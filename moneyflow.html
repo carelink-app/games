@@ -177,7 +177,7 @@ button.mineOnly:disabled{opacity:.25}
       💰 <b>월급날</b>을 지나면 월급+패시브인컴−지출 만큼 현금이 들어옵니다.<br>
       📈 <b>기회</b> 칸에서 주식·코인·부동산·창업에 투자하세요.<br>
       🧾 <b>지출</b>·⚡<b>이벤트</b> 칸은 한국인의 삶 그 자체… 경조사비 조심!<br>
-      🏛️ <b>시장</b> 칸에서 금리·부동산·주가가 요동칩니다.
+      🏛️ <b>시장</b> 칸 + <b>3턴마다 경제 뉴스</b>로 금리·부동산·주가·배당이 요동칩니다.
     </div>
   </div>
 
@@ -313,6 +313,7 @@ function chk(){ // 상태 체크섬 — 폰 간 불일치 감지
     for(const k in p.hold)s=(s+p.hold[k].qty*29)|0;
   });
   for(const k in prices)s=(s+prices[k]*37)|0;
+  s=(s+Math.round(G.reitDiv*10)*41)|0;
   return s;
 }
 
@@ -321,7 +322,8 @@ const CHILD_COST=60;          // 자녀 1명당 월 지출(사교육비 포함)
 const LOAN_RATE=0.05;         // 신용대출 월 이자 5% — 빚은 무섭다! 계획 없는 풀대출 금지
 const DEP_RATE=0.003;         // 예금 월 이자 0.3% (연 3.6%)
 const LOAN_UNIT=500, DEP_UNIT=500;
-const REIT_DIV=1;           // K리츠 1구좌당 월 배당 0.8만원
+const REIT_DIV=1;           // K리츠 초기 월 배당 (게임 중 G.reitDiv로 변동!)
+function reitDiv(){return G?G.reitDiv:REIT_DIV;}
 const COLORS=['#ff5d73','#ffc94d','#3ecf8e','#4dabff','#b78bff','#ff8fd8'];
 
 const JOBS=[
@@ -371,7 +373,7 @@ const SMALL_DEALS=[
  st('K바이오',15,'임상 3상 기대감 최고조.','테마주 급등엔 늘 급락의 그림자가 따라다닙니다.'),
  st('K바이오',20,'증권가 목표가 상향 러시! 광풍 그 자체.','FOMO(나만 소외되는 공포)에 휩쓸린 투자는 대부분 후회로 끝납니다.'),
  st('K리츠',80,'부동산 간접투자 상품 리츠가 저평가 구간.','리츠(REITs)는 여러 사람의 돈을 모아 빌딩에 투자하고 임대료를 배당으로 나눠주는 상품. 소액으로 건물주 되기!'),
- st('K리츠',95,'안정적 배당 매력이 부각되는 중.','K리츠는 1구좌당 매달 1만원 배당 = 패시브인컴이 생기는 자산입니다.'),
+ st('K리츠',95,'안정적 배당 매력이 부각되는 중.','K리츠는 매달 배당이 따박따박 나오는 패시브인컴 자산. 단, 배당은 공실·경기에 따라 오르내립니다!'),
  st('K리츠',110,'저금리 기대감에 리츠 인기 상승.','배당수익률 = 연 배당금 ÷ 가격. 가격이 오르면 수익률은 낮아집니다.'),
  {kind:'coin',sym:'K코인',price:300,desc:'크립토 윈터. "코인은 끝났다"는 기사가 도배 중.',tip:'코인은 이자도 배당도 없는, 오직 시세차익만 노리는 자산입니다. 현금흐름 0!'},
  {kind:'coin',sym:'K코인',price:800,desc:'슬금슬금 반등 중. 커뮤니티가 술렁입니다.',tip:'투자 원칙: 왜 오르는지 설명 못 하는 자산엔 큰돈을 넣지 않기.'},
@@ -441,6 +443,8 @@ const MARKETS=[
  {id:'px',sym:'K리츠',mul:1.15,name:'📈 리츠 인기 상승',tip:'배당 자산은 시세가 안 올라도 배당이 나와 버티기 쉽습니다.'},
  {id:'ipo',name:'🎉 스타트업 상장(IPO) 대박!',desc:'투자했던 스타트업이 코스닥 상장에 성공! 지분 보유자는 <b>투자금의 5배</b>를 회수합니다.',tip:'이것이 엔젤투자의 로망. 단, 이 카드가 안 나오면 그 돈은 계속 묶여 있었겠죠?'},
  {id:'biz-offer',name:'🤝 프랜차이즈 본사의 인수 제안',desc:'사업이 잘된다는 소문에 인수 제안이! 사업 보유자는 <b>투자금의 150%</b>에 매각할 수 있습니다.',tags:['biz'],tip:'사업의 최종 목표 중 하나는 "잘 키워서 파는 것"(엑싯)입니다.'},
+ {id:'rdiv-up',name:'💰 K리츠 배당 인상!',desc:'보유 빌딩 임대료 인상으로 K리츠 배당이 구좌당 <b>+5,000원</b> 오릅니다. (전원 적용)',tip:'배당 성장의 힘! 좋은 배당 자산은 가만히 있어도 패시브인컴이 자랍니다.'},
+ {id:'rdiv-down',name:'📉 K리츠 배당 삭감…',desc:'공실 증가로 K리츠 배당이 구좌당 <b>−5,000원</b> 깎입니다. (최소 5,000원)',tip:'리츠도 부동산 경기를 탑니다. 배당은 약속이 아니라 실적입니다.'},
  {id:'jeonse-up',name:'🏠 전세가 급등',desc:'전세 낀 집(갭투자) 보유자는 세입자와 재계약하며 <b>집 1채당 500만원</b>의 전세금 인상분을 받습니다.',tip:'주의! 올려받은 전세금은 공짜가 아니라 나중에 돌려줘야 할 "부채"입니다. 이 게임에선 현금으로 드리지만, 현실에선 함부로 쓰면 큰일나요.'},
 ];
 
@@ -463,7 +467,7 @@ function draw(deck){
 function passive(p){
   let s=0;
   for(const a of p.assets) s+=a.cf;
-  const r=p.hold['K리츠']; if(r) s+=r.qty*REIT_DIV;
+  const r=p.hold['K리츠']; if(r) s+=r.qty*reitDiv();
   s+=Math.round(p.deposit*DEP_RATE);
   return Math.round(s);
 }
@@ -730,7 +734,7 @@ function startGame(names,winPct){
       skip:0,charity:0,bankrupt:false,
     })),
     turn:0,decks:newDecks(),phase:'await',totalTurns:0,
-    winPct:winPct||100,feed:[],
+    winPct:winPct||100,feed:[],reitDiv:REIT_DIV,lastNews:0,newsMode:false,
   };
   $('scrStart').classList.remove('on');
   $('scrGame').classList.add('on');
@@ -837,6 +841,16 @@ function afterCrisisStart(){
       [{label:'확인',cls:'pri',fn:()=>endTurn()}]);
     return;
   }
+  // 📰 3턴마다 경제 뉴스: 시장 카드가 자동으로 한 장 까진다!
+  if(G.totalTurns-G.lastNews>=3){
+    G.lastNews=G.totalTurns;
+    G.newsMode=true;
+    G.phase='resolving'; renderAll();
+    log('📰 경제 뉴스 속보! 시장이 움직입니다…');
+    feedAdd('📰 ─── 3턴마다 찾아오는 경제 뉴스! ───');
+    tileMarket();
+    return;
+  }
   G.phase='roll';
   renderAll();
   log('🎲 주사위를 굴리세요!');
@@ -880,6 +894,21 @@ function doPayday(n,next){
   const p=cur();
   const pas=passive(p), ex=expenses(p), net=(p.salary+pas-ex)*n;
   p.cash+=net; p.months+=n;
+  // 📢 내놓은 매물: 월급날마다 매수자 등장 확률 굴림
+  const soldMsgs=[];
+  for(let k=0;k<n;k++){
+    for(let i=p.assets.length-1;i>=0;i--){
+      const a=p.assets[i];
+      if(!a.listing)continue;
+      if(rnd(100)<a.listing.ch){
+        const proceeds=a.equity+(a.listing.price-a.propPrice);
+        p.cash+=proceeds;
+        soldMsgs.push('🎉 <b>'+a.name+'</b> 매수자 등장! 호가 '+fmt(a.listing.price)+' 계약 → 회수 <b class="pos">+'+fmt(proceeds)+'</b>');
+        feedAdd('🏠 '+p.name+': '+a.name+' 매도 계약 성사! (+'+fmt(proceeds)+')');
+        p.assets.splice(i,1);
+      }
+    }
+  }
   const html=
     (n>1?'<b>월급날을 '+n+'번</b> 지났습니다!<br>':'')+
     '<table class="tbl">'+
@@ -888,6 +917,7 @@ function doPayday(n,next){
     '<tr><td>🧾 총지출 (생활비'+(p.children?'+자녀':'')+(p.loan?'+대출이자':'')+')</td><td class="neg">−'+fmt(ex*n)+'</td></tr>'+
     '<tr><td><b>실수령</b></td><td class="amt '+(net>=0?'pos':'neg')+'">'+(net>=0?'+':'')+fmt(net)+'</td></tr>'+
     '</table>'+
+    (soldMsgs.length?'<div class="secH">🏠 매물 소식</div>'+soldMsgs.join('<br>'):'')+
     tipHTML('월급−지출 = 저축 가능액. 이 돈을 자산으로 바꾸는 사람만 쳇바퀴를 탈출합니다.');
   showModal('💰 월급날!',html,[{label:'확인',cls:'grn',fn:()=>{
     if(p.cash<0){ openCrisis(()=>{ checkWin(p)||next(); }); }
@@ -898,6 +928,12 @@ function doPayday(n,next){
 
 /* ---------- 칸 해결 ---------- */
 function finishResolve(){
+  if(G.newsMode){ // 경제 뉴스가 끝나면 이번 턴의 주사위는 정상 진행
+    G.newsMode=false;
+    G.phase='roll'; renderAll();
+    log('📰 뉴스 반영 완료! 이제 주사위를 굴리세요.');
+    return;
+  }
   G.phase='done'; renderAll();
   log('✅ 턴 종료를 눌러 다음 사람에게 넘기세요. (은행·재무제표 이용 가능)');
 }
@@ -926,24 +962,31 @@ function showDeal(c){
     feedAdd((c.kind==='coin'?'🪙':'📈')+' 기회 카드: '+c.sym+' — 시세 '+fmt(c.price)+'/'+UNITS[c.sym].unit);
     const isReit=c.sym==='K리츠';
     const divLine=isReit
-      ?'<div style="background:#15301f;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px">💰 <b style="color:var(--green)">배당 자산!</b> 구좌당 월 배당 <b>'+fmt(REIT_DIV)+'</b> · 현 시세 기준 배당수익률 <b>연 '+(REIT_DIV*12/c.price*100).toFixed(1)+'%</b></div>'
+      ?'<div style="background:#15301f;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px">💰 <b style="color:var(--green)">배당 자산!</b> 구좌당 월 배당 <b>'+fmt(reitDiv())+'</b> · 현 시세 기준 배당수익률 <b>연 '+(reitDiv()*12/c.price*100).toFixed(1)+'%</b> <small class="u">(배당은 시장 카드로 오르내림!)</small></div>'
       :'<div style="background:#301a1a;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px">📉 <b style="color:var(--red)">배당 없음</b> — 오직 시세차익(싸게 사서 비싸게 팔기)만 노리는 자산입니다.</div>';
     openQty({
       title:(c.kind==='coin'?'🪙 ':'📈 ')+c.sym+' — '+fmt(c.price)+'/'+UNITS[c.sym].unit,
       brief:finBrief(p),
       sub:c.desc+divLine,tip:c.tip,unitPrice:c.price,step:UNITS[c.sym].step,unit:UNITS[c.sym].unit,
-      divPerUnit:isReit?REIT_DIV:0,
-      maxCost:p.cash,confirm:'매수',
+      divPerUnit:isReit?reitDiv():0,
+      maxCost:p.cash+Math.max(0,loanCap(p)-p.loan), // 빚투 허용 (대출한도까지)
+      cashLimit:p.cash,confirm:'매수',
       extraHTML:()=>holdersHTML(c.sym),
       extraWire:(refresh)=>wireHolders(c.sym,refresh),
       onDone:(qty)=>{
         if(qty>0){
           const cost=qty*c.price;
+          let loanAdd=0;
+          if(cost>p.cash){ // 부족분 자동 대출 (500만 단위)
+            loanAdd=Math.ceil((cost-p.cash)/LOAN_UNIT)*LOAN_UNIT;
+            if(p.loan+loanAdd>loanCap(p)){feedAdd(p.name+': 대출 한도 초과로 매수 실패');finishResolve();return;}
+            p.loan+=loanAdd; p.cash+=loanAdd;
+          }
           p.cash-=cost;
           const h=p.hold[c.sym]||(p.hold[c.sym]={qty:0,avg:0});
           h.avg=Math.round((h.avg*h.qty+cost)/(h.qty+qty)*100)/100;
           h.qty+=qty;
-          feedAdd('🛒 '+p.name+': '+c.sym+' '+qty.toLocaleString()+UNITS[c.sym].unit+' 매수 (−'+fmt(cost)+')');
+          feedAdd('🛒 '+p.name+': '+c.sym+' '+qty.toLocaleString()+UNITS[c.sym].unit+' 매수 (−'+fmt(cost)+(loanAdd?', 💳빚투 '+fmt(loanAdd):'')+')');
           if(checkWin(p))return;
         } else feedAdd(p.name+': '+c.sym+' 매수 안 함');
         finishResolve();
@@ -1075,7 +1118,14 @@ function openQty(o){
         '<input id="qDirect" inputmode="numeric" placeholder="'+o.unit+' 수 직접 입력" style="flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:10px 12px;font-size:14px">'+
         '<button class="sellBtn" id="qApply" style="padding:10px 14px">적용</button></div>'+
         '<div class="costLine">'+(o.sell?'매도 금액':'필요 금액')+': <b class="'+(o.sell?'pos':'')+'">'+fmt(qty*o.unitPrice)+'</b>'+
-        (o.divPerUnit?'<br><span style="font-size:13px">예상 월 배당: <b class="pos">+'+fmt(Math.round(qty*o.divPerUnit))+'</b></span>':'')+'</div>';
+        (o.divPerUnit?'<br><span style="font-size:13px">예상 월 배당: <b class="pos">+'+fmt(Math.round(qty*o.divPerUnit))+'</b></span>':'')+
+        (function(){
+          if(o.cashLimit==null)return'';
+          const cost=qty*o.unitPrice;
+          if(cost<=o.cashLimit)return'';
+          const need=Math.ceil((cost-o.cashLimit)/LOAN_UNIT)*LOAN_UNIT;
+          return '<br><span class="neg" style="font-size:13px">💳 빚투! 부족분 '+fmt(need)+' 자동 대출 (월 이자 +'+fmt(Math.round(need*LOAN_RATE))+' 추가)</span>';
+        })()+'</div>';
     } else {
       h+='<br><b class="neg">'+(o.sell?'보유 수량이 없습니다.':'현금이 부족해 최소 단위('+o.step+o.unit+')도 살 수 없습니다.')+'</b>';
     }
@@ -1184,6 +1234,19 @@ function tileMarket(){
     const old=prices[c.sym];
     prices[c.sym]=Math.max(1,Math.round(prices[c.sym]*c.mul));
     pxReaction(c,old);
+  }
+  else if(c.id==='rdiv-up'||c.id==='rdiv-down'){
+    const old=G.reitDiv;
+    G.reitDiv=c.id==='rdiv-up'?Math.round((G.reitDiv+0.5)*10)/10:Math.max(0.5,Math.round((G.reitDiv-0.5)*10)/10);
+    let msg='';
+    alive().forEach(q=>{
+      const r=q.hold['K리츠'];
+      if(r&&r.qty>0){const delta=Math.round(r.qty*(G.reitDiv-old));
+        msg+='<br>'+q.name+' ('+r.qty+'구좌): 월 배당 <span class="'+(delta>=0?'pos':'neg')+'">'+(delta>=0?'+':'')+fmt(delta)+'</span>';}
+    });
+    showModal('🏛️ '+c.name,c.desc+'<br>구좌당 배당: '+fmt(old)+' → <b class="'+(G.reitDiv>=old?'pos':'neg')+'">'+fmt(G.reitDiv)+'</b>'+
+      (msg||'<br><small class="u">리츠 보유자가 없습니다.</small>')+tipHTML(c.tip),
+      [{label:'확인',cls:'pri',fn:()=>{let won=false;alive().forEach(q=>{if(!won)won=checkWin(q);});if(!won)finishResolve();}}]);
   }
   else if(c.id==='rate-up'){
     let msg='';
@@ -1354,13 +1417,24 @@ function viewFin(p){
   function body(){ return finHTML(p,interactive); }
   function wire(){
     if(!interactive)return;
-    $('mBody').querySelectorAll('.sellBtn').forEach(b=>{
+    $('mBody').querySelectorAll('.listBtn').forEach(b=>{
+      wireAction(b,()=>openListing(p,+b.dataset.a));
+    });
+    $('mBody').querySelectorAll('.unlistBtn').forEach(b=>{
+      wireAction(b,()=>{
+        const a=p.assets[+b.dataset.a]; if(!a)return;
+        a.listing=null;
+        feedAdd('📢 '+p.name+': '+a.name+' 매물 내림');
+        viewFin(p);
+      });
+    });
+    $('mBody').querySelectorAll('.sellBtn[data-sym]').forEach(b=>{
       wireAction(b,()=>{
         const sym=b.dataset.sym,hd=p.hold[sym];
         if(!hd)return;
         openQty({
           title:'📉 '+sym+' 매도 — 현재가 '+fmt(prices[sym])+'/'+UNITS[sym].unit,
-          sub:'보유 '+hd.qty.toLocaleString()+UNITS[sym].unit+' · 평단 '+fmtAvg(hd.avg)+(sym==='K리츠'?'<br><span class="neg" style="font-size:12px">⚠️ 매도한 만큼 월 배당(구좌당 '+fmt(REIT_DIV)+')이 줄어듭니다</span>':''),
+          sub:'보유 '+hd.qty.toLocaleString()+UNITS[sym].unit+' · 평단 '+fmtAvg(hd.avg)+(sym==='K리츠'?'<br><span class="neg" style="font-size:12px">⚠️ 매도한 만큼 월 배당(구좌당 '+fmt(reitDiv())+')이 줄어듭니다</span>':''),
           unit:UNITS[sym].unit,step:UNITS[sym].step,unitPrice:prices[sym],
           maxQtyFixed:hd.qty,sell:true,confirm:'매도 확정',
           tip:'수익은 실현해야 내 돈. 하지만 너무 자주 사고팔면 수수료와 세금이 갉아먹습니다.',
@@ -1379,13 +1453,45 @@ function viewFin(p){
   showModal('📊 '+p.name+'의 재산현황',body(),[{label:'닫기',cls:'pri'}]);
   wire(); renderAll();
 }
+/* 부동산 내놓기 — 호가가 낮을수록 매달 팔릴 확률↑ (부동산은 유동성이 낮다!) */
+function openListing(p,ai){
+  const a=p.assets[ai]; if(!a){viewFin(p);return;}
+  const base=a.fair||a.propPrice||a.equity;
+  const OPTS=[
+    {lbl:'😎 배짱 호가',mul:1.10,ch:10},
+    {lbl:'🙂 시세대로',mul:1.00,ch:30},
+    {lbl:'🏃 빨리 팔기',mul:0.95,ch:55},
+    {lbl:'🚨 급하게',mul:0.90,ch:85},
+  ];
+  const btns=OPTS.map(o=>{
+    const price=Math.round(base*o.mul/10)*10;
+    const proceeds=a.equity+(price-a.propPrice);
+    if(proceeds<=0)return null;
+    return {label:o.lbl+' — '+fmt(price)+' <small>(매월 '+o.ch+'% 확률, 팔리면 +'+fmt(proceeds)+')</small>',
+      fn:()=>{
+        a.listing={price,ch:o.ch};
+        feedAdd('📢 '+p.name+': '+a.name+' 을(를) '+fmt(price)+'에 내놓음 (기준가 대비 '+Math.round((o.mul-1)*100)+'%)');
+        viewFin(p);
+      }};
+  }).filter(Boolean);
+  btns.push({label:'취소',fn:()=>viewFin(p)});
+  showModal('📢 매물 내놓기 — '+a.name,
+    finBrief(p)+'<table class="tbl">'+
+    '<tr><td>기준가 (시세)</td><td><b>'+fmt(base)+'</b></td></tr>'+
+    '<tr><td>매입가</td><td>'+fmt(a.propPrice)+'</td></tr>'+
+    '<tr><td>실투자금</td><td>'+fmt(a.equity)+'</td></tr>'+
+    '<tr><td>월 현금흐름</td><td>'+(a.cf>=0?'+':'')+fmt(a.cf)+' <small class="u">(팔리면 사라짐)</small></td></tr></table>'+
+    '내놓은 매물은 <b>내 월급날마다</b> 매수자가 나타날 수 있습니다. 호가가 쌀수록 빨리 팔려요!'+
+    tipHTML('부동산은 주식과 달리 팔고 싶을 때 바로 못 팝니다(유동성 리스크). 호가를 낮추면 빨리 팔리지만 수익이 줄어드는 트레이드오프!'),
+    btns);
+}
 function finHTML(p,interactive){
     const pas=passive(p),ex=expenses(p);
     let h='<div class="secH">📥 수입 (월)</div><table class="tbl">'+
       '<tr><td>💼 월급 ('+p.job.name+')</td><td class="pos">+'+fmt(p.salary)+'</td></tr>';
     p.assets.forEach(a=>{h+='<tr><td>'+a.name+'</td><td class="'+(a.cf>=0?'pos':'neg')+'">'+(a.cf>=0?'+':'')+fmt(a.cf)+'</td></tr>';});
     const r=p.hold['K리츠'];
-    if(r)h+='<tr><td>K리츠 배당 ('+r.qty+'구좌)</td><td class="pos">+'+fmt(r.qty*REIT_DIV)+'</td></tr>';
+    if(r)h+='<tr><td>K리츠 배당 ('+r.qty+'구좌 × '+fmt(reitDiv())+')</td><td class="pos">+'+fmt(r.qty*reitDiv())+'</td></tr>';
     if(p.deposit)h+='<tr><td>예금 이자</td><td class="pos">+'+fmt(Math.round(p.deposit*DEP_RATE))+'</td></tr>';
     h+='<tr><td><b>패시브인컴 합계</b></td><td class="pos"><b>+'+fmt(pas)+'</b></td></tr></table>';
     h+='<div class="secH">📤 지출 (월)</div><table class="tbl">'+
@@ -1405,8 +1511,15 @@ function finHTML(p,interactive){
     if(!anyH)h+='<tr><td colspan="2"><small class="u">보유 주식·코인·리츠 없음</small></td></tr>';
     h+='</table>';
     if(p.assets.length){
-      h+='<div class="secH">🏠 부동산·사업 (시장 카드로만 매도)</div><table class="tbl">';
-      p.assets.forEach(a=>{h+='<tr><td>'+a.name+'<br><small class="u">월 '+(a.cf>=0?'+':'')+fmt(a.cf)+'</small></td><td><small class="u">실투자 '+fmt(a.equity)+(a.propPrice!==a.equity?'<br>매입가 '+fmt(a.propPrice):'')+'</small></td></tr>';});
+      h+='<div class="secH">🏠 부동산·사업'+(interactive?' — 내놓으면 매달 팔릴 기회!':'')+'</div><table class="tbl">';
+      p.assets.forEach((a,ai)=>{
+        const base=a.fair||a.propPrice||a.equity;
+        h+='<tr><td>'+a.name+'<br><small class="u">월 '+(a.cf>=0?'+':'')+fmt(a.cf)+' · 실투자 '+fmt(a.equity)+(a.propPrice!==a.equity?' · 매입가 '+fmt(a.propPrice):'')+'</small>'+
+          (a.listing?'<br><small style="color:var(--gold)">📢 '+fmt(a.listing.price)+'에 내놓음 (매월 '+a.listing.ch+'% 확률로 매수자 등장)</small>':'')+'</td>'+
+          '<td>'+(interactive?(a.listing
+            ?'<button class="sellBtn unlistBtn" data-a="'+ai+'">내리기</button>'
+            :'<button class="sellBtn listBtn" data-a="'+ai+'">📢 내놓기</button>'):'')+'</td></tr>';
+      });
       h+='</table>';
     }
     h+='<div class="secH">🏦 은행</div><table class="tbl">'+
@@ -1432,10 +1545,18 @@ function openCrisis(onResolved){
     if(p.deposit>0)h+='<tr><td>🏦 예금 '+fmt(p.deposit)+'</td><td><button class="sellBtn" id="crDep">전액 해지</button></td></tr>';
     for(const sym in p.hold){
       const hd=p.hold[sym];if(hd.qty<=0)continue;
-      h+='<tr><td>'+sym+' '+hd.qty.toLocaleString()+UNITS[sym].unit+'</td><td><button class="sellBtn crStock" data-sym="'+sym+'">전량 매도 +'+fmt(Math.round(hd.qty*prices[sym]))+'</button></td></tr>';
+      const pl=Math.round((prices[sym]-hd.avg)*hd.qty);
+      h+='<tr><td>'+sym+' '+hd.qty.toLocaleString()+UNITS[sym].unit+
+        '<br><small class="u">내 평단 '+fmtAvg(hd.avg)+' → 현재가 '+fmt(prices[sym])+'</small>'+
+        '<br><small>팔면 손익: <b class="'+(pl>=0?'pos':'neg')+'">'+(pl>=0?'+':'')+fmt(pl)+'</b>'+(pl<0?' <span class="neg">(손절!)</span>':' <span class="pos">(익절)</span>')+'</small></td>'+
+        '<td><button class="sellBtn crStock" data-sym="'+sym+'">전량 매도 +'+fmt(Math.round(hd.qty*prices[sym]))+'</button></td></tr>';
     }
     p.assets.forEach((a,ai)=>{
-      h+='<tr><td>'+a.name+'<br><small class="u">급매는 실투자금의 80%만 회수</small></td><td><button class="sellBtn crAsset" data-a="'+ai+'">급매 +'+fmt(Math.round(a.equity*0.8))+'</button></td></tr>';
+      const loss=a.equity-Math.round(a.equity*0.8);
+      h+='<tr><td>'+a.name+
+        '<br><small class="u">실투자 '+fmt(a.equity)+' → 급매 회수 '+fmt(Math.round(a.equity*0.8))+' (80%)</small>'+
+        '<br><small>급매 손실: <b class="neg">−'+fmt(loss)+'</b></small></td>'+
+        '<td><button class="sellBtn crAsset" data-a="'+ai+'">급매 +'+fmt(Math.round(a.equity*0.8))+'</button></td></tr>';
     });
     h+='</table>'+tipHTML('현금이 마르면 아무리 자산이 많아도 헐값에 팔아야 합니다(급매). "현금흐름 관리"가 부자의 기본기인 이유!');
     return h;
@@ -1532,7 +1653,7 @@ $('btnRank').onclick=()=>{
       '<td>자유 <b>'+freedomPct(q)+'%</b><br><small class="u">순자산 '+fmt(netWorth(q))+' · 패시브 '+fmt(passive(q))+'</small></td></tr>';
   });
   h+='</table><div class="secH">📊 현재 시세</div><table class="tbl">';
-  for(const sym in prices)h+='<tr><td>'+sym+(sym==='K리츠'?' <small class="u">(월 배당 '+fmt(REIT_DIV)+'/구좌)</small>':'')+'</td><td>'+fmt(prices[sym])+'/'+UNITS[sym].unit+'</td></tr>';
+  for(const sym in prices)h+='<tr><td>'+sym+(sym==='K리츠'?' <small class="u">(월 배당 '+fmt(reitDiv())+'/구좌)</small>':'')+'</td><td>'+fmt(prices[sym])+'/'+UNITS[sym].unit+'</td></tr>';
   h+='</table>';
   vShow('🏆 실시간 순위',h); // 조회 전용 — 각자 폰에서 언제든
 };
@@ -1550,7 +1671,7 @@ function showHelp(){
   '<div class="secH">🎲 진행 방법</div>자기 차례에 주사위를 굴려 이동합니다. <b>월급날💰을 지날 때마다</b> [월급+패시브인컴−지출]을 받습니다. 이동한 칸의 지시를 따른 뒤 "턴 종료"를 눌러 폰을 다음 사람에게 넘깁니다.'+
   '<div class="secH">📈 기회 칸</div>소액(주식·코인·리츠·소형부동산) 또는 대형(아파트·상가·창업) 매물을 볼 수 있습니다. 사도 되고 안 사도 됩니다. 주식·코인은 카드가 보여주는 가격으로 <b>전체 시세가 갱신</b>됩니다.'+
   '<div class="secH">📊 재산현황</div>상단 플레이어 칩을 탭하면 <b>언제든 누구의 재산현황이든</b> 볼 수 있습니다. 월급·이자·지출·손익은 전부 자동 계산됩니다.'+
-  '<div class="secH">💱 매도</div>주식·코인·리츠는 내 턴에 <b>재무제표</b>에서 현재 시세로 팔 수 있습니다. 부동산·사업은 <b>시장 카드</b>에서 매수자가 나타날 때만 팔 수 있습니다(현실도 그렇죠).'+
+  '<div class="secH">💱 매도</div>주식·코인·리츠는 내 턴에 <b>재무제표</b>에서 현재 시세로 팔 수 있습니다. 부동산·사업은 ① <b>재무제표에서 "📢 내놓기"</b> — 호가를 정하면 내 월급날마다 팔릴 확률(배짱 10% ~ 급매 85%)을 굴립니다 ② <b>시장 카드</b>의 매수자 등장 ③ 위기 시 급매(80%)로 팔 수 있습니다.'+
   '<div class="secH">🏦 은행</div>월급×20까지 신용대출(월 이자 5%) 가능 — 이자가 살인적이니 비상용으로만!. 예금은 월 0.3% 이자를 줍니다. 현금이 마이너스가 되면 대출·매각·급매로 해결해야 하며, 불가능하면 <b>파산</b>입니다.'+
   '<div class="secH">📖 경제 용어 사전</div>'+
   '<b>패시브인컴</b>: 노동 없이 자산이 벌어주는 소득. 이 게임의 핵심!<br>'+
