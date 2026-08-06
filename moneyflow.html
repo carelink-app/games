@@ -1475,13 +1475,23 @@ function wireHolders(sym,refresh){
 function openQty(o){
   let qty=o.step;
   const maxQty=o.maxQtyFixed!=null?o.maxQtyFixed:Math.floor(o.maxCost/(o.unitPrice*o.step))*o.step;
+  // 💵 내 돈(원금)만으로 살 수 있는 최대 / 💳 대출까지 끌어 쓸 때 최대 — 둘 다 보여준다
+  const cashQty=(o.cashLimit!=null&&o.maxQtyFixed==null)
+    ?Math.floor(o.cashLimit/(o.unitPrice*o.step))*o.step : null;
+  const showBoth=(cashQty!=null&&maxQty>cashQty);
   const hasQty=maxQty>=o.step;
   function body(){
     let h=(o.brief||'')+o.sub;
     if(hasQty){
       h+='<div class="qtyRow">'+
         '<button class="qbtn" id="qm">−</button><div id="qVal">'+qty.toLocaleString()+o.unit+'</div><button class="qbtn" id="qp">＋</button></div>'+
-        '<button class="qMax" id="qmax">최대 ('+maxQty.toLocaleString()+o.unit+')</button>'+
+        (showBoth
+          ?'<table class="tbl" style="margin-top:8px"><tr><td>💵 원금(현금 '+fmt(o.cashLimit)+')으로</td><td><b class="pos">'+cashQty.toLocaleString()+o.unit+'</b>'+(cashQty>=o.step?'':' <small class="u">(최소 단위 미달)</small>')+'</td></tr>'+
+           '<tr><td>💳 대출까지 끌어 쓰면</td><td><b class="neg">'+maxQty.toLocaleString()+o.unit+'</b><br><small class="u">최대 '+fmt(Math.max(0,maxQty*o.unitPrice-o.cashLimit))+' 빚투</small></td></tr></table>'+
+           '<div style="display:flex;gap:8px;margin-top:8px">'+
+           (cashQty>=o.step?'<button class="qMax" id="qmaxc" style="flex:1;margin:0;background:#15301f;border-color:#2f6b48">💵 원금 최대<br><small>'+cashQty.toLocaleString()+o.unit+'</small></button>':'')+
+           '<button class="qMax" id="qmax" style="flex:1;margin:0">💳 대출 포함 최대<br><small>'+maxQty.toLocaleString()+o.unit+'</small></button></div>'
+          :'<button class="qMax" id="qmax">최대 ('+maxQty.toLocaleString()+o.unit+')</button>')+
         '<div style="display:flex;gap:8px;margin-top:8px;align-items:center">'+
         '<input id="qDirect" inputmode="numeric" placeholder="'+o.unit+' 수 직접 입력" style="flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:10px 12px;font-size:14px">'+
         '<button class="sellBtn" id="qApply" style="padding:10px 14px">적용</button></div>'+
@@ -1492,7 +1502,8 @@ function openQty(o){
           const cost=qty*o.unitPrice;
           if(cost<=o.cashLimit)return'';
           const need=Math.ceil((cost-o.cashLimit)/LOAN_UNIT)*LOAN_UNIT;
-          return '<br><span class="neg" style="font-size:13px">💳 빚투! 부족분 '+fmt(need)+' 자동 대출 (월 이자 +'+fmt(Math.round(need*LOAN_RATE))+' 추가)</span>';
+          return '<br><span class="neg" style="font-size:13px">💳 빚투! 부족분 '+fmt(need)+' 자동 대출 (월 이자 +'+fmt(Math.round(need*LOAN_RATE))+' 추가)</span>'+
+            (cashQty!=null&&cashQty>=o.step?'<br><span style="font-size:12px;color:var(--sub)">빚 없이 사려면 '+cashQty.toLocaleString()+o.unit+'까지</span>':'');
         })()+'</div>';
     } else {
       h+='<br><b class="neg">'+(o.sell?'보유 수량이 없습니다.':'현금이 부족해 최소 단위('+o.step+o.unit+')도 살 수 없습니다.')+'</b>';
@@ -1506,6 +1517,7 @@ function openQty(o){
       wireAction($('qm'),()=>{qty=Math.max(o.step,qty-o.step);refresh();});
       wireAction($('qp'),()=>{qty=Math.min(maxQty,qty+o.step);refresh();});
       wireAction($('qmax'),()=>{qty=maxQty;refresh();});
+      const qc=$('qmaxc'); if(qc)wireAction(qc,()=>{qty=cashQty;refresh();});
       wireAction($('qApply'),(v)=>{
         let n=parseInt(String(v||'').replace(/[^0-9]/g,''));
         if(!isFinite(n)||n<=0)return;
