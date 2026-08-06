@@ -73,6 +73,17 @@ input{user-select:text;-webkit-user-select:text}
 </style>
 </head>
 <body>
+<script>
+window.addEventListener('error',function(ev){
+  try{
+    var b=document.getElementById('jsErrBar');
+    if(!b){b=document.createElement('div');b.id='jsErrBar';
+      b.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#d63a55;color:#fff;font-size:11px;padding:6px 10px;z-index:99999;word-break:break-all';
+      document.body.appendChild(b);}
+    b.textContent='⚠️ 오류: '+(ev.message||'')+' @'+(ev.lineno||'');
+  }catch(e){}
+});
+</script>
 <div id="netBanner"></div>
 <button id="hostSkip" style="display:none;position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:88;background:#d63a55;color:#fff;font-weight:800;font-size:13px;padding:9px 16px;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,.4)">⏭ 멈춘 차례 강제 진행</button>
 <div id="app"></div>
@@ -132,6 +143,15 @@ function ruleCardHTML(g){
   if(g==='poker')return `<div class="banner"><b>🂠 이마 포커</b> (인디언 포커 변형)<br>내 폰엔 <b>남들 카드만</b> 보이고 내 카드는 안 보여요! 상대 표정과 배팅을 읽고 콜/레이즈/폴드. 최고 숫자가 팟을 쓸어갑니다.<br>🔥 <b>변형 룰</b>: 10을 들고 폴드하면 벌금 3칩! (쫄보 방지)</div>`;
   return `<div class="banner"><b>🤠 건파이트</b> (뱅! 스타일 라이트 변형)<br>보안관(공개) vs 숨은 무법자들 vs 혼자 배신자! 매 턴 카드 뽑고 총 쏘고, 누가 아군인지 <b>말로 떠보며</b> 추리하세요. 보안관팀은 악당 소탕, 무법자는 보안관 제거, 배신자는 <b>혼자 살아남아야</b> 승리!</div>`;
 }
+const ICE_CFG={config:{iceServers:[
+ {urls:'stun:stun.l.google.com:19302'},
+ {urls:'stun:stun1.l.google.com:19302'},
+ {urls:'stun:stun.cloudflare.com:3478'}
+]}};
+function netDiag(msg){ // 연결 문제 진단 표시
+  const li=document.getElementById('lobbyInfo');
+  if(li)li.innerHTML='<b style="color:#ff5d73">'+msg+'</b><br><small>· 와이파이/데이터가 켜져 있나요?<br>· 아이폰: 설정→Safari→고급→실험적 기능은 건드리지 않아도 됩니다. <b>개인정보 보호 브라우징(시크릿 모드)을 끄고</b> 일반 탭에서 열어주세요.<br>· 같은 방이면 한 명이 <b>핫스팟</b>을 켜고 모두 그 핫스팟에 접속하면 가장 안정적입니다.</small><br><button class="chip" onclick="location.reload()" style="margin-top:8px">🔄 새로고침</button>';
+}
 function makeCode(){const CS='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<4;i++)c+=CS[rnd(CS.length)];return c;}
 function nameOK(){const el=$('myNameIn');myName=el?el.value.trim():myName;
   if(!myName){$('lobbyInfo').innerHTML='<b style="color:var(--red)">이름을 먼저 입력하세요!</b>';return false;}return true;}
@@ -148,8 +168,10 @@ function hostRoom(){
   if(!nameOK())return;
   roomCode=makeCode();
   $('lobbyInfo').innerHTML='방 만드는 중…';
-  peer=new Peer('kmg-'+roomCode);
-  peer.on('open',()=>{NET={host:true,conns:[],names:[myName],dead:{}};myPid=0;renderHostLobby();});
+  peer=new Peer('kmg-'+roomCode,ICE_CFG);
+  let hostOpened=false;
+  peer.on('open',()=>{hostOpened=true;NET={host:true,conns:[],names:[myName],dead:{}};myPid=0;renderHostLobby();});
+  setTimeout(()=>{if(!hostOpened)netDiag('📡 게임 서버에 연결하지 못했습니다.');},10000);
   peer.on('connection',c=>{
     c.on('data',d=>hostOnData(c,d));
     c.on('close',()=>hostDrop(c));
@@ -164,7 +186,7 @@ function clientConnect(){
   if(typeof Peer==='undefined')return;
   const li0=$('lobbyInfo');if(li0)li0.innerHTML='접속 중…';
   if(peer){try{peer.destroy();}catch(e){}}
-  peer=new Peer();
+  peer=new Peer(undefined,ICE_CFG);
   peer.on('open',()=>{
     const c=peer.connect('kmg-'+roomCode,{reliable:true});
     let opened=false;

@@ -128,6 +128,17 @@ button.mineOnly:disabled{opacity:.25}
 </style>
 </head>
 <body>
+<script>
+window.addEventListener('error',function(ev){
+  try{
+    var b=document.getElementById('jsErrBar');
+    if(!b){b=document.createElement('div');b.id='jsErrBar';
+      b.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#d63a55;color:#fff;font-size:11px;padding:6px 10px;z-index:99999;word-break:break-all';
+      document.body.appendChild(b);}
+    b.textContent='⚠️ 오류: '+(ev.message||'')+' @'+(ev.lineno||'');
+  }catch(e){}
+});
+</script>
 
 <!-- ============ 시작 화면 ============ -->
 <div id="scrStart" class="screen on">
@@ -713,17 +724,29 @@ function setMode(on){
   if(on&&typeof Peer==='undefined')
     $('lobbyInfo').innerHTML='<b class="neg">⚠️ 인터넷 연결이 필요합니다.</b><br>온라인 모드는 접속 중계 서버를 사용하므로 와이파이/데이터를 켜고 페이지를 새로고침 해주세요.';
 }
+const ICE_CFG={config:{iceServers:[
+ {urls:'stun:stun.l.google.com:19302'},
+ {urls:'stun:stun1.l.google.com:19302'},
+ {urls:'stun:stun.cloudflare.com:3478'}
+]}};
+function netDiag(msg){ // 연결 문제 진단 표시
+  const li=document.getElementById('lobbyInfo');
+  if(li)li.innerHTML='<b style="color:#ff5d73">'+msg+'</b><br><small>· 와이파이/데이터가 켜져 있나요?<br>· 아이폰: 설정→Safari→고급→실험적 기능은 건드리지 않아도 됩니다. <b>개인정보 보호 브라우징(시크릿 모드)을 끄고</b> 일반 탭에서 열어주세요.<br>· 같은 방이면 한 명이 <b>핫스팟</b>을 켜고 모두 그 핫스팟에 접속하면 가장 안정적입니다.</small><br><button class="chip" onclick="location.reload()" style="margin-top:8px">🔄 새로고침</button>';
+}
 function makeCode(){const CS='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<4;i++)c+=CS[Math.floor(Math.random()*CS.length)];return c;}
 function nameOK(){myName=$('myName').value.trim();if(!myName){$('lobbyInfo').innerHTML='<b class="neg">이름을 먼저 입력하세요!</b>';return false;}return true;}
 $('btnHost').onclick=()=>{
   if(typeof Peer==='undefined'||!nameOK())return;
   roomCode=makeCode();
   $('lobbyInfo').innerHTML='방 만드는 중…';
-  peer=new Peer('mfk-'+roomCode);
+  peer=new Peer('mfk-'+roomCode,ICE_CFG);
+  let hostOpened=false;
   peer.on('open',()=>{
+    hostOpened=true;
     NET={host:true,conns:[],names:[myName],dead:{}}; myPid=0;
     renderLobby();
   });
+  setTimeout(()=>{if(!hostOpened)netDiag('📡 게임 서버에 연결하지 못했습니다.');},10000);
   peer.on('connection',c=>{
     c.on('data',d=>hostOnData(c,d));
     c.on('close',()=>hostDropConn(c));
@@ -745,7 +768,7 @@ $('btnJoin').onclick=()=>{
 function clientConnect(){
   $('lobbyInfo').innerHTML='방에 접속하는 중…';
   if(peer)try{peer.destroy();}catch(e){}
-  peer=new Peer();
+  peer=new Peer(undefined,ICE_CFG);
   peer.on('open',()=>{
     const c=peer.connect('mfk-'+roomCode,{reliable:true});
     let opened=false;
@@ -757,6 +780,7 @@ function clientConnect(){
   });
   peer.on('error',e=>{
     if(String(e.type)==='peer-unavailable')$('lobbyInfo').innerHTML='<b class="neg">방을 찾을 수 없습니다.</b> 코드를 확인하거나 방장이 방을 만들었는지 확인하세요.';
+    else netDiag('📡 연결 오류 ('+e.type+')');
   });
 }
 function renderLobby(){
@@ -845,6 +869,11 @@ function connLost(){
   if(!NET||NET.host)return;
   setNetBanner(true);
 }
+/* 📱 아이폰/안드로이드: 화면 잠금·앱 전환 시 연결이 끊기므로 복귀하면 자동 재접속 */
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible')return;
+  if(NET&&!NET.host&&NET.c&&!NET.c.open&&G){ setNetBanner(true); clientConnect(); }
+});
 function setNetBanner(lost){
   const nb=$('netBanner');
   if(NET&&!NET.host){
