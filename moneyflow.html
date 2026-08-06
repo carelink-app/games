@@ -45,7 +45,16 @@ button{font-family:inherit;border:none;cursor:pointer}
 .t-pay{background:#3a5f3f}.t-deal{background:#2a4468}.t-doodad{background:#63384a}
 .t-market{background:#5d4a2c}.t-event{background:#4c3a6b}.t-child{background:#6b3a5e}.t-charity{background:#803f45}.t-tempt{background:#6b2f6b}
 .toks{position:absolute;bottom:2px;left:0;right:0;display:flex;justify-content:center;gap:2px;flex-wrap:wrap}
-.tok{width:8px;height:8px;border-radius:50%;border:1px solid #000}
+.tok{width:19px;height:19px;border-radius:50%;border:2px solid rgba(0,0,0,.55);display:flex;
+ align-items:center;justify-content:center;font-size:12px;line-height:1;box-shadow:0 2px 4px rgba(0,0,0,.45)}
+.tok.me{outline:2px solid #fff;outline-offset:1px}
+@keyframes hop{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-13px) scale(1.18)}
+ 70%{transform:translateY(0) scale(.92)}100%{transform:translateY(0) scale(1)}}
+.tok.hopping{animation:hop .17s ease-out;z-index:5}
+@keyframes landPop{0%{transform:scale(1)}40%{transform:scale(1.45)}100%{transform:scale(1)}}
+.tok.landed{animation:landPop .35s ease-out}
+@keyframes tileFlash{0%,100%{background:var(--panel2)}50%{background:#3a4a72}}
+.tile.landing{animation:tileFlash .45s ease-out}
 #center{grid-row:2/7;grid-column:2/7;background:radial-gradient(circle at 50% 30%,#1e2a45,#141b2c);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);padding:8px}
 #diceBox{font-size:44px;font-weight:900;min-height:52px;display:flex;align-items:center;gap:8px}
 #centerName{font-size:15px;font-weight:800}
@@ -372,6 +381,7 @@ const LOAN_UNIT=500, DEP_UNIT=500;
 const REIT_DIV=1;           // K리츠 초기 월 배당 (게임 중 G.reitDiv로 변동!)
 function reitDiv(){return G?G.reitDiv:REIT_DIV;}
 const COLORS=['#ff5d73','#ffc94d','#3ecf8e','#4dabff','#b78bff','#ff8fd8'];
+const CHARS=['🐰','🐻','🐱','🐼','🦊','🐯']; // 모두의마블처럼 캐릭터 말!
 
 const JOBS=[
  {name:'9급 공무원',emoji:'🏛️',salary:251,expense:139,cash:552,secure:true,perk:'safe',
@@ -868,8 +878,9 @@ function showModal(title,bodyHTML,btns,opts){
     bb.appendChild(el);
   });
   easyTerms($('mBody'));
-  $('ovl').classList.add('on');
-  $('modal').scrollTop=0;
+  const wait=ANIM_UNTIL-Number(new Date());
+  if(wait>60&&!FAST){ setTimeout(()=>{try{$('ovl').classList.add('on');$('modal').scrollTop=0;}catch(e){}},wait); }
+  else { $('ovl').classList.add('on'); $('modal').scrollTop=0; }
 }
 function closeModal(){$('ovl').classList.remove('on');}
 /* 뷰어 모달 — 조회 전용, 각자 폰에서 언제든 */
@@ -1144,7 +1155,7 @@ function startGame(names,winPct,learn){
   EPOCH=0;ACTIONS=[]; // 동기화 기준점 리셋 (재접속 복구가 항상 같은 세대에서 시작하도록)
   G={
     players:names.map((nm,i)=>({
-      id:i,name:nm,color:COLORS[i],job:jobPool[i],
+      id:i,name:nm,color:COLORS[i],ch:CHARS[i%CHARS.length],job:jobPool[i],
       salary:jobPool[i].salary,expense:jobPool[i].expense,
       cash:jobPool[i].cash,deposit:0,loan:0,
       hold:{},assets:[],children:0,pos:0,months:0,
@@ -1230,15 +1241,47 @@ function buildBoard(){
   c.innerHTML='<div id="diceBox">🎲</div><div id="centerName"></div><div id="centerSub"></div>';
   bd.appendChild(c);
 }
-function renderAll(){
-  // 토큰
-  TILES.forEach((_,i)=>{ $('tok'+i).innerHTML=''; $('tile'+i).classList.remove('cur'); });
+/* 🐰 캐릭터 말 그리기 — ANIM이 있으면 연출 위치를 우선 (동기화와 무관한 화면 전용) */
+let ANIM=null;        // {pid,pos,hop} 이동 연출
+let ANIM_UNTIL=0;     // 이 시각까지는 모달을 늦게 띄운다 (이동 구경할 시간)
+function drawTokens(){
+  if(!G)return;
+  TILES.forEach((_,i)=>{ const t=$('tok'+i); if(t)t.innerHTML=''; const q=$('tile'+i); if(q)q.classList.remove('cur'); });
   G.players.forEach(p=>{
     if(p.bankrupt)return;
+    const moving=ANIM&&ANIM.pid===p.id;
+    const pos=moving?ANIM.pos:p.pos;
     const tk=document.createElement('div');
-    tk.className='tok'; tk.style.background=p.color;
-    $('tok'+p.pos).appendChild(tk);
+    tk.className='tok'+(moving?(ANIM.hop==='land'?' landed':' hopping'):'')+((!NET||p.id===myPid)?' me':'');
+    tk.style.background=p.color;
+    tk.textContent=p.ch||'●';
+    const box=$('tok'+pos); if(box)box.appendChild(tk);
   });
+  const c=cur();
+  if(c&&!c.bankrupt){ const ct=$('tile'+((ANIM&&ANIM.pid===c.id)?ANIM.pos:c.pos)); if(ct)ct.classList.add('cur'); }
+}
+/* 한 칸씩 폴짝폴짝 이동 (연출 전용 — 게임 로직은 이미 끝나 있음) */
+function animateHop(pid,from,steps){
+  if(FAST||steps<=0)return 0;
+  const per=165, total=steps*per+320;
+  ANIM_UNTIL=Number(new Date())+total;
+  let i=0;
+  ANIM={pid,pos:from,hop:'hop'}; drawTokens();
+  const iv=setInterval(()=>{
+    i++;
+    if(i>steps){
+      clearInterval(iv);
+      ANIM={pid,pos:(from+steps)%24,hop:'land'}; sfx('land'); drawTokens();
+      const lt=$('tile'+((from+steps)%24)); if(lt){lt.classList.add('landing');setTimeout(()=>{try{lt.classList.remove('landing');}catch(e){}},460);}
+      setTimeout(()=>{ ANIM=null; try{drawTokens();}catch(e){} },330);
+      return;
+    }
+    ANIM={pid,pos:(from+i)%24,hop:'hop'}; sfx('step'); drawTokens();
+  },per);
+  return total;
+}
+function renderAll(){
+  drawTokens();
   const p=cur();
   if(!p.bankrupt) $('tile'+p.pos).classList.add('cur');
   // 스트립
@@ -1246,7 +1289,7 @@ function renderAll(){
   G.players.forEach((q,i)=>{
     const d=document.createElement('div');
     d.className='pchip'+(i===G.turn?' cur':'')+(q.bankrupt?' dead':'');
-    d.innerHTML='<span class="d" style="background:'+q.color+'"></span><b>'+q.name+'</b>'+
+    d.innerHTML='<span class="d" style="background:'+q.color+'"></span><b>'+(q.ch||'')+' '+q.name+'</b>'+
       (q.free?'<span style="font-size:10px">🕊️'+(q.dream?Math.min(100,Math.round(q.dreamFund/dreamGoal(q)*100))+'%':'')+'</span>':'')+
       '<span class="c">'+fmt(q.cash)+'</span>';
     d.onclick=()=>viewRead(q); // 조회 전용 뷰어 — 언제든, 누구든
@@ -1334,6 +1377,7 @@ function turnBanner(){
   const sudo=NET&&NET.host&&$('sudoChk')&&$('sudoChk').checked;
   $('toGo').disabled=NET&&!mine&&!sudo;
   $('toGo').textContent=(NET&&!mine&&!sudo)?'⏳ 대기 중…':'내 차례 시작 ▶';
+  ANIM=null; ANIM_UNTIL=0;
   $('turnOvl').classList.add('on');
   if(!FAST){ sfx('turn'); bgmStart(); }
   renderAll();
@@ -1403,10 +1447,11 @@ function moveAndResolve(steps){
   const p=cur();
   let paydays=0;
   for(let i=1;i<=steps;i++) if(TILES[(p.pos+i)%24].t==='pay') paydays++;
+  const from=p.pos;
   p.pos=(p.pos+steps)%24;
+  animateHop(p.id,from,steps); // 🐰 폴짝폴짝 (연출)
   const tile=TILES[p.pos].t;
   log('🎲 '+steps+'칸 이동! → '+TINFO[tile].em+' '+TINFO[tile].lb+' 칸');
-  if(!FAST){ for(let i=0;i<steps;i++)setTimeout(()=>sfx('step'),380+i*95); setTimeout(()=>sfx('land'),380+steps*95); }
   renderAll();
   if(paydays>0) doPayday(paydays,()=>{ tile==='pay'?finishResolve():resolveTile(); });
   else resolveTile();
@@ -1702,7 +1747,7 @@ function openQty(o){
       h+='<br><b class="neg">'+(o.sell?'보유 수량이 없습니다.':'현금이 부족해 최소 단위('+o.step+o.unit+')도 살 수 없습니다.')+'</b>';
     }
     const ex2=o.extraHTML?o.extraHTML():'';
-    h+=(ex2?'<details style="margin-top:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px"><summary style="font-weight:800;font-size:13px;color:var(--gold)">💱 다른 보유자 즉시 매도 찬스 (펼치기)</summary>'+ex2+'</details>':'')+tipHTML(o.tip);
+    h+=(ex2?'<details open style="margin-top:10px;background:#2a2438;border:1px solid #6b4fa8;border-radius:10px;padding:8px 12px"><summary style="font-weight:800;font-size:13px;color:#c9a6ff">🙋 이 종목 보유자는 지금 팔 수 있어요! (탭해서 접기)</summary>'+ex2+'</details>':'')+tipHTML(o.tip);
     return h;
   }
   function wire(){
@@ -1921,21 +1966,31 @@ function tileMarket(){
 /* 주가 변동 카드: 보유자 전원이 그 자리에서 매도 가능 (온라인이면 각자 자기 폰에서!) */
 function pxReaction(c,old){
   const sym=c.sym;
+  const ans={};   // 보유자별 응답 여부 (모든 폰에서 같은 순서로 갱신 — 락스텝 안전)
+  function holders(){ return alive().filter(q=>{const h=q.hold[sym];return h&&h.qty>0;}); }
+  function waiting(){ return holders().filter(q=>!ans[q.id]&&!(NET&&NET.dead&&NET.dead[q.id])); }
   function build(){
     let rows='',any=false;
     alive().forEach(q=>{
       const hd=q.hold[sym]; if(!hd||hd.qty<=0)return; any=true;
       const val=Math.round(hd.qty*prices[sym]);
       const pl=Math.round((prices[sym]-hd.avg)*hd.qty);
-      rows+='<tr><td><b style="color:'+q.color+'">'+q.name+'</b> '+hd.qty.toLocaleString()+UNITS[sym].unit+
-        '<br><small class="u">평단 '+fmtAvg(hd.avg)+' · 손익 <span class="'+(pl>=0?'pos':'neg')+'">'+(pl>=0?'+':'')+fmt(pl)+'</span></small></td>'+
-        '<td><button class="sellBtn pxh" data-p="'+q.id+'">절반 매도</button><br>'+
-        '<button class="sellBtn pxa" data-p="'+q.id+'" style="margin-top:4px">전량 +'+fmt(val)+'</button></td></tr>';
+      const done=!!ans[q.id];
+      rows+='<tr style="'+(done?'opacity:.55':'')+'"><td><b style="color:'+q.color+'">'+(q.ch||'')+' '+q.name+'</b> '+hd.qty.toLocaleString()+UNITS[sym].unit+
+        '<br><small class="u">평단 '+fmtAvg(hd.avg)+' · 손익 <span class="'+(pl>=0?'pos':'neg')+'">'+(pl>=0?'+':'')+fmt(pl)+'</span></small>'+
+        (done?'<br><small style="color:var(--green);font-weight:800">✔ 결정 완료</small>':'<br><small style="color:var(--gold);font-weight:800">❓ 팔까요, 그냥 둘까요?</small>')+'</td>'+
+        '<td>'+(done?'<small class="u">—</small>'
+          :'<button class="sellBtn pxh" data-p="'+q.id+'">절반 매도</button><br>'+
+            '<button class="sellBtn pxa" data-p="'+q.id+'" style="margin-top:4px">전량 +'+fmt(val)+'</button><br>'+
+            '<button class="sellBtn pxk" data-p="'+q.id+'" style="margin-top:4px;background:#1d3326;color:#8ce0b0">👌 안 팔아요</button>')+'</td></tr>';
     });
     return '<div style="background:#1c2742;border-left:4px solid var(--gold);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:15px"><b>📰 '+esc(c.name)+'</b></div>'+
       '<b>'+sym+'</b> 시세: '+fmt(old)+' → <b class="'+(c.mul>=1?'pos':'neg')+'">'+fmt(prices[sym])+'</b>/'+UNITS[sym].unit+
       '<br><small>기준: 평년 시세 '+fmt(BASE_PX[sym])+' · '+pxDevTag(sym,prices[sym])+'</small>'+
-      (any?'<br><small class="u">보유자는 지금 바로 매도 결정! '+(NET?'각자 자기 폰에서 누르세요.':'각자 결정하세요.')+'</small><table class="tbl">'+rows+'</table>'
+      (any?'<div style="background:#2a2438;border:1px solid #6b4fa8;border-radius:10px;padding:9px 12px;margin-top:8px;font-size:13px">'+
+            '🙋 <b>매도 찬스!</b> 보유자 <b>전원이 답해야</b> 다음으로 넘어갑니다. '+(NET?'각자 자기 폰에서 눌러주세요.':'한 명씩 돌아가며 눌러주세요.')+
+            '<br><small class="u">아무도 못 넘어가니 천천히 생각하세요!</small></div>'+
+            '<table class="tbl">'+rows+'</table>'
           :'<br><small class="u">이 종목 보유자가 없습니다.</small>')+tipHTML(c.tip);
   }
   function sellFor(q,half){
@@ -1945,14 +2000,25 @@ function pxReaction(c,old){
     q.cash+=Math.round(qty*prices[sym]);
     hd.qty-=qty; if(hd.qty<=0)delete q.hold[sym];
     feedAdd('💱 '+q.name+': '+sym+' '+qty.toLocaleString()+UNITS[sym].unit+' 매도!');
+    ans[q.id]=1;
+    if(!FAST)sfx('coin');
     redraw(); renderAll();
   }
   function wire(){
     $('mBody').querySelectorAll('.pxh').forEach(b=>wireAction(b,()=>sellFor(G.players[+b.dataset.p],true),+b.dataset.p));
     $('mBody').querySelectorAll('.pxa').forEach(b=>{wireAction(b,()=>sellFor(G.players[+b.dataset.p],false),+b.dataset.p);arm2(b,'⚠️ 전량 매도 — 한 번 더 탭');});
+    $('mBody').querySelectorAll('.pxk').forEach(b=>wireAction(b,()=>{
+      const q=G.players[+b.dataset.p];
+      ans[q.id]=1; feedAdd('🤐 '+q.name+': '+sym+' 안 팔고 그대로 보유');
+      redraw(); renderAll();
+    },+b.dataset.p));
   }
   function redraw(){ // showModal이 resetActions 후 '마감'까지 전부 재등록 — 액션 인덱스 항상 일치
-    showModal('🏛️ '+c.name,build(),[{label:'마감 (다음으로)',cls:'pri',fn:()=>finishResolve()}]);
+    const w=waiting();
+    const lbl=w.length
+      ? '⏭️ 그래도 마감 ('+w.length+'명 미응답: '+w.map(q=>q.name).join(', ')+')'
+      : '✅ 마감 (다음으로)';
+    showModal('🏛️ '+c.name,build(),[{label:lbl,cls:w.length?'':'pri',fn:()=>finishResolve()}]);
     wire();
   }
   redraw();
