@@ -474,7 +474,7 @@ function passive(p){
 function expenses(p){
   return p.expense + p.children*CHILD_COST + Math.round(p.loan*LOAN_RATE);
 }
-function loanCap(p){return p.salary*20;}
+function loanCap(p){return p.salary*10;}
 function stockVal(p){
   let s=0; for(const sym in p.hold) s+=p.hold[sym].qty*prices[sym];
   return Math.round(s);
@@ -538,6 +538,14 @@ function buildStart(){
     b.className='chip'+(i===selCnt?' sel':''); b.textContent=i+'명';
     b.onclick=()=>{selCnt=i;buildStart();};
     cc.appendChild(b);
+  }
+  const hint=document.getElementById('cntHint');
+  if(hint&&hint.remove)hint.remove();
+  if(selCnt>=5||selCnt===1){
+    const d=document.createElement('div');
+    d.id='cntHint';d.style.cssText='margin-top:8px;font-size:12px;color:var(--gold)';
+    d.textContent=selCnt===1?'💡 혼자 연습이라면 "스피드(70%)" 목표로 가볍게 도는 걸 추천!':'⚡ 5~6명은 한 판이 길어져요 — 승리 목표를 "스피드(70%)"로 추천!';
+    cc.parentNode.appendChild(d);
   }
   const nb=$('nameBox');
   const old=[...nb.querySelectorAll('input')].map(x=>x.value);
@@ -1347,7 +1355,8 @@ function sellOfferModal(c,calcProceeds){
         const pr=calcProceeds(a);
         const profit=pr-a.equity;
         rows+='<tr><td><b style="color:'+q.color+'">'+q.name+'</b><br>'+a.name+'<br><small class="u">실투자 '+fmt(a.equity)+' · 월 '+(a.cf>=0?'+':'')+fmt(a.cf)+'</small></td>'+
-          '<td>회수 <b>'+fmt(pr)+'</b><br><span class="'+(profit>=0?'pos':'neg')+'">'+(profit>=0?'+':'')+fmt(profit)+'</span><br><button class="sellBtn" data-p="'+q.id+'" data-a="'+ai+'">매도</button></td></tr>';
+          '<td>회수 <b>'+fmt(pr)+'</b><br><span class="'+(profit>=0?'pos':'neg')+'">'+(profit>=0?'+':'')+fmt(profit)+'</span><br>'+
+          (pr>0?'<button class="sellBtn" data-p="'+q.id+'" data-a="'+ai+'">매도</button>':'<small class="u">손해가 너무 커서 매도 불가</small>')+'</td></tr>';
       });
     });
     return c.desc+(any?'<table class="tbl">'+rows+'</table>':'<br><small class="u">해당하는 자산을 가진 사람이 없습니다.</small>')+tipHTML(c.tip);
@@ -1377,8 +1386,8 @@ function openBank(){
   function body(){
     return '<table class="tbl">'+
       '<tr><td>💵 현금</td><td><b>'+fmt(p.cash)+'</b></td></tr>'+
-      '<tr><td>💳 신용대출 잔액 <small class="u">(월 이자 5%)</small></td><td class="neg">'+fmt(p.loan)+'</td></tr>'+
-      '<tr><td>대출 한도 <small class="u">(월급×20)</small></td><td>'+fmt(loanCap(p))+'</td></tr>'+
+      '<tr><td>💳 신용대출 잔액 <small class="u">(월 이자 5%)</small></td><td class="neg">'+fmt(p.loan)+(p.loan>0?'<br><small>월 이자 −'+fmt(Math.round(p.loan*LOAN_RATE))+' (월급의 '+Math.round(p.loan*LOAN_RATE/p.salary*100)+'%)</small>':'')+'</td></tr>'+
+      '<tr><td>대출 한도 <small class="u">(월급×10)</small></td><td>'+fmt(loanCap(p))+'</td></tr>'+
       '<tr><td>🏦 정기예금 <small class="u">(월 이자 0.3%)</small></td><td class="pos">'+fmt(p.deposit)+'</td></tr>'+
       '</table>'+tipHTML('대출이자(월 5%)는 예금이자(월 0.3%)의 무려 17배! 빚 갚는 것이 곧 최고의 재테크인 이유! 단, 대출로 산 자산이 이자보다 더 벌어주면 이야기가 달라집니다(레버리지).');
   }
@@ -1539,9 +1548,8 @@ function openCrisis(onResolved){
     const need=-p.cash;
     let h='<b class="neg">현금이 '+fmt(need)+' 부족합니다!</b><br>대출을 받거나 자산을 팔아 현금을 0원 이상으로 만드세요.'+
       '<table class="tbl"><tr><td>현재 현금</td><td class="neg">'+fmt(p.cash)+'</td></tr></table>';
-    h+='<div class="secH">해결 수단</div><table class="tbl">';
+    h+='<div class="secH">해결 수단 (위에서부터 시도하는 게 유리!)</div><table class="tbl">';
     const canL=p.loan+LOAN_UNIT<=loanCap(p);
-    h+='<tr><td>💳 신용대출 (한도 '+fmt(loanCap(p)-p.loan)+' 남음)</td><td>'+(canL?'<button class="sellBtn" id="crLoan">+'+fmt(LOAN_UNIT)+' 대출</button>':'<small class="u">한도 초과</small>')+'</td></tr>';
     if(p.deposit>0)h+='<tr><td>🏦 예금 '+fmt(p.deposit)+'</td><td><button class="sellBtn" id="crDep">전액 해지</button></td></tr>';
     for(const sym in p.hold){
       const hd=p.hold[sym];if(hd.qty<=0)continue;
@@ -1558,7 +1566,9 @@ function openCrisis(onResolved){
         '<br><small>급매 손실: <b class="neg">−'+fmt(loss)+'</b></small></td>'+
         '<td><button class="sellBtn crAsset" data-a="'+ai+'">급매 +'+fmt(Math.round(a.equity*0.8))+'</button></td></tr>';
     });
-    h+='</table>'+tipHTML('현금이 마르면 아무리 자산이 많아도 헐값에 팔아야 합니다(급매). "현금흐름 관리"가 부자의 기본기인 이유!');
+    h+='<tr><td>💳 신용대출 <span class="neg">(최후의 수단!)</span><br><small class="u">한도 '+fmt(loanCap(p)-p.loan)+' 남음 · 빌리면 월 이자 +'+fmt(Math.round(LOAN_UNIT*LOAN_RATE))+'씩 증가</small></td>'+
+      '<td>'+(canL?'<button class="sellBtn" id="crLoan">+'+fmt(LOAN_UNIT)+' 대출</button>':'<small class="u">한도 초과</small>')+'</td></tr>';
+    h+='</table>'+tipHTML('현금이 마르면 아무리 자산이 많아도 헐값에 팔아야 합니다(급매). 그리고 위기 때의 5% 대출은 늪입니다 — 자산 매각을 먼저 고려하세요!');
     return h;
   }
   function refresh(){
@@ -1672,7 +1682,7 @@ function showHelp(){
   '<div class="secH">📈 기회 칸</div>소액(주식·코인·리츠·소형부동산) 또는 대형(아파트·상가·창업) 매물을 볼 수 있습니다. 사도 되고 안 사도 됩니다. 주식·코인은 카드가 보여주는 가격으로 <b>전체 시세가 갱신</b>됩니다.'+
   '<div class="secH">📊 재산현황</div>상단 플레이어 칩을 탭하면 <b>언제든 누구의 재산현황이든</b> 볼 수 있습니다. 월급·이자·지출·손익은 전부 자동 계산됩니다.'+
   '<div class="secH">💱 매도</div>주식·코인·리츠는 내 턴에 <b>재무제표</b>에서 현재 시세로 팔 수 있습니다. 부동산·사업은 ① <b>재무제표에서 "📢 내놓기"</b> — 호가를 정하면 내 월급날마다 팔릴 확률(배짱 10% ~ 급매 85%)을 굴립니다 ② <b>시장 카드</b>의 매수자 등장 ③ 위기 시 급매(80%)로 팔 수 있습니다.'+
-  '<div class="secH">🏦 은행</div>월급×20까지 신용대출(월 이자 5%) 가능 — 이자가 살인적이니 비상용으로만!. 예금은 월 0.3% 이자를 줍니다. 현금이 마이너스가 되면 대출·매각·급매로 해결해야 하며, 불가능하면 <b>파산</b>입니다.'+
+  '<div class="secH">🏦 은행</div>월급×10까지 신용대출(월 이자 5%) 가능 — 이자가 살인적이니 비상용으로만!. 예금은 월 0.3% 이자를 줍니다. 현금이 마이너스가 되면 대출·매각·급매로 해결해야 하며, 불가능하면 <b>파산</b>입니다.'+
   '<div class="secH">📖 경제 용어 사전</div>'+
   '<b>패시브인컴</b>: 노동 없이 자산이 벌어주는 소득. 이 게임의 핵심!<br>'+
   '<b>갭투자</b>: 전세를 끼고 적은 돈으로 집을 사는 것. 시세차익형 투자.<br>'+
