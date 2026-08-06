@@ -38,15 +38,25 @@ button{font-family:inherit;border:none;cursor:pointer}
 .topbar .btns{display:flex;gap:6px}
 .iconBtn{background:var(--panel2);color:var(--txt);border-radius:10px;padding:8px 11px;font-size:14px;font-weight:700}
 #board{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(7,1fr);gap:3px;aspect-ratio:1/1;width:100%;margin-bottom:8px}
-.tile{border-radius:9px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:800;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
-.tile .em{font-size:15px;line-height:1.1}
+.tile{border-radius:11px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:800;overflow:visible;
+ border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 2px 3px rgba(255,255,255,.18),inset 0 -3px 5px rgba(0,0,0,.4),0 3px 6px rgba(0,0,0,.45)}
+.tile::after{content:'';position:absolute;inset:0 0 55% 0;background:linear-gradient(rgba(255,255,255,.14),transparent);border-radius:10px 10px 0 0;pointer-events:none}
+.tile .em{font-size:17px;line-height:1.1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
 .tile .lb{font-size:8px;opacity:.85;letter-spacing:-.5px}
 .tile.cur{outline:2px solid #fff;outline-offset:-2px}
-.t-pay{background:#3a5f3f}.t-deal{background:#2a4468}.t-doodad{background:#63384a}
-.t-market{background:#5d4a2c}.t-event{background:#4c3a6b}.t-child{background:#6b3a5e}.t-charity{background:#803f45}.t-tempt{background:#6b2f6b}
+.t-pay{background:linear-gradient(160deg,#4d7a52,#2c4a30)}
+.t-deal{background:linear-gradient(160deg,#3a5c8c,#213652)}
+.t-doodad{background:linear-gradient(160deg,#7d4a60,#4d2a38)}
+.t-market{background:linear-gradient(160deg,#7a6238,#453620)}
+.t-event{background:linear-gradient(160deg,#634c8c,#382a52)}
+.t-child{background:linear-gradient(160deg,#8c4c7a,#522a45)}
+.t-charity{background:linear-gradient(160deg,#a3525a,#5c2e33)}
+.t-tempt{background:linear-gradient(160deg,#8c3f8c,#4d1f4d)}
 .toks{position:absolute;bottom:2px;left:0;right:0;display:flex;justify-content:center;gap:2px;flex-wrap:wrap}
-.tok{width:19px;height:19px;border-radius:50%;border:2px solid rgba(0,0,0,.55);display:flex;
- align-items:center;justify-content:center;font-size:12px;line-height:1;box-shadow:0 2px 4px rgba(0,0,0,.45)}
+.tok{width:21px;height:21px;border-radius:50%;border:2px solid rgba(0,0,0,.55);display:flex;
+ align-items:center;justify-content:center;font-size:13px;line-height:1;box-shadow:0 3px 5px rgba(0,0,0,.5),inset 0 2px 2px rgba(255,255,255,.35);
+ animation:bob 2.1s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
 .tok.me{outline:2px solid #fff;outline-offset:1px}
 @keyframes hop{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-13px) scale(1.18)}
  70%{transform:translateY(0) scale(.92)}100%{transform:translateY(0) scale(1)}}
@@ -54,9 +64,14 @@ button{font-family:inherit;border:none;cursor:pointer}
 @keyframes landPop{0%{transform:scale(1)}40%{transform:scale(1.45)}100%{transform:scale(1)}}
 .tok.landed{animation:landPop .35s ease-out}
 @keyframes tileFlash{0%,100%{background:var(--panel2)}50%{background:#3a4a72}}
+@keyframes shake{0%,100%{transform:translate(0,0)}12%{transform:translate(-7px,3px)}25%{transform:translate(6px,-4px)}
+ 38%{transform:translate(-5px,-3px)}50%{transform:translate(5px,4px)}65%{transform:translate(-4px,2px)}80%{transform:translate(3px,-2px)}}
 .tile.landing{animation:tileFlash .45s ease-out}
 #center{grid-row:2/7;grid-column:2/7;background:radial-gradient(circle at 50% 30%,#1e2a45,#141b2c);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);padding:8px}
-#diceBox{font-size:44px;font-weight:900;min-height:52px;display:flex;align-items:center;gap:8px}
+#diceBox{font-size:46px;font-weight:900;min-height:54px;display:flex;align-items:center;gap:8px;
+ filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+#diceBox.rolling{animation:diceBounce .5s ease-in-out infinite}
+@keyframes diceBounce{0%,100%{transform:translateY(0) rotate(-6deg) scale(1)}50%{transform:translateY(-12px) rotate(8deg) scale(1.15)}}
 #centerName{font-size:15px;font-weight:800}
 #centerSub{font-size:11px;color:var(--sub);text-align:center;line-height:1.5}
 #log{font-size:12px;color:var(--sub);text-align:center;min-height:16px;padding:0 8px;margin-bottom:6px}
@@ -321,6 +336,7 @@ function curId(){return G?G.players[G.turn].id:0;}
 function wireAction(el,fn,owner,valueFn){
   const idx=ACTIONS.length;
   ACTIONS.push({fn,o:owner});
+  try{el.dataset.ai=idx;}catch(e){}
   el.onclick=()=>{const a={k:'i',i:idx,e:EPOCH};if(valueFn)a.v=String(valueFn()).slice(0,120);sendAct(a);};
   if(NET){const o=(owner!=null)?owner:curId();
     if(o!==myPid&&!($('sudoChk')&&$('sudoChk').checked&&NET.host))el.classList.add('mineOnly'),el.disabled=true;}
@@ -528,10 +544,14 @@ const MARKETS=[
  {id:'biz-offer',name:'🤝 프랜차이즈 본사의 인수 제안',desc:'사업이 잘된다는 소문에 인수 제안이! 사업 보유자는 <b>투자금의 150%</b>에 매각할 수 있습니다.',tags:['biz'],tip:'사업의 최종 목표 중 하나는 "잘 키워서 파는 것"(엑싯)입니다.'},
  {id:'rdiv-up',name:'💰 K리츠 배당 인상!',desc:'보유 빌딩 임대료 인상으로 K리츠 배당이 구좌당 <b>+5,000원</b> 오릅니다. (전원 적용)',tip:'배당 성장의 힘! 좋은 배당 자산은 가만히 있어도 패시브인컴이 자랍니다.'},
  {id:'rdiv-down',name:'📉 K리츠 배당 삭감…',desc:'공실 증가로 K리츠 배당이 구좌당 <b>−5,000원</b> 깎입니다. (최소 5,000원)',tip:'리츠도 부동산 경기를 탑니다. 배당은 약속이 아니라 실적입니다.'},
+ {id:'room-offer',name:'🏘️ 원룸·빌라 매수 문의 쇄도',desc:'월세 수익형 소형 주택을 찾는 투자자들이 몰렸습니다. 원룸·오피스텔 보유자는 <b>매매가 +8%</b>에 매도 가능!',tags:['op'],mul:0.08,tip:'소형 주택은 사려는 사람이 많아 환금성이 좋은 편입니다. 다만 팔면 월세 수입도 사라진다는 것!'},
+ {id:'shop-offer2',name:'🏬 상가 투자 열풍',desc:'퇴직금으로 상가를 사려는 수요가 급증! 상가·창고 보유자는 <b>매매가 +12%</b>에 매도할 수 있습니다.',tags:['shop'],mul:0.12,tip:'상가가 비쌀 때는 팔고, 공실 대란으로 쌀 때 다시 사는 것도 전략입니다.'},
+ {id:'gap-exit',name:'🚪 갭투자 출구 찾기',desc:'전세 만기를 앞두고 갭투자 물건을 통째로 인수하겠다는 투자자가 나타났습니다. 갭투자 보유자는 <b>매매가 +6%</b>에 정리 가능.',tags:['gap'],mul:0.06,tip:'갭투자의 출구전략: 시세차익이 났다면 다음 사람에게 넘기는 것도 방법. 단, 마지막에 산 사람이 위험을 다 떠안습니다.'},
  {id:'jeonse-up',name:'🏠 전세가 급등',desc:'전세 낀 집(갭투자) 보유자는 세입자와 재계약하며 <b>집 1채당 500만원</b>의 전세금 인상분을 받습니다.',tip:'주의! 올려받은 전세금은 공짜가 아니라 나중에 돌려줘야 할 "부채"입니다. 이 게임에선 현금으로 드리지만, 현실에선 함부로 쓰면 큰일나요.'},
 ];
 
 function esc(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+const STOCK_EV=[{"id": "split", "name": "📈 KS전자, 1주를 2주로! 액면분할 전격 단행", "sym": "KS전자", "kind": "split", "ratio": 2, "desc": "주가가 너무 비싸져 개인 투자자가 사기 어려워지자 KS전자가 <b>1주를 2주로 쪼개는 액면분할</b>을 결정했다. 내 주식 수는 2배, 주가는 정확히 절반. 계좌의 평가금액은 <b>단 1원도 늘지 않았다</b>.", "tip": "피자 한 판을 두 조각으로 잘라도 피자 양은 똑같아요. 주식 수가 늘었다고 부자가 된 게 아니랍니다. 바뀐 건 가격표뿐이에요.", "severity": "good"}, {"id": "bonus-issue", "name": "🎁 K바이오 무상증자 100%, 주식을 공짜로 드립니다", "sym": "K바이오", "kind": "split", "ratio": 2, "desc": "K바이오가 잉여금을 자본금으로 옮기며 <b>주주에게 공짜로 1주씩 더</b> 나눠준다. 주식 수 2배, 주가 절반. 뉴스는 '호재'라 떠들지만 내 재산 총액은 그대로다.", "tip": "사탕 10개를 봉지 두 개에 나눠 담아도 사탕은 10개죠. '무상'이라는 말에 흥분해 비싸게 사면 오히려 손해예요.", "severity": "good"}, {"id": "capital-reduction", "name": "🪓 K바이오 무상감자 결정… 주주들 망연자실", "sym": "K바이오", "kind": "px", "mul": 0.75, "desc": "적자가 눈덩이처럼 불어난 K바이오가 <b>감자(자본 감소)</b>를 단행했다. 감자는 <b>회사가 그만큼 돈을 까먹었다는 고백</b> — 시장 분위기는 싸늘하게 식으며 주가 <b>25% 하락</b>.", "tip": "감자는 회사가 '손해가 너무 커서 장부를 정리해야 해요'라고 말하는 거예요. 회사가 진짜 돈을 벌고 있는지 확인하고 사야 해요.", "severity": "bad"}, {"id": "rights", "name": "💸 K리츠 유상증자 \"주주님, 돈 더 내세요\"", "sym": "K리츠", "kind": "rights", "payPerUnit": 20, "bonusPct": 25, "losePct": 15, "desc": "K리츠가 새 물류센터 매입을 위해 <b>1구좌당 20만원 추가 납입</b>을 요구했다. 납입하면 구좌가 <b>25% 증가</b>, 거절하면 새 주주가 들어와 내 지분이 <b>15% 희석</b>된다.", "tip": "친구들과 차린 문방구를 넓히려고 돈을 더 걷는 것과 같아요. 안 내면 내 몫이 작아져요. 투자는 '한 번 사면 끝'이 아니랍니다.", "severity": "bad"}, {"id": "delist", "name": "☠️ K코인 거래소 상장폐지… 출금까지 중단", "sym": "K코인", "kind": "delist", "recoverPct": 0, "desc": "거래소가 K코인을 끝내 <b>상장폐지</b>했다. 사고팔 곳이 완전히 사라져 보유 물량 전량이 <b>0원</b>이 된다.", "tip": "아무리 비싸 보여도 사겠다는 사람이 없으면 가격은 0원이에요. 한 곳에 전 재산을 넣으면 하루아침에 사라질 수 있어요. 그래서 나눠서 투자하는 거랍니다.", "severity": "disaster"}, {"id": "fraud", "name": "🚨 K바이오 분식회계 적발, 거래정지 후 정리매매", "sym": "K바이오", "kind": "delist", "recoverPct": 15, "desc": "K바이오가 <b>매출을 부풀린 분식회계</b>로 적발돼 상장폐지 절차에 들어갔다. 정리매매에서 건질 수 있는 돈은 가치의 <b>15%</b>뿐.", "tip": "회사가 성적표(재무제표)를 몰래 고쳐 쓴 사건이에요. 거짓말이 들통나면 피해는 주주 몫이 되죠. 소문이 아니라 회사가 정말 돈을 버는지를 봐야 해요.", "severity": "disaster"}, {"id": "short-attack", "name": "🐻 공매도 세력, K바이오 정조준 \"신약은 허구\"", "sym": "K바이오", "kind": "px", "mul": 0.6, "desc": "해외 헤지펀드가 '<b>신약 데이터가 부풀려졌다</b>'는 보고서를 내고 대규모 공매도에 나섰다. 주가 하루 만에 <b>40% 급락</b>.", "tip": "세상에는 값이 떨어져야 돈을 버는 사람들도 있어요. 기대만 부풀고 실제 버는 돈이 없는 회사가 첫 번째 표적이 된답니다.", "severity": "bad"}, {"id": "owner-dump", "name": "🏃 K코인 재단, 물량 던지고 잠적 '러그풀'", "sym": "K코인", "kind": "px", "mul": 0.45, "desc": "K코인 재단이 예고 없이 <b>보유 물량을 전부 시장에 던지고</b> 채널을 닫았다. 가격 <b>55% 폭락</b>.", "tip": "만든 사람이 제일 먼저 도망가는 투자는 세상에서 가장 위험해요. '지금 이걸 누가 팔고 있지?'만 물어봐도 답이 보인답니다.", "severity": "disaster"}, {"id": "circuit-breaker", "name": "🛑 서킷브레이커 발동! 전 종목 거래 정지", "sym": null, "kind": "px", "mul": 0.78, "desc": "글로벌 금융 불안으로 지수가 폭락, <b>모든 종목 거래가 멈췄다</b>. 재개된 시장에서 <b>전 종목 22% 하락</b> 출발.", "tip": "급할 때는 내가 원해도 팔 수 없어요. 그래서 당장 쓸 생활비는 절대 주식에 넣으면 안 돼요.", "severity": "bad"}, {"id": "ex-dividend", "name": "📉 K리츠 배당락일… 배당 받자마자 주가 뚝", "sym": "K리츠", "kind": "px", "mul": 0.93, "desc": "배당 권리가 사라지는 <b>배당락일</b>. 주가가 배당금만큼 <b>7% 낮게</b> 출발한다. 배당은 이미 챙겼으니 손해는 아니지만 파란 숫자는 마음이 아프다.", "tip": "지갑에서 돈을 꺼내면 지갑이 가벼워지듯, 회사가 배당을 준 만큼 회사 값이 줄어요. 공짜 점심은 없답니다.", "severity": "bad"}, {"id": "buyback", "name": "🛡️ KS전자 3조원 자사주 매입·소각 발표", "sym": "KS전자", "kind": "px", "mul": 1.2, "desc": "KS전자가 번 돈으로 <b>자기 주식을 사들여 없애겠다</b>고 발표. 유통 주식이 줄어 1주의 값어치가 커진다. 주가 <b>20% 상승</b>.", "tip": "피자를 8조각 대신 6조각으로 나누면 한 조각이 커지죠. 돈을 아주 잘 버는 회사만 할 수 있는 주주 선물이랍니다.", "severity": "good"}, {"id": "mna", "name": "🤝 글로벌 제약사, K바이오 인수! 프리미엄 70% 공개매수", "sym": "K바이오", "kind": "px", "mul": 1.7, "desc": "세계적 제약사가 K바이오 인수를 선언, <b>시세보다 70% 비싸게 사주겠다</b>는 공개매수 공고. 버틴 주주들의 잭팟!", "tip": "회사를 통째로 사려면 웃돈(프리미엄)을 얹어줘요. 위험 자산은 크게 잃을 수도, 크게 벌 수도 — 그래서 잃어도 되는 만큼만 담는 거예요.", "severity": "huge-good"}, {"id": "special-dividend", "name": "💰 K리츠 임대료 인상 성공, 구좌당 특별배당", "sym": "K리츠", "kind": "cash", "perUnit": 9, "desc": "K리츠가 <b>임대료 인상 계약에 성공</b>, 1구좌당 <b>9만원 특별배당</b>을 현금 지급한다. 주가와 상관없이 통장에 돈이 들어온다.", "tip": "가격이 오르지 않아도 꼬박꼬박 들어오는 돈이 있으면 든든하죠. 이걸 '현금흐름'이라고 불러요.", "severity": "good"}, {"id": "earnings-shock", "name": "🥶 KS전자 반도체 한파, 영업이익 반토막", "sym": "KS전자", "kind": "px", "mul": 0.7, "desc": "반도체 가격 급락으로 KS전자 <b>영업이익이 절반</b>으로. 모두가 안전하다 믿던 우량주도 <b>30% 하락</b>.", "tip": "아무리 튼튼한 1등 회사라도 파는 물건값이 떨어지면 이익이 줄어요. 좋은 회사도 비싸게 사면 손해랍니다.", "severity": "bad"}];
 /* ---------- 드림로드 콘텐츠 (전문가 패널 제작) ---------- */
 let DREAMS=[{"name": "제주 한 달 살기", "emoji": "🏝️", "price": 4000, "desc": "파도 소리로 아침을 여는 삶.", "ending": "올레길 끝 노을 앞에서, 처음으로 시계를 보지 않았습니다."}, {"name": "동네 작은 서점 주인", "emoji": "📚", "price": 6000, "desc": "좋아하는 책만 파는 나만의 공간.", "ending": "단골 꼬마가 첫 월급으로 책을 사러 왔습니다. 당신이 심은 서가에서."}, {"name": "시골 폐교 살리기", "emoji": "🏫", "price": 8000, "desc": "버려진 학교를 마을 문화공간으로.", "ending": "운동장에 다시 아이들 웃음이 울립니다. 교문 명패엔 당신의 이름이."}, {"name": "캠핑카 전국일주", "emoji": "🚐", "price": 7000, "desc": "내비게이션 목적지: 아무 데나.", "ending": "동해 일출, 남해 별밤, 서해 낙조 — 계절이 당신의 시간표가 되었습니다."}, {"name": "오로라 보러 가는 세계일주", "emoji": "🌌", "price": 12000, "desc": "1년짜리 세계 일주 티켓.", "ending": "아이슬란드의 밤하늘이 초록으로 물드는 순간, 당신은 소리 내어 울었습니다."}, {"name": "시골 브런치 카페", "emoji": "☕", "price": 9000, "desc": "논밭 사이, 줄 서서 먹는 카페.", "ending": "주말 아침, 마당 가득한 손님들. 오늘의 메뉴는 당신의 자유입니다."}, {"name": "유기견 보호소 짓기", "emoji": "🐕", "price": 15000, "desc": "버려진 아이들의 마지막 보금자리.", "ending": "입양 가는 막내가 뒤돌아 꼬리를 흔듭니다. 200번째 가족입니다."}, {"name": "내 이름의 장학재단", "emoji": "🎓", "price": 30000, "desc": "형편 때문에 꿈을 접는 아이가 없도록.", "ending": "1기 장학생의 대학 합격 전화. '덕분에요'라는 말에 30년이 녹았습니다."}, {"name": "어촌 마을 게스트하우스", "emoji": "⚓", "price": 10000, "desc": "바다가 마당인 집, 여행자의 쉼터.", "ending": "오늘 묵은 여행자가 방명록에 씁니다. '여기서 살고 싶다.' 당신은 이미 살고 있습니다."}, {"name": "인디 게임 스튜디오", "emoji": "🎮", "price": 20000, "desc": "내가 만들고 싶던 그 게임.", "ending": "출시일 새벽, 첫 리뷰가 올라옵니다. '이 게임엔 진심이 담겨 있다.'"}, {"name": "숲속 도서관 짓기", "emoji": "🌲", "price": 25000, "desc": "나무 사이 통유리 서재를 모두에게.", "ending": "빗소리와 책장 넘기는 소리만 남은 오후. 당신이 세상에 남긴 고요입니다."}, {"name": "오케스트라와 한 무대", "emoji": "🎻", "price": 5000, "desc": "멈췄던 악기를 다시 잡는다.", "ending": "마지막 음이 홀에 퍼질 때, 객석의 가족이 일어나 박수를 칩니다."}, {"name": "내 책 출간하고 북토크", "emoji": "✍️", "price": 3000, "desc": "내 이야기를 세상에 내놓기.", "ending": "독자가 밑줄 친 페이지를 보여줍니다. 당신의 문장이 누군가의 위로가 된 밤."}, {"name": "세계의 마라톤 완주 여행", "emoji": "🏃", "price": 8000, "desc": "보스턴, 베를린, 도쿄… 발로 쓰는 여행기.", "ending": "여섯 번째 메달을 걸고 결승선 사진을 보냅니다. '다음은 어디?'"}, {"name": "요트 타고 섬 여행", "emoji": "⛵", "price": 35000, "desc": "바람이 이끄는 대로, 남해의 섬들로.", "ending": "돛을 올리자 육지의 소음이 사라집니다. 지도에 없는 하루가 시작됩니다."}, {"name": "부모님 집 지어드리기", "emoji": "🏡", "price": 18000, "desc": "평생 셋방살이 부모님께 마당 있는 집을.", "ending": "어머니가 마당에 상추를 심으며 말합니다. '우리 집 마당이야, 우리 집.'"}];
 let TEMPTS=[{"name": "🚗 신차 풀옵션 뽑기", "cost": 900, "upkeep": 35, "flex": "새 차 냄새 최고! 시승 한 바퀴 어떠세요?", "resist": "지금 차도 잘 굴러갑니다. 이 돈이면 리츠가 매달 배당을…", "tip": "차는 출고 순간 가치가 20% 떨어지고, 보험·기름·할부가 평생 따라옵니다."}, {"name": "👜 명품 백 신상", "cost": 500, "upkeep": 10, "flex": "오늘의 나, 좀 멋진데? ✨", "resist": "가방은 돈을 벌어주지 않습니다. 미래의 내가 고마워할 선택.", "tip": "명품의 유지비는 '다음 신상 욕구'입니다. 하나가 열이 됩니다."}, {"name": "📱 폰은 항상 최신형", "cost": 170, "upkeep": 12, "flex": "이 카메라 미쳤다… 인생샷 각!", "resist": "작년 폰도 사진 잘 나옵니다. 할부 대신 자산을.", "tip": "2년 약정 할부는 '미래 월급 가불'입니다."}, {"name": "🏨 호캉스 정기권", "cost": 300, "upkeep": 25, "flex": "금요일 밤 수영장 뷰, 이게 사는 거지~", "resist": "한 달 참으면 리츠 3구좌. 호캉스는 자유 얻고 매주 가죠.", "tip": "반복되는 소확행은 합치면 대확빚이 됩니다."}, {"name": "⛳ 골프 입문 풀세트+회원권", "cost": 800, "upkeep": 40, "flex": "나이스 샷!! 주말이 기다려진다!", "resist": "필드는 자유인이 된 뒤에 평일 낮에 나가는 게 진짜 플렉스.", "tip": "취미의 함정은 장비가 아니라 '유지 모임비'입니다."}, {"name": "🍣 오마카세 멤버십", "cost": 200, "upkeep": 30, "flex": "오늘 스시 오마카세 예약 완료. 인생은 한 입부터.", "resist": "혀는 3시간 행복하고 통장은 3년 웁니다.", "tip": "외식 습관은 가장 눈에 안 보이는 고정지출입니다."}, {"name": "💪 홈트 기구 풀세트", "cost": 250, "upkeep": 8, "flex": "내일부터 새벽 운동 간다!! (아마도)", "resist": "팔굽혀펴기는 공짜입니다.", "tip": "기구를 사는 것과 운동하는 것은 다른 일입니다."}, {"name": "🎮 최고사양 게임 PC+주변기기", "cost": 400, "upkeep": 10, "flex": "쿨러 소리마저 아름답다… 풀옵 144프레임!", "resist": "지금 PC로도 이 게임은 돌아갑니다?", "tip": "취미 지출은 월 소득의 5% 안에서."}, {"name": "🛋️ 감성 인테리어 싹 교체", "cost": 700, "upkeep": 15, "flex": "집들이 각! 우리 집이 카페가 됐다.", "resist": "집은 못 벌어도 리츠는 법니다. 소파는 자유 뒤에.", "tip": "인테리어는 자산 가치가 아니라 만족 가치. 만족은 3개월 갑니다."}, {"name": "🐶 프리미엄 펫 라이프", "cost": 150, "upkeep": 25, "flex": "우리 애기 옷 입은 거 봐… 심장 폭행…", "resist": "산책과 사랑은 무료입니다. 아이도 그걸 더 좋아해요.", "tip": "반려동물 월 비용은 미리 계산하고 시작하세요."}, {"name": "✈️ 즉흥 해외여행 비즈니스석", "cost": 600, "upkeep": 0, "flex": "떠난다! 공항이 부른다!! 🛫", "resist": "여행은 좋죠. 비즈니스석은 자산이 사주는 날에.", "tip": "보복 소비의 청구서는 다음 달에 옵니다."}, {"name": "⌚ 명품 시계", "cost": 1200, "upkeep": 5, "flex": "소매 아래로 살짝… 이 맛에 찹니다.", "resist": "시간은 시계가 아니라 자산이 벌어줍니다.", "tip": "'시계는 자산'이라는 말은 판매자의 언어입니다."}, {"name": "🍾 회식 2차 3차는 항상 내가 쏜다", "cost": 120, "upkeep": 20, "flex": "오늘 술값은 내가 낸다!! 부어라!!", "resist": "인심은 통장이 아니라 마음으로도 삽니다.", "tip": "체면 지출은 부자 흉내 중 가장 비쌉니다."}, {"name": "🎤 최애 콘서트 전 회차 티켓팅", "cost": 180, "upkeep": 8, "flex": "티켓팅 성공!!! 밤새 줄 선 보람이!!", "resist": "한 회차만 가도 최애는 나를 모릅…아니, 사랑은 한 번이면 충분해요.", "tip": "덕질 예산을 정해두면 더 오래, 죄책감 없이 덕질할 수 있습니다."}, {"name": "🚙 캠핑 장비 풀세트+루프탑", "cost": 450, "upkeep": 12, "flex": "장비빨 세운다! 이번 주말 노지캠 간다!", "resist": "의자 하나로 시작해도 불멍은 똑같이 따뜻합니다.", "tip": "장비는 빌려 쓰고, 자산은 사 모으세요."}, {"name": "💇 미용·시술 정기 구독", "cost": 100, "upkeep": 18, "flex": "관리받는 남/녀, 오늘도 광납니다 ✨", "resist": "거울 속 나보다 통장 속 내가 더 예뻐질 시간.", "tip": "구독형 지출은 해지 버튼을 안 누르면 평생 갑니다."}, {"name": "🏍️ 오토바이 로망 실현", "cost": 600, "upkeep": 22, "flex": "두둥— 시동 소리부터 다르다!", "resist": "바람은 자전거로도 느낄 수 있습니다. 안전하게요.", "tip": "로망의 유지비에는 보험료와 병원비 리스크도 포함됩니다."}, {"name": "🧴 백화점 화장품 풀코스", "cost": 130, "upkeep": 15, "flex": "피부가 다르다 진짜… 백화점 1층의 마법.", "resist": "올리브영에도 인생템은 있습니다.", "tip": "화장품의 절반은 기분값입니다. 기분은 저축으로도 좋아져요."}];
@@ -611,7 +631,7 @@ let G=null; // 게임 상태
 let modalQ=[]; // 모달 체인
 
 function newDecks(){
-  return {small:shuffle(SMALL_DEALS),big:shuffle(BIG_DEALS),doodad:shuffle(DOODADS),event:shuffle(EVENTS),market:shuffle(MARKETS)};
+  return {small:shuffle(SMALL_DEALS),big:shuffle(BIG_DEALS),doodad:shuffle(DOODADS),event:shuffle(EVENTS),market:shuffle(MARKETS.concat(STOCK_EV))};
 }
 function draw(deck){
   if(G.decks[deck].length===0){
@@ -742,6 +762,14 @@ function sfx(name){
     case 'win':   [72,72,72,76,74,76,79,84].forEach((m,i)=>{const tt=t+i*0.13;tone(m,tt,0.3,'square',0.26);tone(m-12,tt,0.3,'triangle',0.18);});
                   [0,1,2,3].forEach(i=>noise(t+i*0.26,0.08,0.1,5000)); break;
     case 'lose':  [64,62,59,55].forEach((m,i)=>tone(m,t+i*0.2,0.4,'sawtooth',0.18)); break;
+    case 'crash': // 💥 경제 붕괴
+      noise(t,0.5,0.3,300); noise(t+0.15,0.4,0.25,500);
+      [55,50,45,38].forEach((m,i)=>{tone(m,t+i*0.16,0.5,'sawtooth',0.26);tone(m-12,t+i*0.16,0.5,'square',0.2);});
+      slide(60,36,t,0.9,'sawtooth',0.22); break;
+    case 'jackpot': // 🎰 엄청난 기회!
+      for(let i=0;i<10;i++)tone(76+((i*5)%19),t+i*0.06,0.15,'square',0.2);
+      [84,88,91,96].forEach((m,i)=>{tone(m,t+0.65+i*0.11,0.34,'square',0.26);tone(m-12,t+0.65+i*0.11,0.34,'triangle',0.18);});
+      noise(t+0.65,0.1,0.12,5000); break;
   }
 }
 /* ── 신나는 BGM (칩튠 루프: 멜로디 + 베이스 + 하이햇) ── */
@@ -1297,6 +1325,9 @@ function renderAll(){
   });
   updateNowDo();
   // 패널
+  const cn=$('centerName'),csb=$('centerSub');
+  if(cn)cn.innerHTML='<span style="font-size:26px">'+(p.ch||'')+'</span> <b style="color:'+p.color+'">'+esc(p.name)+'</b>';
+  if(csb)csb.textContent=p.free?'🕊️ 자유인 · 꿈을 향해!':(p.job.emoji+' '+p.job.name);
   $('pName').textContent=p.name;
   $('pJob').innerHTML=p.job.emoji+' '+p.job.name+' · '+p.months+'개월차'+(p.children?' · 👶×'+p.children:'')+
     '<br><span style="color:var(--gold);font-size:10px">'+(PERK_KO[p.job.perk]||'')+'</span>';
@@ -1331,7 +1362,7 @@ function renderAll(){
   $('btnFund').style.display=(p.free&&actable)?'block':'none';
   const showDr=p.free&&actable;
   $('btnDream').style.display=showDr?'block':'none';
-  $('btnDream').disabled=!canDream(p);
+  $('btnDream').disabled=false; // 항상 탭 가능 — 조건 미달이면 이유를 알려준다
   $('btnDream').classList.toggle('pulse',canDream(p));
 }
 function log(s){$('log').innerHTML=s;}
@@ -1435,13 +1466,18 @@ function doRoll(nDice){
   animateDice(d1,d2,nDice);
   moveAndResolve(steps); // 게임 로직은 즉시(동기) 처리 — 동기화 안정성
 }
+const DICE_FACE=['','⚀','⚁','⚂','⚃','⚄','⚅'];
 function animateDice(d1,d2,nDice){ // 순수 연출 (게임 상태와 무관)
   if(FAST){$('diceBox').textContent=d1+(nDice===2?' · '+d2:'');return;}
   const db=$('diceBox'); let cnt=0;
+  db.classList.add('rolling');
   const iv=setInterval(()=>{
-    if(++cnt>6){clearInterval(iv);db.textContent=d1+(nDice===2?' · '+d2:'');return;}
-    db.textContent=(1+rndUI(6))+(nDice===2?' · '+(1+rndUI(6)):'');
-  },60);
+    if(++cnt>7){clearInterval(iv);db.classList.remove('rolling');
+      db.innerHTML='<span style="font-size:52px">'+DICE_FACE[d1]+'</span>'+(nDice===2?'<span style="font-size:52px">'+DICE_FACE[d2]+'</span>':'')+
+        '<span style="font-size:22px;color:var(--gold)"> = '+(d1+(d2||0))+'</span>';
+      return;}
+    db.innerHTML='<span style="font-size:52px">'+DICE_FACE[1+rndUI(6)]+'</span>'+(nDice===2?'<span style="font-size:52px">'+DICE_FACE[1+rndUI(6)]+'</span>':'');
+  },75);
 }
 function moveAndResolve(steps){
   const p=cur();
@@ -1896,6 +1932,7 @@ function tileCharity(){
 function tileMarket(){
   const c=draw('market');
   feedAdd('🏛️ 시장 카드: '+c.name);
+  if(c.severity&&c.kind){ stockEvent(c); return; } // 📰 주식 대형 이벤트
   if(c.id==='px'){
     const old=prices[c.sym];
     prices[c.sym]=Math.max(1,Math.round(prices[c.sym]*c.mul));
@@ -1941,7 +1978,7 @@ function tileMarket(){
     showModal('🏛️ '+c.name,c.desc+(msg||'<br><small class="u">상가 보유자가 없어 모두 무사합니다.</small>')+tipHTML(c.tip),
       [{label:'확인',cls:'pri',fn:()=>afterGlobalPay()}]);
   }
-  else if(c.id==='ipo'){
+  else if(c.id==='ipo'){ if(!FAST){sfx('jackpot');confettiBurst(35);}
     let msg='';
     alive().forEach(q=>{
       const sus=q.assets.filter(a=>a.tag==='su');
@@ -1964,6 +2001,120 @@ function tileMarket(){
   else { /* re-up / re-down / op-offer */ sellOfferModal(c,(a)=>a.equity+Math.round(a.propPrice*c.mul)); }
 }
 /* 주가 변동 카드: 보유자 전원이 그 자리에서 매도 가능 (온라인이면 각자 자기 폰에서!) */
+
+/* ═══ 📰 주식 대형 이벤트 (액면분할·상장폐지·유상증자…) ═══ */
+function sevFx(sev){
+  if(FAST)return;
+  if(sev==='huge-good'){ sfx('win'); confettiBurst(40); }
+  else if(sev==='good'){ sfx('good'); }
+  else if(sev==='bad'){ sfx('bad'); }
+  else if(sev==='disaster'){ sfx('crash'); screenShake(); }
+}
+function stockEvent(c){
+  const syms=c.sym?[c.sym]:Object.keys(prices);
+  sevFx(c.severity);
+  const head='<div style="background:'+(c.severity==='disaster'?'#3a1420;border-left:4px solid #ff5d73':c.severity==='huge-good'?'#1c3524;border-left:4px solid #3ecf8e':'#1c2742;border-left:4px solid var(--gold)')+';border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:15px"><b>📰 '+esc(c.name)+'</b></div>';
+  if(c.kind==='px'){
+    if(c.sym){
+      const old=prices[c.sym];
+      prices[c.sym]=Math.max(0.5,Math.round(old*c.mul*10)/10);
+      pxReaction({id:'px',sym:c.sym,mul:c.mul,name:c.name,tip:c.tip},old);
+      return;
+    }
+    let body=head+c.desc+'<table class="tbl">';
+    syms.forEach(sy=>{
+      const old=prices[sy];
+      prices[sy]=Math.max(0.5,Math.round(old*c.mul*10)/10);
+      body+='<tr><td>'+sy+'</td><td>'+fmt(old)+' → <b class="'+(c.mul>=1?'pos':'neg')+'">'+fmt(prices[sy])+'</b></td></tr>';
+    });
+    body+='</table>';
+    showModal('🏛️ 시장 급변!',body+tipHTML(c.tip),[{label:'확인',cls:'pri',fn:()=>finishResolve()}]);
+    renderAll(); return;
+  }
+  if(c.kind==='split'){
+    const sy=c.sym, old=prices[sy];
+    prices[sy]=Math.max(0.5,Math.round(old/c.ratio*10)/10);
+    if(BASE_PX[sy])BASE_PX[sy]=Math.round(BASE_PX[sy]/c.ratio*10)/10;
+    let rows='';
+    alive().forEach(q=>{const h=q.hold[sy];if(!h||h.qty<=0)return;
+      const oldQ=h.qty; h.qty=Math.round(h.qty*c.ratio); h.avg=Math.round(h.avg/c.ratio*100)/100;
+      rows+='<tr><td>'+(q.ch||'')+' '+q.name+'</td><td>'+oldQ.toLocaleString()+' → <b>'+h.qty.toLocaleString()+UNITS[sy].unit+'</b></td></tr>';});
+    showModal('🏛️ '+esc(c.name),head+c.desc+
+      '<table class="tbl"><tr><td>주가</td><td>'+fmt(old)+' → <b>'+fmt(prices[sy])+'</b></td></tr>'+rows+'</table>'+
+      '<div class="mini">💡 내 재산 총액은 그대로! 화면의 숫자에 속지 마세요.</div>'+tipHTML(c.tip),
+      [{label:'확인',cls:'pri',fn:()=>finishResolve()}]);
+    renderAll(); return;
+  }
+  if(c.kind==='delist'){
+    const sy=c.sym, rec=(c.recoverPct||0)/100;
+    let rows='',hit=false;
+    alive().forEach(q=>{const h=q.hold[sy];if(!h||h.qty<=0)return; hit=true;
+      const val=Math.round(h.qty*prices[sy]), back=Math.round(val*rec), qn=h.qty;
+      q.cash+=back; delete q.hold[sy];
+      rows+='<tr><td>'+(q.ch||'')+' '+q.name+'</td><td class="neg">'+qn.toLocaleString()+UNITS[sy].unit+' 소멸'+(back>0?' <span class="pos">(+'+fmt(back)+' 회수)</span>':' (전액 손실)')+'</td></tr>';
+      feedAdd('☠️ '+q.name+': '+sy+' 상장폐지 — '+(back>0?fmt(back)+'만 회수':'전액 손실')+'…');});
+    prices[sy]=Math.max(0.5,Math.round(prices[sy]*0.1*10)/10);
+    showModal('🏛️ '+esc(c.name),head+c.desc+
+      (hit?'<table class="tbl">'+rows+'</table>':'<div class="mini">보유자가 없어 모두 무사했습니다. 휴…</div>')+tipHTML(c.tip),
+      [{label:hit?'😱 이럴 수가…':'😮‍💨 다행이다',cls:hit?'red':'grn',fn:()=>finishResolve()}]);
+    renderAll(); return;
+  }
+  if(c.kind==='rights'){
+    const sy=c.sym;
+    const ans={};
+    function holders(){return alive().filter(q=>{const h=q.hold[sy];return h&&h.qty>0;});}
+    if(!holders().length){
+      showModal('🏛️ '+esc(c.name),head+c.desc+'<div class="mini">보유자가 없어 그냥 지나갑니다.</div>'+tipHTML(c.tip),
+        [{label:'확인',cls:'pri',fn:()=>finishResolve()}]);
+      renderAll(); return;
+    }
+    function build(){
+      let rows='';
+      holders().forEach(q=>{
+        const h=q.hold[sy], pay=Math.round(h.qty*c.payPerUnit);
+        const done=ans[q.id];
+        rows+='<tr style="'+(done?'opacity:.55':'')+'"><td>'+(q.ch||'')+' <b style="color:'+q.color+'">'+q.name+'</b> '+h.qty.toLocaleString()+UNITS[sy].unit+
+          (done?'<br><small class="pos">✔ '+done+'</small>':'<br><small style="color:var(--gold)">납입 '+fmt(pay)+' vs 지분 −'+c.losePct+'%</small>')+'</td>'+
+          '<td>'+(done?'—':'<button class="sellBtn rPay" data-p="'+q.id+'">💸 납입 (+'+c.bonusPct+'%)</button><br><button class="sellBtn rNo" data-p="'+q.id+'" style="margin-top:4px">거절 (−'+c.losePct+'%)</button>')+'</td></tr>';
+      });
+      return head+c.desc+'<table class="tbl">'+rows+'</table>'+tipHTML(c.tip);
+    }
+    function redraw(){
+      const w=holders().filter(q=>!ans[q.id]&&!(NET&&NET.dead&&NET.dead[q.id]));
+      showModal('🏛️ '+esc(c.name),build(),
+        [{label:w.length?'⏭️ 그래도 마감 ('+w.length+'명 미응답)':'✅ 마감',cls:w.length?'':'pri',fn:()=>finishResolve()}]);
+      $('mBody').querySelectorAll('.rPay').forEach(b=>wireAction(b,()=>{
+        const q=G.players[+b.dataset.p], h=q.hold[sy]; if(!h||ans[q.id])return;
+        const pay=Math.round(h.qty*c.payPerUnit);
+        if(q.cash<pay){ans[q.id]='현금 부족 — 자동 거절 (−'+c.losePct+'%)';h.qty=Math.max(1,Math.round(h.qty*(1-c.losePct/100)));}
+        else{q.cash-=pay;h.qty=Math.round(h.qty*(1+c.bonusPct/100));ans[q.id]='납입 완료 (+'+c.bonusPct+'%)';if(!FAST)sfx('buy');}
+        feedAdd('💸 '+q.name+': 유상증자 '+ans[q.id]);
+        redraw();renderAll();
+      },+b.dataset.p));
+      $('mBody').querySelectorAll('.rNo').forEach(b=>wireAction(b,()=>{
+        const q=G.players[+b.dataset.p], h=q.hold[sy]; if(!h||ans[q.id])return;
+        h.qty=Math.max(1,Math.round(h.qty*(1-c.losePct/100)));
+        ans[q.id]='거절 (지분 −'+c.losePct+'%)';
+        feedAdd('🤐 '+q.name+': 유상증자 거절, 지분 희석');
+        redraw();renderAll();
+      },+b.dataset.p));
+    }
+    redraw(); renderAll(); return;
+  }
+  if(c.kind==='cash'){
+    const sy=c.sym; let rows='',hit=false;
+    alive().forEach(q=>{const h=q.hold[sy];if(!h||h.qty<=0)return;hit=true;
+      const amt=Math.round(h.qty*c.perUnit); q.cash+=amt;
+      rows+='<tr><td>'+(q.ch||'')+' '+q.name+'</td><td class="pos">+'+fmt(amt)+'</td></tr>';
+      feedAdd('💰 '+q.name+': '+sy+' 특별배당 +'+fmt(amt));});
+    showModal('🏛️ '+esc(c.name),head+c.desc+
+      (hit?'<table class="tbl">'+rows+'</table>':'<div class="mini">보유자가 없네요. 배당 자산의 힘을 놓쳤습니다!</div>')+tipHTML(c.tip),
+      [{label:'확인',cls:'grn',fn:()=>{let won=false;alive().forEach(q=>{if(!won)won=checkWin(q);});if(!won)finishResolve();}}]);
+    renderAll(); return;
+  }
+  finishResolve();
+}
+
 function pxReaction(c,old){
   const sym=c.sym;
   const ans={};   // 보유자별 응답 여부 (모든 폰에서 같은 순서로 갱신 — 락스텝 안전)
@@ -2371,7 +2522,20 @@ function canDream(p){
 }
 function doDreamWin(){
   const p=cur();
-  if(!canDream(p))return;
+  if(!p.free||!p.dream)return;
+  if(!canDream(p)){ // 🧭 왜 아직 못 이루는지 정확히 알려주기
+    const goal=dreamGoal(p), lack=Math.max(0,goal-p.dreamFund);
+    const pasOK=passive(p)>=expenses(p);
+    showModal('🌈 아직 조금 남았어요!',
+      finBrief(p)+'<table class="tbl">'+
+      '<tr><td>'+p.dream.emoji+' 꿈 자금</td><td>'+fmt(p.dreamFund)+' / '+fmt(goal)+
+        (lack>0?'<br><b class="neg">'+fmt(lack)+' 부족</b>':'<br><b class="pos">✔ 달성!</b>')+'</td></tr>'+
+      '<tr><td>🦢 패시브인컴 ≥ 지출</td><td>'+fmt(passive(p))+' vs '+fmt(expenses(p))+
+        (pasOK?'<br><b class="pos">✔ 유지 중</b>':'<br><b class="neg">✘ 거위를 너무 팔았어요! 패시브인컴을 다시 지출 이상으로 만들어야 꿈을 이룰 수 있습니다</b>')+'</td></tr></table>'+
+      (lack>0?'<div class="mini">💡 월급날 자동 적립을 기다리거나, 🌟 꿈 계좌 입금 버튼으로 현금을 직접 넣으세요!</div>':''),
+      [{label:'알겠어요, 조금만 더!',cls:'pri',fn:()=>{closeModal();renderAll();}}]);
+    return;
+  }
   const de=COPYS.dreamEnding||'그토록 바라던 순간입니다.\n이제, 현실에서도.';
   feedAdd('🌈🌈🌈 '+p.name+': 꿈을 이루었습니다!! '+(p.dream.emoji||'')+' '+p.dream.name);
   gameOver(p,'꿈 달성');
@@ -2399,9 +2563,27 @@ STATIC.fund=()=>{
 function finishResolve0(){ // 입금 후 phase 유지용 (resolve 상태 아님)
   renderAll(); closeModal();
 }
+function ceremony(winner,how,then){ // 🎊 우승 연출 (탭해서 결과 보기)
+  if(FAST||!winner){then();return;}
+  let ov=document.createElement('div');
+  ov.id='ceremonyOvl';
+  ov.style.cssText='position:fixed;inset:0;z-index:10004;background:radial-gradient(circle at 50% 35%,rgba(38,32,8,.97),rgba(5,6,12,.99));display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px';
+  ov.innerHTML=
+    '<div style="font-size:86px;animation:hop 0.9s ease-in-out infinite">'+(winner.ch||'🏆')+'</div>'+
+    '<div style="font-size:15px;letter-spacing:5px;color:#ffc94d;font-weight:800;margin-top:14px">WINNER</div>'+
+    '<div style="font-size:34px;font-weight:900;margin-top:6px;color:#fff">'+esc(winner.name)+'</div>'+
+    '<div style="font-size:17px;color:#ffe9b8;margin-top:12px;line-height:1.6">'+
+    (how==='꿈 달성'&&winner.dream?winner.dream.emoji+' 「'+esc(winner.dream.name)+'」<br>꿈을 이루었습니다!':'🏆 '+esc(how)+'!')+'</div>'+
+    '<div style="margin-top:34px;color:#93a2c4;font-size:13px">화면을 탭하면 최종 결과가 나옵니다</div>';
+  document.body.appendChild(ov);
+  confettiBurst(60);
+  const iv=setInterval(()=>confettiBurst(18),900);
+  ov.onclick=()=>{clearInterval(iv);ov.remove();then();};
+  setTimeout(()=>{try{if(ov.parentNode){clearInterval(iv);ov.remove();then();}}catch(e){}},12000);
+}
 function gameOver(winner,how){
   G.over=true;
-  if(!FAST){ bgmStop(); sfx(winner?'win':'lose'); }
+  if(!FAST){ bgmStop(); sfx(winner?'win':'lose'); if(winner)confettiBurst(50); }
   const ranked=G.players.slice().sort((a,b)=>{
     if(a.bankrupt!==b.bankrupt)return a.bankrupt?1:-1;
     if(a.free!==b.free)return a.free?-1:1;   // 자유인이 위
@@ -2431,7 +2613,9 @@ function gameOver(winner,how){
       '<br><small class="u">순자산 '+fmt(netWorth(q))+'</small></td></tr>';
   });
   h+='</table>'+tipHTML('오늘의 교훈: 월급은 시작일 뿐, 지출을 통제하고 현금흐름 자산을 모으는 사람이 결국 자유를 얻습니다.');
-  showModal('🎊 게임 종료',h,[{label:'🔄 새 게임 (이 폰에서)',cls:'pri',local:true,fn:()=>location.reload()}]);
+  ceremony(winner,how,()=>{
+    showModal('🎊 게임 종료',h,[{label:'🔄 새 게임 (이 폰에서)',cls:'pri',local:true,fn:()=>location.reload()}]);
+  });
 }
 
 /* ---------- 턴 종료 / 순위 / 도움말 ---------- */
@@ -2494,6 +2678,33 @@ function showHelp(){
   vShow('❓ 게임 방법 & 경제 사전',h); // 조회 전용
 }
 
+/* ---------- 🎆 폭죽 & 흔들림 (연출 전용 — Math.random 사용 OK, 게임 상태 무관) ---------- */
+function confettiBurst(n){
+  if(FAST)return;
+  const cs=['#ffc94d','#ff5d73','#3ecf8e','#4dabff','#b78bff','#ff8fd8','#fff'];
+  for(let i=0;i<(n||30);i++){
+    const d=document.createElement('div');
+    const sz=6+Math.random()*8;
+    d.style.cssText='position:fixed;z-index:10005;pointer-events:none;width:'+sz+'px;height:'+(sz*0.6)+'px;'+
+      'background:'+cs[i%cs.length]+';left:'+(Math.random()*100)+'vw;top:-20px;border-radius:2px;'+
+      'transform:rotate('+(Math.random()*360)+'deg)';
+    document.body.appendChild(d);
+    const fall=1600+Math.random()*1800, sway=(Math.random()-0.5)*220;
+    if(d.animate)d.animate([
+      {transform:'translate(0,0) rotate(0deg)',opacity:1},
+      {transform:'translate('+sway+'px,'+(window.innerHeight+40)+'px) rotate('+(360+Math.random()*720)+'deg)',opacity:0.9}
+    ],{duration:fall,easing:'cubic-bezier(.2,.6,.4,1)'});
+    setTimeout(()=>{try{d.remove();}catch(e){}},fall);
+  }
+}
+function screenShake(){
+  if(FAST)return;
+  document.body.style.animation='none';
+  void document.body.offsetHeight;
+  document.body.style.animation='shake .55s ease-out';
+  setTimeout(()=>{try{document.body.style.animation='';}catch(e){}},600);
+}
+
 /* ---------- 📱 뒤로가기 방지: 게임 중 실수로 나가지 않도록 ---------- */
 let backGuard=false, backWarnAt=0;
 /* 뒤로가기 한 번 = 지금 열린 창 하나 닫기 (재무제표·은행·도움말·도서관 → 게임으로) */
@@ -2527,6 +2738,28 @@ function armBackGuard(){
     setTimeout(()=>{ try{t.style.display='none';}catch(e){} },2500);
   });
 }
+
+/* ---------- 🤖 자동 진행: 접속이 끊긴 사람 차례를 방장 폰이 대신 (모두의마블처럼) ---------- */
+let autoLast=0;
+setInterval(()=>{
+  try{
+    if(!NET||!NET.host||!G||G.over)return;
+    const pid=curId();
+    if(!NET.dead||!NET.dead[pid])return;   // 현재 차례가 끊긴 사람일 때만
+    const now=Number(new Date());
+    if(now-autoLast<7000)return;           // 7초에 한 걸음씩 (재접속 기다려줌)
+    autoLast=now;
+    const send=(a)=>{a.p=myPid;a.sudo=1;if(doAct(a)){ACTLOG.push(a);netAll({t:'a',a,q:SEQ++,c:chk()});}};
+    if(G.phase==='await'){ send({k:'s',n:'go'}); feedAdd('🤖 '+G.players[pid].name+' (연결 끊김) — 자동 진행'); return; }
+    if(G.phase==='roll'){ send({k:'s',n:'roll'}); return; }
+    if(G.phase==='done'){ send({k:'s',n:'end'}); return; }
+    // 모달 열림: 안전한 버튼(확인/취소/패스류) 우선, 없으면 마지막 버튼
+    const btns=[...$('mBtns').children].filter(b=>b.dataset&&b.dataset.ai!=null);
+    if(!btns.length)return;
+    const pick=btns.find(b=>/확인|계속|닫기|취소|넘어가|패스|안 사|마감|다행|지불|알겠/.test(b.textContent))||btns[btns.length-1];
+    send({k:'i',i:+pick.dataset.ai,e:EPOCH});
+  }catch(e){}
+},2500);
 
 /* ---------- 초기화 ---------- */
 $('sudoChk').onchange=()=>{if(G)renderAll();};
