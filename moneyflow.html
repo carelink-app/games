@@ -735,6 +735,7 @@ function showModal(title,bodyHTML,btns,opts){
     el.innerHTML=b.label;
     if(b.disabled) el.disabled=true;
     const run=(v)=>{ if(b.keep!==true) closeModal(); if(b.fn) b.fn(v); };
+    if(/^(닫기|취소)$/.test(String(b.label||'').trim()))el.dataset.back='1'; // 뒤로가기로 눌러도 안전한 버튼
     if(b.local) el.onclick=()=>run();    // 로컬 전용 버튼 (예: 새 게임)
     else wireAction(el,run,b.owner,b.valueFn); // 동기화 대상 버튼 (입력값 동봉 가능)
     bb.appendChild(el);
@@ -2228,13 +2229,26 @@ function showHelp(){
 
 /* ---------- 📱 뒤로가기 방지: 게임 중 실수로 나가지 않도록 ---------- */
 let backGuard=false, backWarnAt=0;
+/* 뒤로가기 한 번 = 지금 열린 창 하나 닫기 (재무제표·은행·도움말·도서관 → 게임으로) */
+function backCloseTop(){
+  const t=document.getElementById('termOvl'); if(t){t.remove();return true;}          // 용어 설명
+  const iv=document.getElementById('introOvl'); if(iv){iv.remove();return true;}      // 인트로
+  const vo=$('vovl'); if(vo&&vo.classList.contains('on')){vo.classList.remove('on');return true;} // 재산현황·도움말·서재
+  const ov=$('ovl');
+  if(ov&&ov.classList.contains('on')){                                                 // 은행·재무제표 등 '닫기'가 있는 창
+    const b=[...$('mBtns').children].find(x=>x.dataset&&x.dataset.back==='1'&&!x.disabled);
+    if(b){b.click();return true;}
+  }
+  return false; // 닫을 게 없다 = 게임 화면
+}
 function armBackGuard(){
   if(backGuard)return; backGuard=true;
   try{ history.pushState({dr:1},''); }catch(e){}
   window.addEventListener('popstate',()=>{
     if(!G||(G&&G.over)){ return; } // 게임 전/후엔 정상 동작
-    const now=Number(new Date());
     try{ history.pushState({dr:1},''); }catch(e){}
+    if(backCloseTop()){ backWarnAt=0; return; } // 열린 창만 닫고 게임으로 복귀
+    const now=Number(new Date());
     if(now-backWarnAt<2500){ backGuard=false; history.back(); return; } // 2.5초 안에 두 번 = 진짜 나가기
     backWarnAt=now;
     let t=document.getElementById('backToast');

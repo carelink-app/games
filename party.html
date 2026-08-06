@@ -858,8 +858,10 @@ function INGAME(){return !!(LG||MG);}
   try{ history.pushState({dr:1},''); }catch(e){}
   window.addEventListener('popstate',function(){
     if(!INGAME()){ return; }
-    const now=Number(new Date());
     try{ history.pushState({dr:1},''); }catch(e){}
+    var ovs=document.querySelectorAll('.ovl.on,#vovl.on,#ovl.on,.overlay.on');
+    if(ovs.length){ ovs[ovs.length-1].classList.remove('on'); return; } // 열린 창부터 닫기
+    const now=Number(new Date());
     if(now-warnAt<2500){ history.back(); return; }
     warnAt=now;
     let t=document.getElementById('backToast');
