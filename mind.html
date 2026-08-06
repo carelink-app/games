@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>심리전 팩 — 코드브레이커 · 이마 포커 · 건파이트</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+<style>
+:root{--bg:#141019;--panel:#221a2e;--panel2:#2f2440;--line:#453458;--txt:#f5eefc;--sub:#b39cc9;
+--gold:#ffc94d;--green:#3ecf8e;--red:#ff5d73;--blue:#4dabff;--purple:#c9a2ff}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+html,body{height:100%}
+body{background:var(--bg);color:var(--txt);font-family:'Apple SD Gothic Neo','Noto Sans KR',-apple-system,sans-serif;overscroll-behavior:none}
+button{font-family:inherit;border:none;cursor:pointer}
+input{user-select:text;-webkit-user-select:text}
+#app{max-width:520px;margin:0 auto;padding:18px 14px 40px;min-height:100%}
+.logo{text-align:center;font-size:26px;font-weight:900;margin:8px 0 2px}
+.logo .g{color:var(--purple)}
+.tag{text-align:center;color:var(--sub);font-size:13px;margin-bottom:16px;line-height:1.6}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.card h3{font-size:13px;color:var(--sub);margin-bottom:10px;font-weight:700}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:11px 14px;border-radius:12px;background:var(--panel2);color:var(--txt);font-size:14px;font-weight:800;border:2px solid transparent;flex:1;min-width:70px}
+.chip.sel{border-color:var(--purple);background:#43335e;color:#ecdcff}
+.chip.sm{font-size:13px;padding:9px 6px;min-width:44px;flex:0 1 auto}
+.nameIn{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:11px 12px;font-size:15px;margin-bottom:8px}
+.bigBtn{display:block;width:100%;padding:15px;border-radius:14px;background:linear-gradient(135deg,#c9a2ff,#8b5fd6);color:#fff;font-size:17px;font-weight:900;margin-top:8px}
+.bigBtn.gold{background:linear-gradient(135deg,#ffc94d,#ff9f43);color:#1c1200}
+.bigBtn.red{background:linear-gradient(135deg,#ff5d73,#d63a55)}
+.bigBtn.green{background:linear-gradient(135deg,#3ecf8e,#2aa46d);color:#04150c}
+.bigBtn:disabled{opacity:.35}
+.ghostBtn{display:block;width:100%;padding:11px;border-radius:12px;background:var(--panel2);color:var(--sub);font-size:14px;font-weight:700;margin-top:8px}
+.center{text-align:center}
+.sub{color:var(--sub);font-size:13px;line-height:1.7}
+.big{font-size:19px;font-weight:900;line-height:1.5}
+.mini{font-size:12px;color:var(--sub);text-align:center;margin-top:6px}
+.codeBox{font-size:30px;font-weight:900;letter-spacing:7px;color:var(--gold);text-align:center;padding:12px;background:#191322;border-radius:12px;margin:10px 0}
+.banner{background:#1c1530;border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12.5px;color:#ddd0f0;line-height:1.6;margin:10px 0}
+.banner b{color:var(--gold)}
+#netBanner{display:none;position:fixed;top:0;left:0;right:0;background:#d63a55;color:#fff;font-size:13px;font-weight:800;text-align:center;padding:8px;z-index:90}
+.tbl{width:100%;font-size:14px;border-collapse:collapse;margin:8px 0}
+.tbl td{padding:7px 4px;border-bottom:1px solid #3a2c4e}
+.tbl td:last-child{text-align:right}
+/* 타일 (코드브레이커) */
+.tileRow{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0}
+.tile{width:38px;height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:900;border:2px solid transparent}
+.tile.b{background:#1d1d24;color:#fff;border-color:#3c3c4e}
+.tile.w{background:#f2ecdb;color:#1a1a1a;border-color:#c8bfa5}
+.tile.hidden.b{color:#1d1d24}
+.tile.hidden.w{color:#f2ecdb}
+.tile.pick{outline:3px solid var(--gold)}
+.tile.small{width:30px;height:42px;font-size:15px}
+.tile.mine{box-shadow:0 0 0 2px var(--purple)}
+.numGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:10px 0}
+.numGrid button{padding:12px 0;border-radius:10px;background:var(--panel2);color:var(--txt);font-size:17px;font-weight:900}
+.numGrid button.sel{background:#5a4380;color:#ffd}
+/* 포커 카드 */
+.pcard{display:inline-flex;align-items:center;justify-content:center;width:52px;height:72px;border-radius:10px;background:#fff;color:#111;font-size:26px;font-weight:900;border:3px solid #caa;margin:2px}
+.pcard.back{background:repeating-linear-gradient(45deg,#7d5fd6,#7d5fd6 6px,#6b4fc0 6px,#6b4fc0 12px);color:transparent}
+.pcard.big{width:70px;height:96px;font-size:36px}
+.chipCnt{font-size:15px;font-weight:900;color:var(--gold)}
+/* 건파이트 */
+.hpRow{display:flex;gap:2px}
+.hp{width:12px;height:12px;border-radius:50%;background:#ff5d73}
+.hp.off{background:#3a2c4e}
+.handCard{display:inline-block;padding:12px 10px;border-radius:12px;background:var(--panel2);border:2px solid var(--line);font-size:14px;font-weight:900;margin:3px;min-width:74px;text-align:center}
+.handCard small{display:block;font-weight:600;color:var(--sub);font-size:10px;margin-top:3px}
+.handCard.sel{border-color:var(--gold);background:#4a3a20}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.pick2{padding:14px 8px;border-radius:12px;background:var(--panel2);color:var(--txt);font-size:15px;font-weight:800;border:2px solid transparent}
+.pick2.dead{opacity:.3;text-decoration:line-through}
+.logBox{background:#191322;border-radius:10px;padding:8px 12px;font-size:12px;color:var(--sub);line-height:1.9;max-height:120px;overflow-y:auto;margin:8px 0}
+</style>
+</head>
+<body>
+<div id="netBanner"></div>
+<div id="app"></div>
+<script>
+'use strict';
+/* =====================================================
+   심리전 팩: 코드브레이커 · 이마 포커 · 건파이트
+   폰은 비밀 정보만, 승부는 눈빛과 말로!
+   (방장 폰이 심판 역할을 하는 온라인 구조)
+===================================================== */
+const app=document.getElementById('app');
+const $=s=>document.getElementById(s);
+function rnd(n){return Math.floor(Math.random()*n);}
+function shuffle(a){const b=a.slice();for(let i=b.length-1;i>0;i--){const j=rnd(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+const PCOLORS=['#ff5d73','#ffc94d','#3ecf8e','#4dabff','#c9a2ff','#ff8fd8','#7ee0e6','#ffb020'];
+
+/* ---------- 전역 ---------- */
+let NET=null, myPid=0, myName='', roomCode='', peer=null;
+let GAME=null;        // 호스트의 게임 상태
+let myPriv=null;      // 내 비밀 정보
+let lastScene=null;   // 재접속 복구용
+let myPrivOf=null;    // 호스트: pid별 비밀 정보
+let selGame='code';
+
+/* =====================================================
+   홈 & 로비
+===================================================== */
+function home(){
+  GAME=null;myPriv=null;lastScene=null;
+  if(peer){try{peer.destroy();}catch(e){}peer=null;}
+  NET=null;
+  $('netBanner').style.display='none';
+  app.innerHTML=`
+  <div class="logo">🃏 <span class="g">심리전 팩</span></div>
+  <div class="tag">폰엔 비밀만, 승부는 눈빛과 말로! · 전원 각자 폰 필요</div>
+  <div class="card"><h3>🎮 게임 선택</h3>
+    <div class="chips">
+      <button class="chip ${selGame==='code'?'sel':''}" onclick="selGame='code';home()">🔢 코드브레이커<br><small>2~6인 · 숫자 추리</small></button>
+      <button class="chip ${selGame==='poker'?'sel':''}" onclick="selGame='poker';home()">🂠 이마 포커<br><small>2~8인 · 배팅 블러핑</small></button>
+      <button class="chip ${selGame==='gun'?'sel':''}" onclick="selGame='gun';home()">🤠 건파이트<br><small>4~8인 · 숨은 직업 총격전</small></button>
+    </div>
+  </div>
+  <div class="card"><h3>📶 온라인 접속 (전원 인터넷 필요)</h3>
+    <input class="nameIn" id="myNameIn" maxlength="8" placeholder="내 이름" value="${esc(myName)}">
+    <div class="chips">
+      <button class="chip" onclick="hostRoom()">🏠 방 만들기</button>
+      <button class="chip" onclick="showJoin()">🚪 참여하기</button>
+    </div>
+    <input class="nameIn" id="joinCodeIn" maxlength="4" placeholder="초대 코드 4글자" style="display:none;margin-top:8px;text-transform:uppercase;letter-spacing:4px;text-align:center;font-size:20px;font-weight:900">
+    <div id="lobbyInfo" class="sub" style="margin-top:10px"></div>
+  </div>
+  ${ruleCardHTML(selGame)}`;
+}
+function ruleCardHTML(g){
+  if(g==='code')return `<div class="banner"><b>🔢 코드브레이커</b> (다빈치코드 스타일 변형)<br>각자 흑/백 숫자 타일을 <b>오름차순</b>으로 숨겨 들고 시작. 내 차례에 상대 타일 하나를 콕 집어 숫자를 추리! 맞히면 그 타일 공개(연속 추리 가능), 틀리면 내가 방금 가져온 타일이 공개됩니다. 타일이 전부 까지면 탈락 — <b>표정 관리가 생명!</b></div>`;
+  if(g==='poker')return `<div class="banner"><b>🂠 이마 포커</b> (인디언 포커 변형)<br>내 폰엔 <b>남들 카드만</b> 보이고 내 카드는 안 보여요! 상대 표정과 배팅을 읽고 콜/레이즈/폴드. 최고 숫자가 팟을 쓸어갑니다.<br>🔥 <b>변형 룰</b>: 10을 들고 폴드하면 벌금 3칩! (쫄보 방지)</div>`;
+  return `<div class="banner"><b>🤠 건파이트</b> (뱅! 스타일 라이트 변형)<br>보안관(공개) vs 숨은 무법자들 vs 혼자 배신자! 매 턴 카드 뽑고 총 쏘고, 누가 아군인지 <b>말로 떠보며</b> 추리하세요. 보안관팀은 악당 소탕, 무법자는 보안관 제거, 배신자는 <b>혼자 살아남아야</b> 승리!</div>`;
+}
+function makeCode(){const CS='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<4;i++)c+=CS[rnd(CS.length)];return c;}
+function nameOK(){const el=$('myNameIn');myName=el?el.value.trim():myName;
+  if(!myName){$('lobbyInfo').innerHTML='<b style="color:var(--red)">이름을 먼저 입력하세요!</b>';return false;}return true;}
+function showJoin(){const j=$('joinCodeIn');
+  if(j.style.display==='none'){j.style.display='block';j.focus();
+    $('lobbyInfo').innerHTML='코드를 입력하고 다시 [참여하기]를 누르세요.';return;}
+  if(!nameOK())return;
+  const code=j.value.trim().toUpperCase();
+  if(code.length!==4){$('lobbyInfo').innerHTML='<b style="color:var(--red)">코드는 4글자!</b>';return;}
+  roomCode=code;clientConnect();
+}
+function hostRoom(){
+  if(typeof Peer==='undefined'){$('lobbyInfo').innerHTML='<b style="color:var(--red)">인터넷 연결 필요!</b>';return;}
+  if(!nameOK())return;
+  roomCode=makeCode();
+  $('lobbyInfo').innerHTML='방 만드는 중…';
+  peer=new Peer('kmg-'+roomCode);
+  peer.on('open',()=>{NET={host:true,conns:[],names:[myName],dead:{}};myPid=0;renderHostLobby();});
+  peer.on('connection',c=>{
+    c.on('data',d=>hostOnData(c,d));
+    c.on('close',()=>hostDrop(c));
+    c.on('error',()=>hostDrop(c));
+  });
+  peer.on('error',e=>{
+    if(String(e.type)==='unavailable-id'){try{peer.destroy();}catch(x){};hostRoom();}
+    else{const li=$('lobbyInfo');if(li)li.innerHTML='<b style="color:var(--red)">연결 오류: '+e.type+'</b>';}
+  });
+}
+function clientConnect(){
+  if(typeof Peer==='undefined')return;
+  const li0=$('lobbyInfo');if(li0)li0.innerHTML='접속 중…';
+  if(peer){try{peer.destroy();}catch(e){}}
+  peer=new Peer();
+  peer.on('open',()=>{
+    const c=peer.connect('kmg-'+roomCode,{reliable:true});
+    let opened=false;
+    c.on('open',()=>{opened=true;NET={host:false,c};c.send({t:'hello',name:myName});});
+    c.on('data',d=>clientOnData(d));
+    c.on('close',()=>lostConn());
+    c.on('error',()=>lostConn());
+    setTimeout(()=>{if(!opened){const li=$('lobbyInfo');if(li)li.innerHTML='<b style="color:var(--red)">방을 못 찾았어요.</b> 코드 확인!';}},8000);
+  });
+  peer.on('error',e=>{
+    if(String(e.type)==='peer-unavailable'){const li=$('lobbyInfo');if(li)li.innerHTML='<b style="color:var(--red)">방을 못 찾았어요.</b> 코드 확인!';}
+  });
+}
+function lostConn(){
+  if(!NET||NET.host)return;
+  const nb=$('netBanner');
+  nb.style.display='block';nb.innerHTML='📡 연결 끊김 — <u>탭하여 재접속</u>';
+  nb.onclick=()=>{nb.innerHTML='재접속 중…';clientConnect();};
+}
+function hostDrop(c){
+  if(!NET||!NET.host)return;
+  const i=NET.conns.indexOf(c);
+  if(i>=0){NET.dead[i+1]=true;
+    if(!GAME){NET.names.splice(i+1,1);NET.conns.splice(i,1);delete NET.dead[i+1];
+      netAll({t:'lobby',names:NET.names});renderHostLobby();}
+  }
+}
+function netAll(m){if(NET&&NET.host)NET.conns.forEach(c=>{if(c&&c.open)try{c.send(m);}catch(e){}});}
+function sendTo(pid,m){if(!NET||!NET.host)return;if(pid===0){clientOnData(m);return;}const c=NET.conns[pid-1];if(c&&c.open)try{c.send(m);}catch(e){}}
+function bc(scene){lastScene=scene;netAll(scene);renderScene(scene);}
+function hostOnData(c,d){
+  if(d.t==='hello'){
+    if(GAME){
+      const pid=NET.names.indexOf(d.name);
+      if(pid>0){NET.conns[pid-1]=c;NET.dead[pid]=false;
+        c.send({t:'welcome',pid,name:d.name});
+        if(myPrivOf&&myPrivOf[pid]!=null)c.send({t:'priv',data:myPrivOf[pid]});
+        if(lastScene)c.send(lastScene);
+      } else c.send({t:'reject',msg:'게임이 진행 중입니다.'});
+      return;
+    }
+    if(NET.names.length>=8){c.send({t:'reject',msg:'방이 가득 찼어요 (8명).'});return;}
+    let nm=d.name;let k=2;while(NET.names.includes(nm))nm=d.name+k++;
+    const pid=NET.names.length;
+    NET.names.push(nm);NET.conns.push(c);
+    c.send({t:'welcome',pid,name:nm});
+    netAll({t:'lobby',names:NET.names});
+    renderHostLobby();
+  }
+  else if(d.t==='act')hostAct(d);
+}
+function clientOnData(d){
+  if(d.t==='welcome'){myPid=d.pid;if(d.name)myName=d.name;$('netBanner').style.display='none';renderClientLobby('입장 완료! 방장이 시작하길 기다리는 중…');}
+  else if(d.t==='lobby'){if(NET)NET.names=d.names;renderClientLobby('입장 완료! ('+d.names.map(esc).join(', ')+')');}
+  else if(d.t==='reject'){app.innerHTML='<div class="card"><b style="color:var(--red)">'+esc(d.msg)+'</b></div><button class="bigBtn" onclick="home()">처음으로</button>';}
+  else if(d.t==='priv'){myPriv=d.data;if(lastScene)renderScene(lastScene);}
+  else if(d.t==='scene'){lastScene=d;renderScene(d);}
+}
+function sendAct(a){a.t='act';a.p=myPid;if(NET.host)hostAct(a);else NET.c.send(a);}
+function renderClientLobby(msg){
+  app.innerHTML=`<div class="logo">🃏 <span class="g">심리전 팩</span></div>
+  <div class="card"><div class="big center">🚪 ${esc(roomCode)} 방</div>
+  <div class="sub center" style="margin-top:8px">${msg}</div></div>`;
+}
+function renderHostLobby(){
+  const n=NET.names.length;
+  const MIN={code:2,poker:2,gun:4}[selGame], MAX={code:6,poker:8,gun:8}[selGame];
+  app.innerHTML=`<div class="logo">🃏 <span class="g">심리전 팩</span></div>
+  <div class="card"><h3>초대 코드</h3><div class="codeBox">${roomCode}</div>
+    <div class="sub">참여자 (${n}/8): <b>${NET.names.map(esc).join(', ')}</b></div></div>
+  <div class="card"><h3>🎮 게임 선택</h3><div class="chips">
+    <button class="chip ${selGame==='code'?'sel':''}" onclick="selGame='code';renderHostLobby()">🔢 코드브레이커<br><small>2~6인</small></button>
+    <button class="chip ${selGame==='poker'?'sel':''}" onclick="selGame='poker';renderHostLobby()">🂠 이마 포커<br><small>2~8인</small></button>
+    <button class="chip ${selGame==='gun'?'sel':''}" onclick="selGame='gun';renderHostLobby()">🤠 건파이트<br><small>4~8인</small></button>
+  </div></div>
+  ${ruleCardHTML(selGame)}
+  ${(n>=MIN&&n<=MAX)?`<button class="bigBtn" onclick="startGame()">🎮 시작! (${n}명)</button>`
+    :`<div class="mini">${MIN}~${MAX}명이 필요해요 (현재 ${n}명)</div>`}`;
+}
+function backToLobbyHost(){GAME=null;lastScene=null;myPrivOf=null;myPriv=null;netAll({t:'lobby',names:NET.names});renderHostLobby();}
+function startGame(){
+  if(selGame==='code')codeStart();
+  else if(selGame==='poker')pokerStart();
+  else gunStart();
+}
+function renderScene(d){
+  if(d.s==='code-board')codeRender(d);
+  else if(d.s==='code-end')codeEndRender(d);
+  else if(d.s==='poker-round')pokerRender(d);
+  else if(d.s==='poker-show')pokerShowRender(d);
+  else if(d.s==='poker-end')pokerEndRender(d);
+  else if(d.s==='gun-board')gunRender(d);
+  else if(d.s==='gun-end')gunEndRender(d);
+}
+function hostAct(a){
+  if(!GAME)return;
+  if(GAME.type==='code')codeAct(a);
+  else if(GAME.type==='poker')pokerAct(a);
+  else if(GAME.type==='gun')gunAct(a);
+}
+
+/* =====================================================
+   🔢 코드브레이커
+===================================================== */
+function codeCmp(a,b){return a.v!==b.v?a.v-b.v:(a.c==='b'?-1:1)-(b.c==='b'?-1:1);}
+function codeStart(){
+  const n=NET.names.length;
+  const per=n<=4?4:3;
+  let all=[];
+  for(let v=0;v<=11;v++){all.push({c:'b',v});all.push({c:'w',v});}
+  all=shuffle(all);
+  const players=NET.names.map((nm,i)=>{
+    const tiles=all.splice(0,per).map(t=>({...t,open:false}));
+    tiles.sort(codeCmp);
+    return {name:nm,tiles,alive:true};
+  });
+  GAME={type:'code',players,pool:all,turn:0,drawn:null,streak:0,log:[]};
+  myPrivOf={};
+  players.forEach((p,i)=>{myPrivOf[i]=p.tiles.map(t=>t.v);sendTo(i,{t:'priv',data:myPrivOf[i]});});
+  codeBroadcast('게임 시작! '+players[0].name+' 님부터.');
+  codeTurnBegin();
+}
+function codeSyncPriv(i){
+  myPrivOf[i]=GAME.players[i].tiles.map(t=>t.v);
+  sendTo(i,{t:'priv',data:myPrivOf[i]});
+}
+function codeTurnBegin(){
+  const g=GAME;
+  // 풀에서 한 장 뽑아 손에 (있으면)
+  g.drawn=null;g.streak=0;
+  if(g.pool.length>0){
+    const t={...g.pool.pop(),open:false,fresh:true};
+    const p=g.players[g.turn];
+    p.tiles.push(t);p.tiles.sort(codeCmp);
+    codeSyncPriv(g.turn);
+    g.drawn=t;
+  }
+  codeBroadcast(null);
+}
+function codeBroadcast(logMsg){
+  const g=GAME;
+  if(logMsg)g.log.push(logMsg);
+  if(g.log.length>8)g.log=g.log.slice(-8);
+  bc({t:'scene',s:'code-board',
+    players:g.players.map(p=>({name:p.name,alive:p.alive,
+      tiles:p.tiles.map(t=>({c:t.c,open:t.open,v:t.open?t.v:null,fresh:!!t.fresh}))})),
+    turn:g.turn,pool:g.pool.length,streak:g.streak,log:g.log});
+}
+function codeAct(a){
+  const g=GAME;
+  if(a.p!==g.turn)return;
+  if(a.k==='guess'){
+    const tp=g.players[a.target];
+    if(!tp||!tp.alive||a.target===g.turn)return;
+    const tile=tp.tiles[a.ti];
+    if(!tile||tile.open)return;
+    const me=g.players[g.turn];
+    if(tile.v===a.v){ // 적중!
+      tile.open=true;g.streak++;
+      let msg='🎯 '+me.name+' 적중! '+tp.name+'의 '+(tile.c==='b'?'검정':'하양')+' 타일 = '+tile.v;
+      if(tp.tiles.every(t=>t.open)){tp.alive=false;msg+=' → 💀 '+tp.name+' 탈락!';}
+      const aliveP=g.players.filter(p=>p.alive);
+      if(aliveP.length===1){
+        g.log.push(msg);
+        bc({t:'scene',s:'code-end',winner:aliveP[0].name,
+          players:g.players.map(p=>({name:p.name,alive:p.alive,tiles:p.tiles.map(t=>({c:t.c,v:t.v,open:t.open}))})),log:g.log});
+        return;
+      }
+      codeBroadcast(msg);
+    } else { // 실패
+      let msg='❌ '+me.name+' 추리 실패! ('+tp.name+' 타일 ≠ '+a.v+')';
+      // 방금 뽑은 타일 공개, 없으면(풀 소진) 내 숨은 타일 하나 랜덤 공개
+      let pen=me.tiles.find(t=>t.fresh&&!t.open);
+      if(!pen){const hid=me.tiles.filter(t=>!t.open);pen=hid[rnd(hid.length)];}
+      if(pen){pen.open=true;msg+=' → '+me.name+'의 '+(pen.c==='b'?'검정':'하양')+' '+pen.v+' 공개';}
+      if(me.tiles.every(t=>t.open)){me.alive=false;msg+=' → 💀 '+me.name+' 탈락!';}
+      me.tiles.forEach(t=>delete t.fresh);
+      const aliveP=g.players.filter(p=>p.alive);
+      if(aliveP.length===1){
+        g.log.push(msg);
+        bc({t:'scene',s:'code-end',winner:aliveP[0].name,
+          players:g.players.map(p=>({name:p.name,alive:p.alive,tiles:p.tiles.map(t=>({c:t.c,v:t.v,open:t.open}))})),log:g.log});
+        return;
+      }
+      codeNextTurn(msg);
+    }
+  }
+  else if(a.k==='stop'){ // 연속 추리 멈춤 (뽑은 타일 안전하게 숨김 유지)
+    if(g.streak<1)return;
+    const me=g.players[g.turn];
+    me.tiles.forEach(t=>delete t.fresh);
+    codeNextTurn('🛑 '+me.name+' 님이 안전하게 멈췄습니다.');
+  }
+}
+function codeNextTurn(msg){
+  const g=GAME;
+  do{g.turn=(g.turn+1)%g.players.length;}while(!g.players[g.turn].alive);
+  codeTurnBegin();
+  if(msg){g.log.push(msg);if(g.log.length>8)g.log=g.log.slice(-8);codeBroadcast(null);}
+}
+/* --- 렌더 --- */
+let codeSel={target:null,ti:null,v:null};
+function codeRender(d){
+  const myTurn=d.turn===myPid;
+  const me=d.players[myPid];
+  let h=`<div class="logo" style="font-size:20px">🔢 코드브레이커</div>
+  <div class="mini">남은 타일 더미: ${d.pool}장 · <b style="color:${d.turn===myPid?'var(--gold)':'var(--sub)'}">${esc(d.players[d.turn].name)} 차례</b></div>`;
+  d.players.forEach((p,i)=>{
+    const mine=i===myPid;
+    h+=`<div class="card" style="padding:10px 12px${p.alive?'':';opacity:.45'}">
+      <div style="font-size:13px;font-weight:800;color:${PCOLORS[i]}">${esc(p.name)}${mine?' (나)':''}${p.alive?'':' 💀'}${i===d.turn?' ◀ 차례':''}</div>
+      <div class="tileRow">`;
+    p.tiles.forEach((t,ti)=>{
+      let txt='?',cls='tile '+t.c;
+      if(t.open){txt=t.v;}
+      else if(mine&&myPriv){txt=myPriv[ti];cls+=' mine';}
+      else cls+=' hidden';
+      if(t.fresh&&!t.open)cls+=''; // fresh 표시는 본인만 의미 있음
+      const clickable=myTurn&&!mine&&!t.open&&p.alive;
+      h+=`<div class="${cls}${codeSel.target===i&&codeSel.ti===ti?' pick':''}" ${clickable?`onclick="codePick(${i},${ti})"`:''}>${txt}${t.fresh&&mine?'<span style="font-size:9px;position:absolute;">✦</span>':''}</div>`;
+    });
+    h+=`</div></div>`;
+  });
+  if(myTurn){
+    h+=`<div class="card"><h3>🎯 추리하기 — 상대 타일을 탭한 뒤 숫자 선택</h3>`;
+    if(codeSel.target!=null){
+      h+=`<div class="mini">${esc(d.players[codeSel.target].name)}의 ${codeSel.ti+1}번째 타일 = ?</div><div class="numGrid">`;
+      for(let v=0;v<=11;v++)h+=`<button class="${codeSel.v===v?'sel':''}" onclick="codeNum(${v})">${v}</button>`;
+      h+=`</div>
+      <button class="bigBtn red" ${codeSel.v==null?'disabled':''} onclick="codeGuess()">🎯 추리! ${codeSel.v!=null?'"'+codeSel.v+'"':''}</button>`;
+    } else h+=`<div class="mini">위에서 상대의 <b>? 타일</b>을 탭하세요</div>`;
+    if(d.streak>0)h+=`<button class="bigBtn green" onclick="sendAct({g:'code',k:'stop'})">🛑 그만 추리 (안전하게 턴 넘기기)</button>`;
+    h+=`</div>`;
+  } else {
+    h+=`<div class="mini">💬 얼굴 보고 떠보세요! "너 흑7 있지?" (${esc(d.players[d.turn].name)} 님이 추리 중)</div>`;
+  }
+  h+=`<div class="logBox">${d.log.slice().reverse().map(esc).join('<br>')}</div>`;
+  app.innerHTML=h;
+}
+function codePick(i,ti){codeSel={target:i,ti,v:null};renderScene(lastScene);}
+function codeNum(v){codeSel.v=v;renderScene(lastScene);}
+function codeGuess(){
+  if(codeSel.target==null||codeSel.v==null)return;
+  sendAct({g:'code',k:'guess',target:codeSel.target,ti:codeSel.ti,v:codeSel.v});
+  codeSel={target:null,ti:null,v:null};
+}
+function codeEndRender(d){
+  let h=`<div class="logo">🏆</div>
+  <div class="card center"><div class="big" style="color:var(--gold)">${esc(d.winner)} 승리!</div>
+  <div class="sub" style="margin-top:6px">모든 타일 공개:</div>`;
+  d.players.forEach((p,i)=>{
+    h+=`<div style="margin-top:6px"><b style="color:${PCOLORS[i]};font-size:13px">${esc(p.name)}</b><div class="tileRow">`;
+    p.tiles.forEach(t=>{h+=`<div class="tile small ${t.c}">${t.v}</div>`;});
+    h+=`</div></div>`;
+  });
+  h+=`</div>${myPid===0?`<button class="bigBtn" onclick="startGame()">🔄 한 판 더</button>
+  <button class="ghostBtn" onclick="backToLobbyHost()">로비로</button>`:'<div class="mini">방장이 다음 판을 시작할 수 있어요</div>'}`;
+  app.innerHTML=h;
+}
+
+/* =====================================================
+   🂠 이마 포커
+===================================================== */
+function pokerStart(){
+  const n=NET.names.length;
+  GAME={type:'poker',chips:NET.names.map(()=>20),round:0,maxRounds:8,dealer:-1,log:[]};
+  pokerNewRound();
+}
+function pokerNewRound(){
+  const g=GAME;
+  g.round++;
+  if(g.round>g.maxRounds||g.chips.some(c=>c<=0)){pokerGameEnd();return;}
+  const n=NET.names.length;
+  let deck=[];for(let v=1;v<=10;v++)for(let k=0;k<4;k++)deck.push(v);
+  deck=shuffle(deck);
+  g.cards=NET.names.map(()=>deck.pop());
+  g.dealer=(g.dealer+1)%n;
+  g.inRound=NET.names.map((_,i)=>g.chips[i]>0);
+  g.pot=0;g.bets=NET.names.map(()=>0);g.curBet=1;
+  // 앤티 1
+  NET.names.forEach((_,i)=>{if(g.inRound[i]){g.chips[i]-=1;g.bets[i]=1;g.pot+=1;}});
+  g.turn=(g.dealer+1)%n;
+  while(!g.inRound[g.turn])g.turn=(g.turn+1)%n;
+  g.raises=0;g.lastRaiser=g.turn;g.acted=NET.names.map(()=>false);
+  // 비밀 정보: 각자에게 "남들 카드"
+  myPrivOf={};
+  NET.names.forEach((_,i)=>{
+    const others=NET.names.map((nm,j)=>({name:nm,card:j===i?null:g.cards[j],pid:j}));
+    myPrivOf[i]={others};
+    sendTo(i,{t:'priv',data:myPrivOf[i]});
+  });
+  g.log.push('── '+g.round+'라운드 시작 (앤티 1칩) ──');
+  pokerBroadcast();
+}
+function pokerBroadcast(){
+  const g=GAME;
+  if(g.log.length>8)g.log=g.log.slice(-8);
+  bc({t:'scene',s:'poker-round',round:g.round,maxRounds:g.maxRounds,
+    chips:g.chips.slice(),bets:g.bets.slice(),pot:g.pot,curBet:g.curBet,
+    turn:g.turn,inRound:g.inRound.slice(),names:NET.names,dealer:g.dealer,log:g.log});
+}
+function pokerAct(a){
+  const g=GAME;
+  if(!g||a.p!==g.turn||!g.inRound[a.p])return;
+  const i=a.p, name=NET.names[i];
+  if(a.k==='fold'){
+    g.inRound[i]=false;g.acted[i]=true;
+    let msg='🏳️ '+name+' 폴드';
+    if(g.cards[i]===10){const pay=Math.min(3,g.chips[i]);g.chips[i]-=pay;g.pot+=pay;
+      msg+=' … 그런데 10이었다!! 벌금 '+pay+'칩 🔥';}
+    g.log.push(msg);
+  } else if(a.k==='call'){
+    const need=g.curBet-g.bets[i];
+    const pay=Math.min(need,g.chips[i]);
+    g.chips[i]-=pay;g.bets[i]+=pay;g.pot+=pay;g.acted[i]=true;
+    g.log.push('✅ '+name+' 콜 ('+g.curBet+')');
+  } else if(a.k==='raise'){
+    const amt=Math.max(1,Math.min(3,a.amt|0));
+    if(g.raises>=4)return;
+    const newBet=g.curBet+amt;
+    const need=newBet-g.bets[i];
+    if(need>g.chips[i])return;
+    g.chips[i]-=need;g.bets[i]=newBet;g.pot+=need;g.curBet=newBet;
+    g.raises++;g.acted=NET.names.map(()=>false);g.acted[i]=true;
+    g.log.push('🔺 '+name+' 레이즈! → '+newBet);
+  } else return;
+  // 라운드 종료 판정
+  const act=NET.names.map((_,j)=>j).filter(j=>g.inRound[j]);
+  if(act.length===1){pokerShowdown();return;}
+  const allActed=act.every(j=>g.acted[j]||g.bets[j]===g.curBet);
+  const allMatched=act.every(j=>g.bets[j]===g.curBet||g.chips[j]===0);
+  if(allMatched&&act.every(j=>g.acted[j])){pokerShowdown();return;}
+  do{g.turn=(g.turn+1)%NET.names.length;}while(!g.inRound[g.turn]||(g.acted[g.turn]&&g.bets[g.turn]===g.curBet));
+  pokerBroadcast();
+}
+function pokerShowdown(){
+  const g=GAME;
+  const act=NET.names.map((_,j)=>j).filter(j=>g.inRound[j]);
+  let winner,best=-1;
+  act.forEach(j=>{if(g.cards[j]>best){best=g.cards[j];winner=j;}});
+  const ties=act.filter(j=>g.cards[j]===best);
+  let msg;
+  if(ties.length>1){
+    const share=Math.floor(g.pot/ties.length);
+    ties.forEach(j=>g.chips[j]+=share);
+    g.chips[ties[0]]+=g.pot-share*ties.length;
+    msg='🤝 무승부! '+ties.map(j=>NET.names[j]).join(', ')+' 팟 분배 ('+g.pot+'칩)';
+  } else {
+    g.chips[winner]+=g.pot;
+    msg='🏆 '+NET.names[winner]+' 승리! +'+g.pot+'칩 (카드 '+best+')';
+  }
+  g.log.push(msg);
+  bc({t:'scene',s:'poker-show',cards:g.cards.slice(),chips:g.chips.slice(),names:NET.names,
+    inRound:g.inRound.slice(),msg,round:g.round,host:0});
+}
+function pokerGameEnd(){
+  const g=GAME;
+  let best=-1,winner=0;
+  g.chips.forEach((c,i)=>{if(c>best){best=c;winner=i;}});
+  bc({t:'scene',s:'poker-end',chips:g.chips.slice(),names:NET.names,winner:NET.names[winner]});
+}
+function pokerRender(d){
+  const myTurn=d.turn===myPid&&d.inRound[myPid];
+  let h=`<div class="logo" style="font-size:20px">🂠 이마 포커</div>
+  <div class="mini">${d.round}/${d.maxRounds}라운드 · 팟 <b class="chipCnt">${d.pot}칩</b> · 현재 배팅 ${d.curBet}</div>
+  <div class="card"><h3>테이블 (내 카드는 남들만 볼 수 있다!)</h3><div class="center">`;
+  d.names.forEach((nm,i)=>{
+    const mine=i===myPid;
+    let cardHTML;
+    if(mine)cardHTML=`<div class="pcard back">?</div>`;
+    else{
+      const c=myPriv&&myPriv.others?myPriv.others.find(o=>o.pid===i):null;
+      cardHTML=`<div class="pcard">${c&&c.card!=null?c.card:'?'}</div>`;
+    }
+    h+=`<div style="display:inline-block;margin:4px;text-align:center${d.inRound[i]?'':';opacity:.35'}">
+      ${cardHTML}
+      <div style="font-size:12px;font-weight:800;color:${PCOLORS[i]}">${esc(nm)}${mine?' (나)':''}${i===d.turn?' ◀':''}</div>
+      <div style="font-size:11px" class="sub">💰${d.chips[i]} · 배팅${d.bets[i]}</div>
+    </div>`;
+  });
+  h+=`</div></div>`;
+  if(myTurn){
+    const need=d.curBet-d.bets[myPid];
+    h+=`<div class="card"><h3>내 차례! (콜 비용: ${need}칩)</h3>
+    <div class="chips">
+      <button class="chip green" style="background:#1d4535" onclick="sendAct({g:'poker',k:'call'})">✅ 콜 ${need>0?'(-'+need+')':''}</button>
+      <button class="chip" onclick="sendAct({g:'poker',k:'raise',amt:1})">🔺 +1</button>
+      <button class="chip" onclick="sendAct({g:'poker',k:'raise',amt:2})">🔺 +2</button>
+      <button class="chip" onclick="sendAct({g:'poker',k:'raise',amt:3})">🔺 +3</button>
+      <button class="chip" style="background:#4a2030" onclick="sendAct({g:'poker',k:'fold'})">🏳️ 폴드</button>
+    </div>
+    <div class="mini">⚠️ 10 들고 폴드하면 벌금 3칩!</div></div>`;
+  } else {
+    h+=`<div class="mini">💬 ${esc(d.names[d.turn])} 님 고민 중… 표정을 읽어라!</div>`;
+  }
+  h+=`<div class="logBox">${d.log.slice().reverse().map(esc).join('<br>')}</div>`;
+  app.innerHTML=h;
+}
+function pokerShowRender(d){
+  let h=`<div class="logo">🂠</div>
+  <div class="card center"><div class="big">${esc(d.msg)}</div><div style="margin-top:10px">`;
+  d.names.forEach((nm,i)=>{
+    h+=`<div style="display:inline-block;margin:4px;text-align:center${d.inRound[i]?'':';opacity:.4'}">
+      <div class="pcard">${d.cards[i]}</div>
+      <div style="font-size:12px;font-weight:800;color:${PCOLORS[i]}">${esc(nm)}</div>
+      <div style="font-size:11px" class="sub">💰${d.chips[i]}</div></div>`;
+  });
+  h+=`</div></div>
+  ${myPid===0?`<button class="bigBtn" onclick="pokerNewRound()">▶ 다음 라운드</button>
+  <button class="ghostBtn" onclick="pokerGameEnd()">여기서 종료 (칩 정산)</button>`:'<div class="mini">방장이 다음 라운드를 엽니다</div>'}`;
+  app.innerHTML=h;
+}
+function pokerEndRender(d){
+  const rank=d.names.map((nm,i)=>({nm,c:d.chips[i]})).sort((a,b)=>b.c-a.c);
+  let h=`<div class="logo">🏆</div>
+  <div class="card center"><div class="big" style="color:var(--gold)">${esc(d.winner)} 최종 승리!</div>
+  <table class="tbl">${rank.map((r,i)=>'<tr><td>'+(i+1)+'위 '+esc(r.nm)+'</td><td>💰'+r.c+'칩</td></tr>').join('')}</table></div>
+  ${myPid===0?`<button class="bigBtn" onclick="startGame()">🔄 한 판 더</button>
+  <button class="ghostBtn" onclick="backToLobbyHost()">로비로</button>`:'<div class="mini">방장이 다음 판을 시작할 수 있어요</div>'}`;
+  app.innerHTML=h;
+}
+
+/* =====================================================
+   🤠 건파이트
+===================================================== */
+const GUN_ROLES_BY_N={4:['sheriff','outlaw','outlaw','renegade'],
+ 5:['sheriff','deputy','outlaw','outlaw','renegade'],
+ 6:['sheriff','deputy','outlaw','outlaw','outlaw','renegade'],
+ 7:['sheriff','deputy','deputy','outlaw','outlaw','outlaw','renegade'],
+ 8:['sheriff','deputy','deputy','outlaw','outlaw','outlaw','outlaw','renegade']};
+const GUN_ROLE_KO={sheriff:'⭐ 보안관',deputy:'🤝 부관',outlaw:'🔫 무법자',renegade:'🐍 배신자'};
+const GUN_CARD={bang:{ko:'💥 뱅!',d:'한 명에게 총격 (회피 가능)'},dodge:{ko:'🌀 회피',d:'공격당하면 자동 사용'},
+ beer:{ko:'🍺 맥주',d:'체력 1 회복'},aim:{ko:'🎯 정조준',d:'회피 불가 총격!'}};
+function gunDeck(){
+  const d=[];
+  for(let i=0;i<24;i++)d.push('bang');
+  for(let i=0;i<16;i++)d.push('dodge');
+  for(let i=0;i<10;i++)d.push('beer');
+  for(let i=0;i<6;i++)d.push('aim');
+  return shuffle(d);
+}
+function gunStart(){
+  const n=NET.names.length;
+  const roles=shuffle(GUN_ROLES_BY_N[n]);
+  GAME={type:'gun',roles,hp:roles.map(r=>r==='sheriff'?5:4),maxHp:roles.map(r=>r==='sheriff'?5:4),
+    hands:roles.map(()=>[]),deck:gunDeck(),discard:[],
+    turn:roles.indexOf('sheriff'),shotThisTurn:false,alive:roles.map(()=>true),log:[]};
+  const g=GAME;
+  // 초기 카드 4장
+  g.hands.forEach(h=>{for(let k=0;k<4;k++)h.push(gunDraw());});
+  myPrivOf={};
+  NET.names.forEach((_,i)=>{
+    myPrivOf[i]={role:g.roles[i],hand:g.hands[i].slice()};
+    sendTo(i,{t:'priv',data:myPrivOf[i]});
+  });
+  g.log.push('🌵 황야에 총성이... 보안관은 '+NET.names[g.turn]+'!');
+  gunTurnBegin();
+}
+function gunDraw(){
+  const g=GAME;
+  if(g.deck.length===0){g.deck=shuffle(g.discard);g.discard=[];}
+  return g.deck.pop()||'bang';
+}
+function gunSyncPriv(i){
+  myPrivOf[i]={role:GAME.roles[i],hand:GAME.hands[i].slice()};
+  sendTo(i,{t:'priv',data:myPrivOf[i]});
+}
+function gunTurnBegin(){
+  const g=GAME;
+  g.shotThisTurn=false;
+  // 드로우 2장
+  g.hands[g.turn].push(gunDraw(),gunDraw());
+  // 손패 상한 6 (오래된 것부터 버림)
+  while(g.hands[g.turn].length>6)g.discard.push(g.hands[g.turn].shift());
+  gunSyncPriv(g.turn);
+  g.log.push('▶ '+NET.names[g.turn]+' 차례 (카드 2장 드로우)');
+  gunBroadcast();
+}
+function gunBroadcast(){
+  const g=GAME;
+  if(g.log.length>9)g.log=g.log.slice(-9);
+  bc({t:'scene',s:'gun-board',names:NET.names,hp:g.hp.slice(),maxHp:g.maxHp.slice(),
+    alive:g.alive.slice(),turn:g.turn,handCounts:g.hands.map(h=>h.length),
+    sheriff:g.roles.indexOf('sheriff'),shot:g.shotThisTurn,
+    deadRoles:g.roles.map((r,i)=>g.alive[i]?null:r),log:g.log});
+}
+function gunCheckWin(){
+  const g=GAME;
+  const aliveIdx=g.roles.map((_,i)=>i).filter(i=>g.alive[i]);
+  const sheriffAlive=g.alive[g.roles.indexOf('sheriff')];
+  const badAlive=aliveIdx.some(i=>g.roles[i]==='outlaw');
+  const renAlive=aliveIdx.some(i=>g.roles[i]==='renegade');
+  let winner=null;
+  if(!sheriffAlive){
+    if(aliveIdx.length===1&&g.roles[aliveIdx[0]]==='renegade')winner='🐍 배신자 승리! 혼자 살아남았다!';
+    else winner='🔫 무법자 승리! 보안관이 쓰러졌다!';
+  } else if(!badAlive&&!renAlive){
+    winner='⭐ 보안관팀 승리! 마을에 평화가!';
+  }
+  if(winner){
+    bc({t:'scene',s:'gun-end',msg:winner,names:NET.names,
+      roles:GAME.roles.slice(),alive:g.alive.slice()});
+    return true;
+  }
+  return false;
+}
+function gunAct(a){
+  const g=GAME;
+  if(!g||a.p!==g.turn||!g.alive[a.p])return;
+  const i=a.p,name=NET.names[i],hand=g.hands[i];
+  if(a.k==='shoot'){ // card: 'bang'|'aim'
+    if(g.shotThisTurn)return;
+    const ci=hand.indexOf(a.card);
+    if(ci<0||(a.card!=='bang'&&a.card!=='aim'))return;
+    const t=a.target;
+    if(t===i||!g.alive[t])return;
+    hand.splice(ci,1);g.discard.push(a.card);
+    g.shotThisTurn=true;
+    let msg=(a.card==='aim'?'🎯 ':'💥 ')+name+' → '+NET.names[t];
+    const di=g.hands[t].indexOf('dodge');
+    if(a.card==='bang'&&di>=0){
+      g.hands[t].splice(di,1);g.discard.push('dodge');
+      msg+=' … 🌀 회피 성공!';
+      gunSyncPriv(t);
+    } else {
+      g.hp[t]--;
+      msg+=' … 명중! (-1❤️)';
+      if(g.hp[t]<=0){g.alive[t]=false;msg+=' 💀 '+NET.names[t]+' 사망! 정체는 '+GUN_ROLE_KO[g.roles[t]];
+        g.discard.push(...g.hands[t]);g.hands[t]=[];}
+    }
+    gunSyncPriv(i);
+    g.log.push(msg);
+    if(gunCheckWin())return;
+    gunBroadcast();
+  }
+  else if(a.k==='beer'){
+    const ci=hand.indexOf('beer');
+    if(ci<0)return;
+    if(g.hp[i]>=g.maxHp[i])return;
+    hand.splice(ci,1);g.discard.push('beer');
+    g.hp[i]++;
+    gunSyncPriv(i);
+    g.log.push('🍺 '+name+' 맥주로 회복 (+1❤️)');
+    gunBroadcast();
+  }
+  else if(a.k==='end'){
+    do{g.turn=(g.turn+1)%NET.names.length;}while(!g.alive[g.turn]);
+    gunTurnBegin();
+  }
+}
+let gunSel={card:null};
+function gunRender(d){
+  const myTurn=d.turn===myPid&&d.alive[myPid];
+  let h=`<div class="logo" style="font-size:20px">🤠 건파이트</div>
+  <div class="mini">보안관: <b>${esc(d.names[d.sheriff])}</b> · ${esc(d.names[d.turn])} 차례</div>`;
+  h+=`<div class="card" style="padding:10px 12px">`;
+  d.names.forEach((nm,i)=>{
+    h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #352a48${d.alive[i]?'':';opacity:.4'}">
+      <div><b style="color:${PCOLORS[i]}">${esc(nm)}${i===myPid?' (나)':''}</b>
+        ${i===d.sheriff?' ⭐':''}${d.deadRoles[i]?' <small>'+GUN_ROLE_KO[d.deadRoles[i]]+'</small>':''}${i===d.turn?' ◀':''}</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="sub" style="font-size:11px">🎴${d.handCounts[i]}</span>
+        <div class="hpRow">${Array.from({length:d.maxHp[i]},(_,k)=>`<div class="hp ${k<d.hp[i]?'':'off'}"></div>`).join('')}</div>
+      </div></div>`;
+  });
+  h+=`</div>`;
+  if(myPriv&&myPriv.role){
+    h+=`<div class="mini">내 정체: <b>${GUN_ROLE_KO[myPriv.role]}</b> (비밀!)</div>`;
+  }
+  if(myTurn&&myPriv){
+    h+=`<div class="card"><h3>내 손패 — 카드를 탭해서 사용</h3><div class="center">`;
+    myPriv.hand.forEach((c,ci)=>{
+      h+=`<button class="handCard ${gunSel.card===ci?'sel':''}" onclick="gunPickCard(${ci})">${GUN_CARD[c].ko}<small>${GUN_CARD[c].d}</small></button>`;
+    });
+    h+=`</div>`;
+    if(gunSel.card!=null){
+      const c=myPriv.hand[gunSel.card];
+      if(c==='bang'||c==='aim'){
+        if(d.shot)h+=`<div class="mini" style="color:var(--red)">이번 턴 공격은 이미 했어요! (턴당 1발)</div>`;
+        else{
+          h+=`<div class="mini">누굴 쏠까? 🔽</div><div class="grid">`;
+          d.names.forEach((nm,t)=>{
+            if(t===myPid||!d.alive[t])return;
+            h+=`<button class="pick2" onclick="gunShoot(${t})">${esc(nm)}</button>`;
+          });
+          h+=`</div>`;
+        }
+      } else if(c==='beer'){
+        h+=`<button class="bigBtn green" onclick="sendAct({g:'gun',k:'beer'});gunSel.card=null">🍺 마시기 (+1❤️)</button>`;
+      } else {
+        h+=`<div class="mini">🌀 회피는 공격받을 때 자동으로 사용됩니다</div>`;
+      }
+    }
+    h+=`<button class="bigBtn gold" onclick="gunSel.card=null;sendAct({g:'gun',k:'end'})">⏭️ 턴 종료</button></div>`;
+  } else if(d.alive[myPid]===false){
+    h+=`<div class="mini">👻 관전 중… (죽은 자는 말이 없다)</div>`;
+  } else {
+    h+=`<div class="mini">💬 "너 무법자지?" — 얼굴 보고 심문 타임!</div>`;
+  }
+  h+=`<div class="logBox">${d.log.slice().reverse().map(esc).join('<br>')}</div>`;
+  app.innerHTML=h;
+}
+function gunPickCard(ci){gunSel.card=gunSel.card===ci?null:ci;renderScene(lastScene);}
+function gunShoot(t){
+  const c=myPriv.hand[gunSel.card];
+  gunSel.card=null;
+  sendAct({g:'gun',k:'shoot',card:c,target:t});
+}
+function gunEndRender(d){
+  let h=`<div class="logo">🌵</div>
+  <div class="card center"><div class="big" style="color:var(--gold)">${esc(d.msg)}</div>
+  <table class="tbl">${d.names.map((nm,i)=>'<tr><td>'+esc(nm)+(d.alive[i]?'':' 💀')+'</td><td>'+GUN_ROLE_KO[d.roles[i]]+'</td></tr>').join('')}</table></div>
+  ${myPid===0?`<button class="bigBtn" onclick="startGame()">🔄 한 판 더</button>
+  <button class="ghostBtn" onclick="backToLobbyHost()">로비로</button>`:'<div class="mini">방장이 다음 판을 시작할 수 있어요</div>'}`;
+  app.innerHTML=h;
+}
+
+home();
+</script>
+</body>
+</html>
