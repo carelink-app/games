@@ -151,10 +151,12 @@ function choseong(str){
   for(const ch of str){
     const code=ch.charCodeAt(0);
     if(code>=0xAC00&&code<=0xD7A3)out+=CHO[Math.floor((code-0xAC00)/588)];
-    else out+=ch;
+    else if(ch===' ')out+=' ';        // 띄어쓰기는 힌트로 유지
+    else out+='·';                    // 숫자·영문은 가려서 정답 유출 방지
   }
   return out;
 }
+function glyphLen(str){return [...str].filter(c=>c!==' ').length;} // 공백 제외 글자수
 
 /* =====================================================
    홈
@@ -201,9 +203,12 @@ function quizSetupRender(){
   <button class="bigBtn" onclick="quizGo()">시작! (3초 준비)</button>
   <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
 }
-let qzTimer=null;
+let qzTimer=null, qzNextT=null, qzOver=false;
 function quizGo(){
   ac(); // 사용자 제스처로 오디오 잠금 해제
+  if(qzTimer){clearInterval(qzTimer);qzTimer=null;}
+  if(qzNextT){clearTimeout(qzNextT);qzNextT=null;}
+  qzOver=false;
   QZ.words=shuffle(WORDS[QZ.cat]);
   QZ.idx=0;QZ.score=0;QZ.left=QZ.sec;QZ.log=[];
   let cd=3;
@@ -216,6 +221,7 @@ function quizGo(){
   },900);
 }
 function quizRound(){
+  if(qzOver||QZ.left<=0)return; // 종료 후 유령 라운드 방지
   if(QZ.idx>=QZ.words.length)QZ.words=QZ.words.concat(shuffle(WORDS[QZ.cat]));
   const w=QZ.words[QZ.idx];
   app.innerHTML=`
@@ -236,11 +242,16 @@ function quizRound(){
   }
 }
 function quizNext(kind){
+  if(qzOver)return;
   const top=document.querySelector('.fsTop');
   if(top)top.classList.add(kind==='ok'?'flash-ok':'flash-pass');
-  setTimeout(quizRound,120);
+  if(qzNextT)clearTimeout(qzNextT);
+  qzNextT=setTimeout(()=>{qzNextT=null;quizRound();},120);
 }
 function quizEnd(){
+  qzOver=true;
+  if(qzTimer){clearInterval(qzTimer);qzTimer=null;}
+  if(qzNextT){clearTimeout(qzNextT);qzNextT=null;}
   boomlessEnd();
 }
 function boomlessEnd(){
@@ -268,7 +279,7 @@ function bombSetup(){
   <div class="logo">💣 폭탄 돌리기</div>
   <div class="card center"><h3>이번 판 주제</h3>
     <div class="big" style="font-size:24px" id="bTopic">"${esc(BB.topic)}"</div>
-    <button class="ghostBtn" onclick="BB.topic=pick(BOMB_TOPICS);$('bTopic').textContent='&quot;'+BB.topic+'&quot;'">🎲 주제 바꾸기</button>
+    <button class="ghostBtn" onclick="BB.topic=pick(BOMB_TOPICS);$('bTopic').textContent='"'+BB.topic+'"'">🎲 주제 바꾸기</button>
   </div>
   <div class="card"><h3>📖 하는 법</h3><div class="sub">
   주제에 맞는 단어를 <b>말하고 폰을 옆 사람에게</b> 넘기세요. 중복·5초 침묵 금지!<br>
@@ -307,7 +318,7 @@ function bombAfter(){
   app.innerHTML=`
   <div class="logo">💥 당첨!</div>
   <div class="card center"><div class="big">벌칙 타임이다!</div></div>
-  <button class="bigBtn gold" onclick="roulette()">🎯 벌칙 룰렛 돌리기</button>
+  <button class="bigBtn gold" onclick="roulette('bombAfter')">🎯 벌칙 룰렛 돌리기</button>
   <button class="bigBtn" onclick="bombSetup()">💣 한 판 더</button>
   <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
 }
@@ -338,7 +349,7 @@ function choRound(){
   <div class="logo">ㅋㅅ</div>
   <div class="card center"><h3>${CQ.cat} · ${CQ.idx+1}번째</h3>
     <div class="huge" style="letter-spacing:6px;color:var(--gold)">${esc(choseong(w))}</div>
-    <div class="mini">${w.length}글자</div>
+    <div class="mini">${glyphLen(w)}글자</div>
   </div>
   <button class="bigBtn blue" onclick="choReveal()">👀 정답 공개</button>
   <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
@@ -350,7 +361,7 @@ function choReveal(){
     <div class="huge">${esc(CQ.cur)}</div>
   </div>
   <button class="bigBtn" onclick="CQ.idx++;choRound()">다음 문제 →</button>
-  <button class="bigBtn gold" onclick="roulette()">🎯 벌칙 룰렛</button>
+  <button class="bigBtn gold" onclick="roulette('choReveal')">🎯 벌칙 룰렛</button>
   <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
 }
 
@@ -370,7 +381,7 @@ function balanceGame(i,deck){
   <button class="bigBtn blue" onclick="balCount()">🖐️ 하나, 둘, 셋! (동시에 가리키기)</button>
   <div class="mini" style="margin-top:10px">소수파 벌칙 · 만장일치면 세이프</div>
   <button class="bigBtn" onclick="balanceGame(${i+1},window._bal.deck)">다음 질문 →</button>
-  <button class="bigBtn gold" onclick="roulette()">🎯 벌칙 룰렛</button>
+  <button class="bigBtn gold" onclick="roulette('balanceBack')">🎯 벌칙 룰렛</button>
   <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
 }
 function balCount(){
@@ -383,19 +394,22 @@ function balCount(){
 ===================================================== */
 let PEN=PENALTY_DEFAULT.slice();
 let wheelAngle=0;
-function roulette(){
+let rouletteBack='home()';
+function roulette(returnTo){
+  if(spinning)return; // 스핀 중 화면 전환 차단
+  if(returnTo)rouletteBack=returnTo;
   wheelAngle=0; // 새 화면마다 바퀴 각도 리셋 (화살표 정렬 유지)
   app.innerHTML=`
   <div class="logo">🎯 벌칙 룰렛</div>
   <div id="wheelBox"><div class="wArrow">🔻</div><div id="wheel">${wheelSVG()}</div></div>
   <div class="rollBig" id="rollOut">운명의 버튼을 누르세요…</div>
   <button class="bigBtn red" id="spinBtn" onclick="spin()">🎰 돌려돌려!</button>
-  <div class="card" style="margin-top:12px"><h3>벌칙 목록 (${PEN.length}개) — 직접 추가 가능</h3>
+  <div class="card" style="margin-top:12px" id="penEditCard"><h3>벌칙 목록 (${PEN.length}개) — 직접 추가 가능</h3>
     <input class="nameIn" id="penIn" maxlength="20" placeholder="예: 아재개그 하나 하기">
     <button class="ghostBtn" onclick="addPen()">＋ 추가</button>
-    <button class="ghostBtn" onclick="PEN=PENALTY_DEFAULT.slice();roulette()">기본 목록으로 초기화</button>
+    <button class="ghostBtn" onclick="if(!spinning){PEN=PENALTY_DEFAULT.slice();roulette();}">기본 목록으로 초기화</button>
   </div>
-  <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
+  <button class="ghostBtn" id="rouletteBackBtn" onclick="if(!spinning){${rouletteBack.indexOf('(')>=0?rouletteBack:rouletteBack+'()'}}">← ${rouletteBack==='home()'?'메뉴로':'하던 게임으로'}</button>`;
 }
 function wheelSVG(){
   const n=PEN.length,R=150;
@@ -418,18 +432,25 @@ function spin(){
   spinning=true;ac();
   const n=PEN.length;
   const target=rnd(n);
-  // 화살표(위쪽)가 target 조각 중앙을 가리키도록
+  const result=PEN[target]; // 결과 문자열을 즉시 캡처 (스핀 중 목록 변경 대비)
+  // 스핀 중 이탈/편집 버튼 잠금
+  const bb=$('rouletteBackBtn'); if(bb)bb.style.opacity='.3';
+  const sb=$('spinBtn'); if(sb){sb.disabled=true;sb.style.opacity='.4';}
   const seg=360/n;
   // 현재 각도를 360 배수로 올림 정렬 후, 화살표가 target 조각 중앙에 오도록
   wheelAngle=Math.ceil(wheelAngle/360)*360 + 360*5 + (360-(target*seg+seg/2));
-  $('wheel').style.transform='rotate('+wheelAngle+'deg)';
-  $('rollOut').textContent='두구두구두구…';
+  const wh=$('wheel'); if(wh)wh.style.transform='rotate('+wheelAngle+'deg)';
+  const ro0=$('rollOut'); if(ro0)ro0.textContent='두구두구두구…';
   let t=0;const tickIv=setInterval(()=>{beep(600+rnd(200),.04,'square',.08);t+=1;if(t>30)clearInterval(tickIv);},130);
   setTimeout(()=>{
     clearInterval(tickIv);
+    spinning=false; // 어떤 경우에도 잠금 해제 (아래 DOM 접근보다 먼저)
+    const ro=$('rollOut');
+    if(!ro)return; // 화면이 바뀌었으면 조용히 종료 (크래시 방지)
     beep(1200,.4);vib([100,50,100]);
-    $('rollOut').innerHTML='👉 <b>'+esc(PEN[target])+'</b>';
-    spinning=false;
+    const sb2=$('spinBtn'); if(sb2){sb2.disabled=false;sb2.style.opacity='1';}
+    const bb2=$('rouletteBackBtn'); if(bb2)bb2.style.opacity='1';
+    ro.innerHTML='👉 <b>'+esc(result)+'</b>';
   },4400);
 }
 

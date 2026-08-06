@@ -74,6 +74,7 @@ input{user-select:text;-webkit-user-select:text}
 </head>
 <body>
 <div id="netBanner"></div>
+<button id="hostSkip" style="display:none;position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:88;background:#d63a55;color:#fff;font-weight:800;font-size:13px;padding:9px 16px;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,.4)">⏭ 멈춘 차례 강제 진행</button>
 <div id="app"></div>
 <script>
 'use strict';
@@ -213,7 +214,7 @@ function hostOnData(c,d){
     netAll({t:'lobby',names:NET.names});
     renderHostLobby();
   }
-  else if(d.t==='act')hostAct(d);
+  else if(d.t==='act'){d._conn=c;hostAct(d);}
 }
 function clientOnData(d){
   if(d.t==='welcome'){myPid=d.pid;if(d.name)myName=d.name;$('netBanner').style.display='none';renderClientLobby('입장 완료! 방장이 시작하길 기다리는 중…');}
@@ -257,9 +258,26 @@ function renderScene(d){
   else if(d.s==='poker-end')pokerEndRender(d);
   else if(d.s==='gun-board')gunRender(d);
   else if(d.s==='gun-end')gunEndRender(d);
+  updateHostSkip(d);
+}
+// 호스트 전용: 진행 중인 보드에서만 '강제 진행' 버튼 노출 (접속 끊긴 사람이 차례를 잡아 멈췄을 때)
+function updateHostSkip(d){
+  const b=$('hostSkip'); if(!b)return;
+  const onBoard=d&&(d.s==='code-board'||d.s==='poker-round'||d.s==='gun-board');
+  if(NET&&NET.host&&onBoard){b.style.display='block';b.onclick=forceSkip;}
+  else b.style.display='none';
+}
+function forceSkip(){
+  if(!GAME||GAME.over)return;
+  if(GAME.type==='code'){codeNextTurn('⏭ 호스트가 '+NET.names[GAME.turn]+'의 멈춘 차례를 넘김');}
+  else if(GAME.type==='poker'){pokerAct({p:GAME.turn,k:'fold'});} // 자동 폴드
+  else if(GAME.type==='gun'){const t=GAME.turn;GAME.log.push('⏭ 호스트가 '+NET.names[t]+'의 차례를 넘김');
+    do{GAME.turn=(GAME.turn+1)%NET.names.length;}while(!GAME.alive[GAME.turn]);gunTurnBegin();}
 }
 function hostAct(a){
-  if(!GAME)return;
+  if(!GAME||GAME.over)return; // 게임 종료 후 늦게/중복 도착한 액션 무시
+  // 발신자 신원을 연결에서 역산 (p 위조 방지)
+  if(NET&&NET.host&&a._conn){const idx=NET.conns.indexOf(a._conn);if(idx>=0)a.p=idx+1;}
   if(GAME.type==='code')codeAct(a);
   else if(GAME.type==='poker')pokerAct(a);
   else if(GAME.type==='gun')gunAct(a);
@@ -307,9 +325,11 @@ function codeBroadcast(logMsg){
   const g=GAME;
   if(logMsg)g.log.push(logMsg);
   if(g.log.length>8)g.log=g.log.slice(-8);
+  // fresh(방금 뽑은 타일)는 브로드캐스트에 넣지 않음 — 크기 구간 힌트 유출 방지.
+  // 본인에게는 별도 priv(freshIdx)로만 전달.
   bc({t:'scene',s:'code-board',
     players:g.players.map(p=>({name:p.name,alive:p.alive,
-      tiles:p.tiles.map(t=>({c:t.c,open:t.open,v:t.open?t.v:null,fresh:!!t.fresh}))})),
+      tiles:p.tiles.map(t=>({c:t.c,open:t.open,v:t.open?t.v:null}))})),
     turn:g.turn,pool:g.pool.length,streak:g.streak,log:g.log});
 }
 function codeAct(a){
@@ -328,6 +348,7 @@ function codeAct(a){
       const aliveP=g.players.filter(p=>p.alive);
       if(aliveP.length===1){
         g.log.push(msg);
+        g.over=true;
         bc({t:'scene',s:'code-end',winner:aliveP[0].name,
           players:g.players.map(p=>({name:p.name,alive:p.alive,tiles:p.tiles.map(t=>({c:t.c,v:t.v,open:t.open}))})),log:g.log});
         return;
@@ -344,6 +365,7 @@ function codeAct(a){
       const aliveP=g.players.filter(p=>p.alive);
       if(aliveP.length===1){
         g.log.push(msg);
+        g.over=true;
         bc({t:'scene',s:'code-end',winner:aliveP[0].name,
           players:g.players.map(p=>({name:p.name,alive:p.alive,tiles:p.tiles.map(t=>({c:t.c,v:t.v,open:t.open}))})),log:g.log});
         return;
@@ -448,6 +470,7 @@ function pokerNewRound(){
   g.turn=(g.dealer+1)%n;
   while(!g.inRound[g.turn])g.turn=(g.turn+1)%n;
   g.raises=0;g.lastRaiser=g.turn;g.acted=NET.names.map(()=>false);
+  g.phase='bet';
   // 비밀 정보: 각자에게 "남들 카드"
   myPrivOf={};
   NET.names.forEach((_,i)=>{
@@ -467,7 +490,7 @@ function pokerBroadcast(){
 }
 function pokerAct(a){
   const g=GAME;
-  if(!g||a.p!==g.turn||!g.inRound[a.p])return;
+  if(!g||g.phase!=='bet'||a.p!==g.turn||!g.inRound[a.p])return; // 쇼다운 후 중복 액션 차단
   const i=a.p, name=NET.names[i];
   if(a.k==='fold'){
     g.inRound[i]=false;g.acted[i]=true;
@@ -501,6 +524,8 @@ function pokerAct(a){
 }
 function pokerShowdown(){
   const g=GAME;
+  if(g.phase==='show')return; // 재진입 방지 (팟 이중 지급 차단)
+  g.phase='show';
   const act=NET.names.map((_,j)=>j).filter(j=>g.inRound[j]);
   let winner,best=-1;
   act.forEach(j=>{if(g.cards[j]>best){best=g.cards[j];winner=j;}});
@@ -523,6 +548,7 @@ function pokerGameEnd(){
   const g=GAME;
   let best=-1,winner=0;
   g.chips.forEach((c,i)=>{if(c>best){best=c;winner=i;}});
+  g.over=true;
   bc({t:'scene',s:'poker-end',chips:g.chips.slice(),names:NET.names,winner:NET.names[winner]});
 }
 function pokerRender(d){
@@ -664,6 +690,7 @@ function gunCheckWin(){
     winner='⭐ 보안관팀 승리! 마을에 평화가!';
   }
   if(winner){
+    GAME.over=true;
     bc({t:'scene',s:'gun-end',msg:winner,names:NET.names,
       roles:GAME.roles.slice(),alive:g.alive.slice()});
     return true;

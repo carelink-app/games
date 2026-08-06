@@ -89,7 +89,7 @@ const CATS=Object.keys(WORDS);
 
 /* ---------- 전역 상태 ---------- */
 let NET=null;      // null | {host:true,conns,names,dead} | {host:false,c,names}
-let myPid=0, myName='', roomCode='', peer=null;
+let myPid=0, myName='', roomCode='', peer=null, myToken=null;
 let SC={};         // 현재 화면 상태(로컬 진행용)
 let LG=null;       // 라이어 게임 상태 (호스트/로컬)
 let MG=null;       // 마피아 게임 상태 (호스트/로컬)
@@ -221,7 +221,7 @@ function clientConnect(){
   peer.on('open',()=>{
     const c=peer.connect('kpg-'+roomCode,{reliable:true});
     let opened=false;
-    c.on('open',()=>{opened=true;NET={host:false,c,names:[]};c.send({t:'hello',name:myName});});
+    c.on('open',()=>{opened=true;NET={host:false,c,names:[]};c.send({t:'hello',name:myName,token:myToken});});
     c.on('data',d=>clientOnData(d));
     c.on('close',()=>lostConn());
     c.on('error',()=>lostConn());
@@ -249,29 +249,33 @@ function netAll(m){if(NET&&NET.host)NET.conns.forEach(c=>{if(c&&c.open)try{c.sen
 function sendTo(pid,m){if(!NET||!NET.host||pid===0)return;const c=NET.conns[pid-1];if(c&&c.open)try{c.send(m);}catch(e){}}
 function hostOnData(c,d){
   if(d.t==='hello'){
-    if(LG||MG){ // 재접속
+    if(!NET.tokens)NET.tokens={};
+    if(LG||MG){ // 재접속 — 토큰 인증 필수 (이름만으로는 남의 역할 탈취 불가)
       const pid=NET.names.indexOf(d.name);
-      if(pid>0){NET.conns[pid-1]=c;NET.dead[pid]=false;
-        c.send({t:'welcome',pid,name:d.name});
-        if(myPrivOf&&myPrivOf[pid])c.send({t:'priv',data:myPrivOf[pid]});
+      if(pid>0&&d.token&&NET.tokens[pid]===d.token){
+        NET.conns[pid-1]=c;NET.dead[pid]=false;
+        c.send({t:'welcome',pid,name:d.name,token:d.token});
+        if(myPrivOf&&myPrivOf[pid]!=null)c.send({t:'priv',data:myPrivOf[pid]});
         if(lastScene)c.send(lastScene);
-      } else c.send({t:'reject',msg:'게임이 진행 중입니다.'});
+      } else c.send({t:'reject',msg:'재접속 인증 실패 (게임 진행 중이거나 인증 불일치).'});
       return;
     }
     if(NET.names.length>=12){c.send({t:'reject',msg:'방이 가득 찼어요 (12명).'});return;}
     let nm=d.name;let k=2;while(NET.names.includes(nm))nm=d.name+k++;
     const pid=NET.names.length;
-    NET.names.push(nm);NET.conns.push(c);
-    c.send({t:'welcome',pid,name:nm});
+    const token=Math.random().toString(36).slice(2,10);
+    NET.names.push(nm);NET.conns.push(c);NET.tokens[pid]=token;
+    c.send({t:'welcome',pid,name:nm,token});
     netAll({t:'lobby',names:NET.names});
     renderHostLobby();
   }
-  else if(d.t==='nact'){mafiaNightInput(d.pid,d.pick);}
-  else if(d.t==='vote'){mafiaVoteInput(d.pid,d.pick);}
+  // 밤/투표 입력: 발신 pid를 연결에서 역산 (클라가 주장하는 d.pid 신뢰 안 함)
+  else if(d.t==='nact'){const p=NET.conns.indexOf(c)+1;if(p>=1)mafiaNightInput(p,d.pick);}
+  else if(d.t==='vote'){const p=NET.conns.indexOf(c)+1;if(p>=1)mafiaVoteInput(p,d.pick);}
 }
 let myPrivOf=null;
 function clientOnData(d){
-  if(d.t==='welcome'){myPid=d.pid;if(d.name)myName=d.name;$('netBanner').style.display='none';renderClientLobby('입장 완료! 방장이 시작하길 기다리는 중…');}
+  if(d.t==='welcome'){myPid=d.pid;if(d.name)myName=d.name;if(d.token)myToken=d.token;$('netBanner').style.display='none';renderClientLobby('입장 완료! 방장이 시작하길 기다리는 중…');}
   else if(d.t==='lobby'){if(NET)NET.names=d.names;renderClientLobby('입장 완료! ('+d.names.join(', ')+')');}
   else if(d.t==='reject'){render('<div class="card"><b style="color:var(--red)">'+esc(d.msg)+'</b></div><button class="bigBtn" onclick="home()">처음으로</button>');}
   else if(d.t==='priv'){myPriv=d.data;if(d.data.polres!==undefined)return; renderMyPrivIfWaiting();}
@@ -472,7 +476,7 @@ function mafiaStart(){
   if(mafCfg.doctor)roles.push('doctor');
   while(roles.length<n)roles.push('citizen');
   const dealt=shuffle(roles);
-  MG={names,isNet,roles:dealt,alive:names.map(()=>true),round:1,
+  MG={names,isNet,roles:dealt,alive:names.map(()=>true),round:0,
       nightPicks:{},votes:{},phase:'reveal'};
   if(isNet){
     myPrivOf={};
@@ -519,6 +523,8 @@ function mafiaRevealSeq(i){
 }
 /* --- 밤 시작 --- */
 function mafiaNightBegin(){
+  if(checkMafiaWin())return; // 처형 결과로 게임이 끝났으면 종료 화면
+  MG.round++; // 매 밤 시작 시 라운드 증가 (첫 밤=1)
   MG.phase='night';MG.nightPicks={};
   if(MG.isNet){
     lastScene={t:'scene',s:'night',round:MG.round,alive:MG.alive.slice(),names:MG.names};
@@ -627,7 +633,8 @@ function clientNightRender(i,role,pub){
     <div class="grid" id="nGrid">${targets.map(k=>`<button class="pick" onclick="netNightPick(${k},this)">${esc(names[k])}</button>`).join('')}</div>
     <div class="mini" id="nWait">한 명을 선택하세요</div>
   </div>
-  <div class="banner">지금은 <b>조용히!</b> 모두 제출하면 아침이 밝습니다.</div>`);
+  <div class="banner">지금은 <b>조용히!</b> 모두 제출하면 아침이 밝습니다.</div>
+  ${NET&&NET.host?'<button class="ghostBtn" onclick="mafiaNightResolve()">⏭ 안 누른 사람 빼고 진행 (방장)</button>':''}`);
 }
 function nightDeadHTML(round){
   return `<div class="logo">👻</div><div class="card center"><div class="big">당신은 사망했습니다</div>
@@ -640,12 +647,16 @@ function netNightPick(k,btn){
   if(NET.host)mafiaNightInput(myPid,k);
   else NET.c.send({t:'nact',pid:myPid,pick:k});
 }
+// 살아있고 '접속된' 플레이어 수 — 끊긴 사람을 기다리다 교착되는 것 방지
+function activeAliveCount(){
+  return MG.names.filter((_,i)=>MG.alive[i]&&!(NET&&NET.dead&&NET.dead[i])).length;
+}
 function mafiaNightInput(pid,pick){
   if(!MG||MG.phase!=='night')return;
   if(!MG.alive[pid])return;
   MG.nightPicks[pid]=pick;
-  const need=MG.names.filter((_,i)=>MG.alive[i]).length;
-  if(Object.keys(MG.nightPicks).length>=need)mafiaNightResolve();
+  const submitted=Object.keys(MG.nightPicks).filter(i=>MG.alive[i]&&!(NET&&NET.dead&&NET.dead[i])).length;
+  if(submitted>=activeAliveCount())mafiaNightResolve();
 }
 /* --- 밤 결과 --- */
 function mafiaNightResolve(){
@@ -673,7 +684,7 @@ function mafiaNightResolve(){
     }
   });
   MG.phase='day';MG.lastKilled=killedName;MG.lastSaved=saved;
-  if(checkMafiaWin())return;
+  // 승패 판정은 아침 결과를 '보여준 뒤' (투표 시작 시점)에 — 마지막 희생자 연출이 잘리지 않도록
   if(MG.isNet){
     // 경찰에게 비밀 결과 전송
     Object.keys(MG.polResults).forEach(i=>{
@@ -705,6 +716,7 @@ function morningScreen(d,isNet){
 }
 /* --- 투표 --- */
 function mafiaVoteBegin(){
+  if(checkMafiaWin())return; // 밤 결과로 게임이 끝났으면 여기서 종료 화면
   MG.phase='vote';MG.votes={};
   if(MG.isNet){
     lastScene={t:'scene',s:'vote',alive:MG.alive.slice(),names:MG.names,round:MG.round};
@@ -723,7 +735,8 @@ function voteScreen(d,isNet){
       <div class="grid" id="vGrid">${d.names.map((nm,k)=>d.alive[k]?`<button class="pick" onclick="netVotePick(${k},this)">${esc(nm)}</button>`:'').join('')}
       <button class="pick" onclick="netVotePick(-1,this)">🙅 기권</button></div>
       <div class="mini" id="vWait">한 명을 선택하세요</div>
-    </div>`);
+    </div>
+    ${NET&&NET.host?'<button class="ghostBtn" onclick="mafiaVoteResolve()">⏭ 안 누른 사람 빼고 개표 (방장)</button>':''}`);
   } else {
     render(`<div class="logo">🗳️</div>
     <div class="card center">
@@ -745,8 +758,8 @@ function mafiaVoteInput(pid,pick){
   if(!MG||MG.phase!=='vote')return;
   if(!MG.alive[pid])return;
   MG.votes[pid]=pick;
-  const need=MG.names.filter((_,i)=>MG.alive[i]).length;
-  if(Object.keys(MG.votes).length>=need)mafiaVoteResolve();
+  const submitted=Object.keys(MG.votes).filter(i=>MG.alive[i]&&!(NET&&NET.dead&&NET.dead[i])).length;
+  if(submitted>=activeAliveCount())mafiaVoteResolve();
 }
 function mafiaVoteResolve(){
   const cnt={};
@@ -767,8 +780,7 @@ function mafiaDoExec(k,tally){
   MG.phase='exec';
   const d={s:'exec',t:'scene',name:execName,role:execRole,tally,
     alive:MG.alive.slice(),names:MG.names,round:MG.round};
-  if(checkMafiaWin())return;
-  MG.round++;
+  // 처형 결과 연출을 먼저 보여주고, '다시 밤' 버튼에서 승패 판정 (마지막 처형 연출 보존)
   if(MG.isNet){lastScene=d;netAll(d);execScreen(d,true);}
   else execScreen(d,false);
 }
