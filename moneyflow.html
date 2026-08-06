@@ -51,6 +51,12 @@ button{font-family:inherit;border:none;cursor:pointer}
 #centerName{font-size:15px;font-weight:800}
 #centerSub{font-size:11px;color:var(--sub);text-align:center;line-height:1.5}
 #log{font-size:12px;color:var(--sub);text-align:center;min-height:16px;padding:0 8px;margin-bottom:6px}
+#nowDo{background:linear-gradient(135deg,#2a3350,#1f2740);border:1px solid #47b3ff;border-radius:12px;
+ color:#eef2fb;font-size:14.5px;text-align:center;padding:10px 12px;margin:2px 0 6px;line-height:1.5}
+#nowDo b{color:#8fd4ff}
+#nowDo .sm{display:block;font-size:11.5px;color:#93a2c4;margin-top:3px;font-weight:600}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(71,179,255,.5)}50%{box-shadow:0 0 0 7px rgba(71,179,255,0)}}
+.act.main.hint{animation:pulseGlow 1.4s infinite}
 /* 플레이어 스트립 */
 #pstrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px}
 .pchip{flex-shrink:0;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:7px 10px;font-size:11px;display:flex;align-items:center;gap:6px}
@@ -195,6 +201,7 @@ window.addEventListener('error',function(ev){
   </div>
 
   <button class="bigBtn" id="btnStart">🎮 게임 시작</button>
+  <button class="bigBtn" id="btnHowTo" style="background:linear-gradient(135deg,#47b3ff,#7d5fd6);color:#fff;margin-top:10px">🎓 처음이신가요? 30초 사용법 보기</button>
   <button class="ghostBtn" id="btnHelp0">❓ 자세한 규칙 · 경제 용어 사전</button>
   <button class="ghostBtn" id="btnLib0" style="border:1px solid var(--line);color:var(--txt)">📚 부의 서재 — 흥미진진 경제 역사 13장면</button>
   <button class="ghostBtn" id="btnLearnTg" style="border:1px solid var(--gold);color:var(--gold)">🎓 학습 모드 ON — 게임 중 전문가 조언 카드</button>
@@ -209,11 +216,13 @@ window.addEventListener('error',function(ev){
       <label id="sudoWrap"><input type="checkbox" id="sudoChk">대리조작</label>
       <button class="iconBtn" id="btnFeed">📜</button>
       <button class="iconBtn" id="btnRank">🏆</button>
+      <button class="iconBtn" id="btnHow">🎓</button>
       <button class="iconBtn" id="btnLib">📚</button>
       <button class="iconBtn" id="btnHelp">❓</button>
     </div>
   </div>
   <div id="board"></div>
+  <div id="nowDo">🎲 <b>주사위 굴리기</b> 버튼을 누르세요!</div>
   <div id="log">주사위를 굴려 시작하세요!</div>
   <div id="pstrip"></div>
   <div id="panel">
@@ -788,6 +797,34 @@ $('btnStart').onclick=()=>{
   startGame(names,selWinPct,LEARN);
 };
 $('btnHelp0').onclick=()=>showHelp();
+$('btnHowTo').onclick=()=>showHowTo();
+/* ---------- 🎓 30초 사용법 (그림처럼 큰 글씨로) ---------- */
+function showHowTo(){
+  const step=(n,em,t,b)=>'<div style="display:flex;gap:12px;align-items:flex-start;background:var(--panel2);border-radius:14px;padding:13px 14px;margin-bottom:9px">'+
+    '<div style="font-size:30px;line-height:1">'+em+'</div><div><b style="font-size:15px;color:var(--gold)">'+n+'. '+t+'</b>'+
+    '<div style="font-size:13px;color:#c9d4ea;line-height:1.7;margin-top:3px">'+b+'</div></div></div>';
+  const h=
+   '<div style="background:#1c2742;border-left:4px solid var(--gold);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:14px;line-height:1.7">'+
+   '<b>한 줄 요약</b><br>월급으로 <b>매달 돈이 들어오는 것</b>을 사 모아서, 그 돈이 생활비보다 커지면 <b>회사를 그만두고</b>, 그다음 <b>내 꿈</b>에 필요한 돈을 모으면 이깁니다!</div>'+
+   '<div class="secH">이렇게 돌아갑니다 (한 사람 차례)</div>'+
+   step(1,'🎲','주사위를 굴린다','화면 아래 파란 <b>주사위 굴리기</b> 버튼을 누르세요. 나온 숫자만큼 말이 움직여요.')+
+   step(2,'📄','도착한 칸의 카드를 읽는다','카드가 뜨면 내용을 읽고 버튼을 고르면 돼요. 어려운 단어는 <b>점선 밑줄</b>을 탭하면 뜻이 나옵니다.')+
+   step(3,'✅','턴 종료를 누른다','다 했으면 초록색 <b>턴 종료</b>. 한 폰으로 할 땐 다음 사람에게 넘겨주세요.')+
+   '<div class="secH">칸은 이런 게 있어요</div>'+
+   '<table class="tbl">'+
+   '<tr><td>💰 월급날</td><td>월급 받고 생활비 냅니다 (자동 계산!)</td></tr>'+
+   '<tr><td>📈 기회</td><td>주식·집·가게를 살 수 있어요. <b>여기서 부자가 됩니다</b></td></tr>'+
+   '<tr><td>🧾 지출 / 🛍️ 지름신</td><td>돈이 나갑니다. 인생이 그렇죠…</td></tr>'+
+   '<tr><td>🏛️ 시장 / ⚡ 사건</td><td>주가·집값이 오르내리고, 별별 일이 다 생겨요</td></tr>'+
+   '<tr><td>👶 자녀</td><td>축하합니다! 그리고 생활비가 늘어납니다</td></tr></table>'+
+   '<div class="secH">뭘 사야 좋은가요?</div>'+
+   '<div style="font-size:13.5px;line-height:1.8">딱 하나만 기억하세요. 카드에 <b class="pos">월 현금흐름 +얼마</b>라고 적혀 있으면, 그건 <b>사놓으면 매달 돈이 들어오는 것</b>입니다. 이걸 모으는 게 이 게임의 전부예요.<br>'+
+   '반대로 <b class="neg">월 −얼마</b>는 매달 돈이 나가는 것. 재미는 있지만 자유는 멀어집니다.</div>'+
+   '<div class="secH">화면에서 헷갈리면</div>'+
+   '<div style="font-size:13.5px;line-height:1.8">판 아래 <b>파란 안내줄</b>이 항상 "지금 뭘 누르면 되는지" 알려줍니다. 그것만 따라 하면 돼요!<br>'+
+   '위쪽 사람 이름을 탭하면 <b>누구든 재산 상태</b>를 볼 수 있고, 뒤로가기를 누르면 게임으로 돌아옵니다.</div>';
+  vShow('🎓 30초 사용법',h);
+}
 $('btnLib0').onclick=()=>showLibrary();
 $('btnEasyTg').onclick=()=>{EASY=!EASY;
   const b=$('btnEasyTg');
@@ -1096,6 +1133,7 @@ function renderAll(){
     d.onclick=()=>viewRead(q); // 조회 전용 뷰어 — 언제든, 누구든
     ps.appendChild(d);
   });
+  updateNowDo();
   // 패널
   $('pName').textContent=p.name;
   $('pJob').innerHTML=p.job.emoji+' '+p.job.name+' · '+p.months+'개월차'+(p.children?' · 👶×'+p.children:'')+
@@ -1135,6 +1173,35 @@ function renderAll(){
   $('btnDream').classList.toggle('pulse',canDream(p));
 }
 function log(s){$('log').innerHTML=s;}
+/* 🧭 "지금 할 일" — 처음 하는 사람도 다음에 뭘 누를지 바로 알 수 있게 */
+function updateNowDo(){
+  const el=$('nowDo'); if(!el||!G)return;
+  const p=cur(), me=(!NET||p.id===myPid);
+  let h='', hint='';
+  if(G.over){ h='🎊 게임이 끝났습니다!'; }
+  else if(G.phase==='await'){ h='📱 <b>'+esc(p.name)+'</b> 님 차례예요. '+(NET?'':'폰을 넘겨주세요!'); hint=''; }
+  else if(G.phase==='roll'){
+    if(!me){ h='⏳ <b>'+esc(p.name)+'</b> 님이 주사위를 굴릴 차례예요.'; }
+    else { h='🎲 <b>주사위 굴리기</b> 버튼을 누르세요!';
+      hint='나온 숫자만큼 말이 움직이고, 도착한 칸의 일이 벌어져요'; }
+  }
+  else if(G.phase==='resolving'){
+    h='📄 화면에 뜬 <b>카드를 읽고 버튼을 고르세요</b>';
+    hint='살지 말지 고민되면? 매달 돈이 들어오는 것(+)이면 사는 게 좋아요';
+  }
+  else if(G.phase==='done'){
+    if(!me){ h='⏳ <b>'+esc(p.name)+'</b> 님이 정리하는 중이에요.'; }
+    else{
+      h='✅ 다 했으면 <b>턴 종료</b>를 누르세요';
+      hint='그전에 🏦은행에서 빚 갚기, 📊재무제표에서 자산 팔기도 할 수 있어요';
+      if(canRetire(p)){h='🎉 <b>자유 조건 달성!</b> 퇴사 선언 버튼을 눌러보세요!';hint='이제 월급 없이도 살 수 있어요. 퇴사하면 꿈 모으기가 시작됩니다';}
+      if(p.free&&canDream(p)){h='🌈 <b>꿈 자금이 다 모였어요!</b> 꿈 이루기 버튼을 누르세요!';hint='누르면 게임이 끝나고 당신의 꿈 이야기가 나옵니다';}
+    }
+  }
+  el.innerHTML=h+(hint?'<span class="sm">'+hint+'</span>':'');
+  // 눌러야 할 버튼 반짝이기
+  const rb=$('btnRoll'); if(rb)rb.classList.toggle('hint',G.phase==='roll'&&me&&!G.over);
+}
 
 /* ---------- 턴 진행 ---------- */
 function turnBanner(){
@@ -2197,6 +2264,7 @@ $('btnRank').onclick=()=>{
 };
 $('btnHelp').onclick=()=>showHelp();
 $('btnLib').onclick=()=>showLibrary();
+$('btnHow').onclick=()=>showHowTo();
 $('btnFeed').onclick=()=>{
   if(!G)return;
   const list=G.feed.slice().reverse();
