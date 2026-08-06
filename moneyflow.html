@@ -924,10 +924,15 @@ function showDeal(c){
   if(c.kind==='stock'||c.kind==='coin'){
     prices[c.sym]=c.price; // 시세 갱신
     feedAdd((c.kind==='coin'?'🪙':'📈')+' 기회 카드: '+c.sym+' — 시세 '+fmt(c.price)+'/'+UNITS[c.sym].unit);
+    const isReit=c.sym==='K리츠';
+    const divLine=isReit
+      ?'<div style="background:#15301f;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px">💰 <b style="color:var(--green)">배당 자산!</b> 구좌당 월 배당 <b>'+fmt(REIT_DIV)+'</b> · 현 시세 기준 배당수익률 <b>연 '+(REIT_DIV*12/c.price*100).toFixed(1)+'%</b></div>'
+      :'<div style="background:#301a1a;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px">📉 <b style="color:var(--red)">배당 없음</b> — 오직 시세차익(싸게 사서 비싸게 팔기)만 노리는 자산입니다.</div>';
     openQty({
       title:(c.kind==='coin'?'🪙 ':'📈 ')+c.sym+' — '+fmt(c.price)+'/'+UNITS[c.sym].unit,
       brief:finBrief(p),
-      sub:c.desc,tip:c.tip,unitPrice:c.price,step:UNITS[c.sym].step,unit:UNITS[c.sym].unit,
+      sub:c.desc+divLine,tip:c.tip,unitPrice:c.price,step:UNITS[c.sym].step,unit:UNITS[c.sym].unit,
+      divPerUnit:isReit?REIT_DIV:0,
       maxCost:p.cash,confirm:'매수',
       extraHTML:()=>holdersHTML(c.sym),
       extraWire:(refresh)=>wireHolders(c.sym,refresh),
@@ -1069,7 +1074,8 @@ function openQty(o){
         '<div style="display:flex;gap:8px;margin-top:8px;align-items:center">'+
         '<input id="qDirect" inputmode="numeric" placeholder="'+o.unit+' 수 직접 입력" style="flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:10px 12px;font-size:14px">'+
         '<button class="sellBtn" id="qApply" style="padding:10px 14px">적용</button></div>'+
-        '<div class="costLine">'+(o.sell?'매도 금액':'필요 금액')+': <b class="'+(o.sell?'pos':'')+'">'+fmt(qty*o.unitPrice)+'</b></div>';
+        '<div class="costLine">'+(o.sell?'매도 금액':'필요 금액')+': <b class="'+(o.sell?'pos':'')+'">'+fmt(qty*o.unitPrice)+'</b>'+
+        (o.divPerUnit?'<br><span style="font-size:13px">예상 월 배당: <b class="pos">+'+fmt(Math.round(qty*o.divPerUnit))+'</b></span>':'')+'</div>';
     } else {
       h+='<br><b class="neg">'+(o.sell?'보유 수량이 없습니다.':'현금이 부족해 최소 단위('+o.step+o.unit+')도 살 수 없습니다.')+'</b>';
     }
@@ -1091,11 +1097,15 @@ function openQty(o){
     }
     if(o.extraWire)o.extraWire(refresh);
   }
-  function refresh(){$('mBody').innerHTML=body();wire();}
+  function paintConfirm(){ // 확정 버튼에 수량·금액 명시 → 실수 방지
+    const cb=$('mBtns').children[0];
+    if(cb&&hasQty)cb.innerHTML=o.confirm+' — '+qty.toLocaleString()+o.unit+' ('+fmt(qty*o.unitPrice)+')';
+  }
+  function refresh(){$('mBody').innerHTML=body();wire();paintConfirm();}
   showModal(o.title,body(),hasQty
-    ?[{label:o.confirm,cls:o.sell?'grn':'pri',fn:()=>o.onDone(qty)},{label:'취소',fn:()=>o.onDone(0)}]
+    ?[{label:o.confirm,cls:o.sell?'grn':'pri',fn:()=>o.onDone(qty)},{label:o.sell?'취소':'사지 않고 넘어가기',fn:()=>o.onDone(0)}]
     :[{label:'닫기',fn:()=>o.onDone(0)}]);
-  wire();
+  wire();paintConfirm();
 }
 
 /* --- 지출 --- */
@@ -1350,7 +1360,7 @@ function viewFin(p){
         if(!hd)return;
         openQty({
           title:'📉 '+sym+' 매도 — 현재가 '+fmt(prices[sym])+'/'+UNITS[sym].unit,
-          sub:'보유 '+hd.qty.toLocaleString()+UNITS[sym].unit+' · 평단 '+fmtAvg(hd.avg),
+          sub:'보유 '+hd.qty.toLocaleString()+UNITS[sym].unit+' · 평단 '+fmtAvg(hd.avg)+(sym==='K리츠'?'<br><span class="neg" style="font-size:12px">⚠️ 매도한 만큼 월 배당(구좌당 '+fmt(REIT_DIV)+')이 줄어듭니다</span>':''),
           unit:UNITS[sym].unit,step:UNITS[sym].step,unitPrice:prices[sym],
           maxQtyFixed:hd.qty,sell:true,confirm:'매도 확정',
           tip:'수익은 실현해야 내 돈. 하지만 너무 자주 사고팔면 수수료와 세금이 갉아먹습니다.',
@@ -1522,7 +1532,7 @@ $('btnRank').onclick=()=>{
       '<td>자유 <b>'+freedomPct(q)+'%</b><br><small class="u">순자산 '+fmt(netWorth(q))+' · 패시브 '+fmt(passive(q))+'</small></td></tr>';
   });
   h+='</table><div class="secH">📊 현재 시세</div><table class="tbl">';
-  for(const sym in prices)h+='<tr><td>'+sym+'</td><td>'+fmt(prices[sym])+'/'+UNITS[sym].unit+'</td></tr>';
+  for(const sym in prices)h+='<tr><td>'+sym+(sym==='K리츠'?' <small class="u">(월 배당 '+fmt(REIT_DIV)+'/구좌)</small>':'')+'</td><td>'+fmt(prices[sym])+'/'+UNITS[sym].unit+'</td></tr>';
   h+='</table>';
   vShow('🏆 실시간 순위',h); // 조회 전용 — 각자 폰에서 언제든
 };
