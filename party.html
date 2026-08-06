@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>K-파티게임 — 라이어게임 & 마피아</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+<style>
+:root{--bg:#12101c;--panel:#1e1a2e;--panel2:#2a2440;--line:#3a3158;--txt:#f0edfa;--sub:#a89cc8;
+--gold:#ffc94d;--green:#3ecf8e;--red:#ff5d73;--blue:#4dabff;--purple:#b78bff}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+html,body{height:100%}
+body{background:var(--bg);color:var(--txt);font-family:'Apple SD Gothic Neo','Noto Sans KR',-apple-system,sans-serif;overscroll-behavior:none}
+button{font-family:inherit;border:none;cursor:pointer}
+input{user-select:text;-webkit-user-select:text}
+#app{max-width:520px;margin:0 auto;padding:20px 16px 40px;min-height:100%}
+.logo{text-align:center;font-size:30px;font-weight:900;margin:10px 0 4px}
+.logo .g{color:var(--purple)}
+.tag{text-align:center;color:var(--sub);font-size:13px;margin-bottom:18px;line-height:1.6}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.card h3{font-size:13px;color:var(--sub);margin-bottom:10px;font-weight:700}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{flex:1;min-width:60px;padding:12px 6px;border-radius:12px;background:var(--panel2);color:var(--txt);font-size:15px;font-weight:800;border:2px solid transparent}
+.chip.sel{border-color:var(--purple);background:#3b3160;color:#e6d9ff}
+.chip.sm{font-size:13px;padding:9px 4px;min-width:46px;flex:0 1 auto}
+.nameIn{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:11px 12px;font-size:15px;margin-bottom:8px}
+.bigBtn{display:block;width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#b78bff,#7d5fff);color:#fff;font-size:18px;font-weight:900;margin-top:8px}
+.bigBtn.gold{background:linear-gradient(135deg,#ffc94d,#ff9f43);color:#1c1200}
+.bigBtn.red{background:linear-gradient(135deg,#ff5d73,#d63a55)}
+.bigBtn.green{background:linear-gradient(135deg,#3ecf8e,#2aa46d);color:#04150c}
+.bigBtn:disabled{opacity:.35}
+.ghostBtn{display:block;width:100%;padding:12px;border-radius:12px;background:var(--panel2);color:var(--sub);font-size:14px;font-weight:700;margin-top:8px}
+.center{text-align:center}
+.hugeWord{font-size:38px;font-weight:900;text-align:center;padding:34px 10px;background:var(--panel2);border-radius:18px;margin:14px 0;line-height:1.3;border:2px solid var(--line)}
+.roleMafia{color:var(--red)} .rolePolice{color:var(--blue)} .roleDoctor{color:var(--green)} .roleCitizen{color:var(--gold)} .roleLiar{color:var(--red)}
+.holdBtn{display:block;width:100%;padding:24px;border-radius:16px;background:var(--panel2);border:2px dashed var(--purple);color:var(--purple);font-size:17px;font-weight:900;margin:14px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.pick{padding:16px 8px;border-radius:12px;background:var(--panel2);color:var(--txt);font-size:16px;font-weight:800;border:2px solid transparent}
+.pick.sel{border-color:var(--gold);background:#453a20;color:var(--gold)}
+.pick.dead{opacity:.3;text-decoration:line-through}
+.pick:disabled{opacity:.3}
+.timer{font-size:56px;font-weight:900;text-align:center;margin:10px 0;font-variant-numeric:tabular-nums}
+.timer.low{color:var(--red);animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.4}}
+.sub{color:var(--sub);font-size:13px;line-height:1.7}
+.big{font-size:19px;font-weight:900;line-height:1.5}
+.tbl{width:100%;font-size:14px;border-collapse:collapse;margin:8px 0}
+.tbl td{padding:8px 4px;border-bottom:1px solid #352c52}
+.tbl td:last-child{text-align:right}
+.stepRow{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
+.stepRow .qbtn{width:42px;height:42px;border-radius:12px;background:var(--panel2);color:var(--txt);font-size:20px;font-weight:900}
+.codeBox{font-size:32px;font-weight:900;letter-spacing:8px;color:var(--gold);text-align:center;padding:12px;background:#171226;border-radius:12px;margin:10px 0}
+.banner{background:#152238;border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12.5px;color:#d5ddf0;line-height:1.6;margin:10px 0}
+.banner b{color:var(--gold)}
+#netBanner{display:none;position:fixed;top:0;left:0;right:0;background:#d63a55;color:#fff;font-size:13px;font-weight:800;text-align:center;padding:8px;z-index:90}
+.mini{font-size:12px;color:var(--sub);text-align:center;margin-top:6px}
+.tagRole{display:inline-block;padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800;margin-left:6px}
+</style>
+</head>
+<body>
+<div id="netBanner"></div>
+<div id="app"></div>
+
+<script>
+'use strict';
+/* =====================================================
+   K-파티게임: 라이어게임(일반/바보) + 마피아
+   실제 대화는 얼굴 보고! 폰은 비밀 배분과 진행만.
+   한 폰 돌려보기 모드 + 각자 폰 온라인 모드
+===================================================== */
+const $=s=>document.getElementById(s);
+const app=document.getElementById('app');
+function rnd(n){return Math.floor(Math.random()*n);}
+function shuffle(a){const b=a.slice();for(let i=b.length-1;i>0;i--){const j=rnd(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ---------- 라이어게임 제시어 ---------- */
+const WORDS={
+'음식':['김치찌개','삼겹살','치킨','떡볶이','피자','초밥','짜장면','짬뽕','냉면','비빔밥','삼계탕','부대찌개','갈비탕','순대국','라면','김밥','돈까스','족발','보쌈','마라탕','햄버거','파스타','설렁탕','감자탕','닭갈비','제육볶음','계란찜','불고기','쭈꾸미','곱창'],
+'과일/간식':['사과','바나나','수박','딸기','포도','복숭아','귤','붕어빵','호떡','팥빙수','아이스크림','마카롱','도넛','케이크','추로스','솜사탕','군고구마','옥수수','호두과자','약과','인절미','꿀떡','샤인머스캣','망고','파인애플'],
+'동물':['강아지','고양이','호랑이','사자','코끼리','기린','팬더','펭귄','돌고래','상어','독수리','부엉이','다람쥐','고슴도치','수달','너구리','여우','늑대','악어','하마','캥거루','코알라','미어캣','알파카','햄스터','앵무새','문어','해파리'],
+'장소':['노래방','피시방','찜질방','편의점','영화관','놀이공원','수영장','도서관','미용실','병원','학교','공항','지하철역','해수욕장','캠핑장','전통시장','백화점','카페','헬스장','목욕탕','경찰서','소방서','동물원','식물원','박물관','한강공원','스키장'],
+'직업':['의사','간호사','경찰관','소방관','선생님','요리사','가수','배우','유튜버','프로게이머','운동선수','변호사','판사','군인','농부','어부','파일럿','승무원','미용사','개발자','건축가','수의사','약사','기자','아이돌','웹툰작가','택배기사','바리스타'],
+'물건':['우산','칫솔','베개','이불','선풍기','에어컨','냉장고','세탁기','텔레비전','리모컨','충전기','이어폰','마우스','키보드','가위','풀','지우개','필통','물티슈','텀블러','마스크','거울','드라이기','청소기','전자레인지','밥솥','손톱깎이','모기향'],
+'스포츠/취미':['축구','야구','농구','배구','수영','볼링','당구','골프','태권도','유도','탁구','배드민턴','테니스','스키','보드게임','낚시','등산','캠핑','요가','필라테스','클라이밍','러닝','자전거','서핑','복싱','양궁'],
+'탈것':['버스','지하철','택시','기차','비행기','헬리콥터','자전거','오토바이','킥보드','유람선','케이블카','트럭','소방차','구급차','경찰차','포클레인','스쿨버스','KTX','잠수함','열기구','캠핑카','오리배'],
+};
+const CATS=Object.keys(WORDS);
+
+/* ---------- 전역 상태 ---------- */
+let NET=null;      // null | {host:true,conns,names,dead} | {host:false,c,names}
+let myPid=0, myName='', roomCode='', peer=null;
+let SC={};         // 현재 화면 상태(로컬 진행용)
+let LG=null;       // 라이어 게임 상태 (호스트/로컬)
+let MG=null;       // 마피아 게임 상태 (호스트/로컬)
+let myPriv=null;   // 온라인: 내 비밀 정보
+let lastScene=null;// 온라인 호스트: 마지막 공개 장면(재접속 복구용)
+let timerIv=null;
+
+/* ---------- 화면 렌더 ---------- */
+function render(html){clearTimer();app.innerHTML=html;}
+function clearTimer(){if(timerIv){clearInterval(timerIv);timerIv=null;}}
+function startTimer(sec,elId,onEnd){
+  clearTimer();
+  let left=sec;
+  const el=()=>document.getElementById(elId);
+  const paint=()=>{const e=el();if(!e)return;
+    e.textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0');
+    e.classList.toggle('low',left<=10);};
+  paint();
+  timerIv=setInterval(()=>{left--;if(left<0){clearTimer();if(onEnd)onEnd();return;}paint();},1000);
+}
+
+/* =====================================================
+   홈 & 설정
+===================================================== */
+let selGame='liar', selMode='local';
+function home(){
+  NET=null;myPriv=null;LG=null;MG=null;
+  if(peer){try{peer.destroy();}catch(e){}peer=null;}
+  $('netBanner')&&($('netBanner').style.display='none');
+  render(`
+  <div class="logo">🎭 K-<span class="g">파티게임</span></div>
+  <div class="tag">라이어게임 & 마피아 — 대화는 얼굴 보고, 진행은 폰이!</div>
+  <div class="card"><h3>🎮 게임 선택</h3>
+    <div class="chips">
+      <button class="chip ${selGame==='liar'?'sel':''}" onclick="selGame='liar';home()">🤥 라이어게임</button>
+      <button class="chip ${selGame==='mafia'?'sel':''}" onclick="selGame='mafia';home()">🔪 마피아</button>
+    </div>
+  </div>
+  <div class="card"><h3>📱 플레이 방식</h3>
+    <div class="chips">
+      <button class="chip ${selMode==='local'?'sel':''}" onclick="selMode='local';home()">🏠 한 폰 돌려보기</button>
+      <button class="chip ${selMode==='net'?'sel':''}" onclick="selMode='net';home()">📶 각자 폰으로</button>
+    </div>
+    ${selMode==='net'?'<div class="mini">전원 인터넷 연결 필요 · 방장이 코드를 만들어 공유</div>':''}
+  </div>
+  ${selMode==='local'?localSetupHTML():netLobbyHTML()}
+  <div class="banner">💡 <b>라이어게임</b>: 한 명(라이어)만 제시어를 몰라요. 돌아가며 제시어를 설명하고 라이어를 찾아내세요! <b>바보 모드</b>에선 라이어가 자신이 라이어인지도 모릅니다(다른 단어를 받음).<br><br>
+  🔪 <b>마피아</b>: 밤엔 폰이 사회자가 되어 마피아·경찰·의사가 몰래 행동하고, 낮엔 얼굴 보고 토론해서 범인을 찾아냅니다.</div>`);
+  if(selMode==='local')buildNameInputs();
+}
+let localCnt=(selGame==='mafia')?5:4;
+function localSetupHTML(){
+  const min=selGame==='mafia'?4:3, max=12;
+  if(localCnt<min)localCnt=min;
+  let chips='';
+  for(let i=min;i<=max;i++)chips+=`<button class="chip sm ${localCnt===i?'sel':''}" onclick="localCnt=${i};home()">${i}</button>`;
+  return `<div class="card"><h3>👥 인원 (${min}~${max}명)</h3><div class="chips">${chips}</div></div>
+  <div class="card"><h3>✏️ 이름</h3><div id="nameBox"></div></div>
+  <button class="bigBtn" onclick="startLocal()">${selGame==='liar'?'🤥 라이어게임 시작':'🔪 마피아 시작'}</button>`;
+}
+let savedNames=[];
+function buildNameInputs(){
+  const nb=document.getElementById('nameBox');if(!nb)return;
+  nb.innerHTML='';
+  for(let i=0;i<localCnt;i++){
+    const inp=document.createElement('input');
+    inp.className='nameIn';inp.maxLength=8;inp.placeholder='플레이어 '+(i+1);
+    if(savedNames[i])inp.value=savedNames[i];
+    inp.oninput=()=>{savedNames[i]=inp.value;};
+    nb.appendChild(inp);
+  }
+}
+function readNames(){
+  return [...document.querySelectorAll('#nameBox input')].map((x,i)=>x.value.trim()||('플레이어'+(i+1)));
+}
+function startLocal(){
+  const names=readNames();
+  if(selGame==='liar')liarSettings(names,false);
+  else mafiaSettings(names,false);
+}
+
+/* =====================================================
+   온라인 로비 (공용)
+===================================================== */
+function netLobbyHTML(){
+  return `<div class="card"><h3>📶 온라인 접속</h3>
+    <input class="nameIn" id="myNameIn" maxlength="8" placeholder="내 이름" value="${esc(myName)}">
+    <div class="chips">
+      <button class="chip" onclick="hostRoom()">🏠 방 만들기</button>
+      <button class="chip" onclick="showJoin()">🚪 참여하기</button>
+    </div>
+    <input class="nameIn" id="joinCodeIn" maxlength="4" placeholder="초대 코드 4글자" style="display:none;margin-top:8px;text-transform:uppercase;letter-spacing:4px;text-align:center;font-size:20px;font-weight:900">
+    <div id="lobbyInfo" class="sub" style="margin-top:10px"></div>
+  </div>`;
+}
+function makeCode(){const CS='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<4;i++)c+=CS[rnd(CS.length)];return c;}
+function nameOK(){const el=$('myNameIn');myName=el?el.value.trim():myName;
+  if(!myName){$('lobbyInfo').innerHTML='<b style="color:var(--red)">이름을 먼저 입력하세요!</b>';return false;}return true;}
+function showJoin(){const j=$('joinCodeIn');
+  if(j.style.display==='none'){j.style.display='block';j.focus();
+    $('lobbyInfo').innerHTML='코드를 입력하고 다시 [참여하기]를 누르세요.';return;}
+  if(!nameOK())return;
+  const code=j.value.trim().toUpperCase();
+  if(code.length!==4){$('lobbyInfo').innerHTML='<b style="color:var(--red)">코드는 4글자!</b>';return;}
+  roomCode=code;clientConnect();
+}
+function hostRoom(){
+  if(typeof Peer==='undefined'){$('lobbyInfo').innerHTML='<b style="color:var(--red)">인터넷 연결 필요!</b> 새로고침 후 다시 시도하세요.';return;}
+  if(!nameOK())return;
+  roomCode=makeCode();
+  $('lobbyInfo').innerHTML='방 만드는 중…';
+  peer=new Peer('kpg-'+roomCode);
+  peer.on('open',()=>{NET={host:true,conns:[],names:[myName],dead:{}};myPid=0;renderHostLobby();});
+  peer.on('connection',c=>{
+    c.on('data',d=>hostOnData(c,d));
+    c.on('close',()=>hostDrop(c));
+    c.on('error',()=>hostDrop(c));
+  });
+  peer.on('error',e=>{
+    if(String(e.type)==='unavailable-id'){try{peer.destroy();}catch(x){};hostRoom();}
+    else{const li=$('lobbyInfo');if(li)li.innerHTML='<b style="color:var(--red)">연결 오류: '+e.type+'</b>';}
+  });
+}
+function clientConnect(){
+  if(typeof Peer==='undefined')return;
+  $('lobbyInfo')&&($('lobbyInfo').innerHTML='접속 중…');
+  if(peer){try{peer.destroy();}catch(e){}}
+  peer=new Peer();
+  peer.on('open',()=>{
+    const c=peer.connect('kpg-'+roomCode,{reliable:true});
+    let opened=false;
+    c.on('open',()=>{opened=true;NET={host:false,c,names:[]};c.send({t:'hello',name:myName});});
+    c.on('data',d=>clientOnData(d));
+    c.on('close',()=>lostConn());
+    c.on('error',()=>lostConn());
+    setTimeout(()=>{if(!opened){const li=$('lobbyInfo');if(li)li.innerHTML='<b style="color:var(--red)">방을 찾을 수 없어요.</b> 코드 확인!';}},8000);
+  });
+  peer.on('error',e=>{
+    if(String(e.type)==='peer-unavailable'){const li=$('lobbyInfo');if(li)li.innerHTML='<b style="color:var(--red)">방을 찾을 수 없어요.</b> 코드 확인!';}
+  });
+}
+function lostConn(){
+  if(!NET||NET.host)return;
+  const nb=$('netBanner');
+  nb.style.display='block';nb.innerHTML='📡 연결 끊김 — <u>탭하여 재접속</u>';
+  nb.onclick=()=>{nb.innerHTML='재접속 중…';clientConnect();};
+}
+function hostDrop(c){
+  if(!NET||!NET.host)return;
+  const i=NET.conns.indexOf(c);
+  if(i>=0){NET.dead[i+1]=true;
+    if(!LG&&!MG){NET.names.splice(i+1,1);NET.conns.splice(i,1);delete NET.dead[i+1];
+      netAll({t:'lobby',names:NET.names});renderHostLobby();}
+  }
+}
+function netAll(m){if(NET&&NET.host)NET.conns.forEach(c=>{if(c&&c.open)try{c.send(m);}catch(e){}});}
+function sendTo(pid,m){if(!NET||!NET.host||pid===0)return;const c=NET.conns[pid-1];if(c&&c.open)try{c.send(m);}catch(e){}}
+function hostOnData(c,d){
+  if(d.t==='hello'){
+    if(LG||MG){ // 재접속
+      const pid=NET.names.indexOf(d.name);
+      if(pid>0){NET.conns[pid-1]=c;NET.dead[pid]=false;
+        c.send({t:'welcome',pid,name:d.name});
+        if(myPrivOf&&myPrivOf[pid])c.send({t:'priv',data:myPrivOf[pid]});
+        if(lastScene)c.send(lastScene);
+      } else c.send({t:'reject',msg:'게임이 진행 중입니다.'});
+      return;
+    }
+    if(NET.names.length>=12){c.send({t:'reject',msg:'방이 가득 찼어요 (12명).'});return;}
+    let nm=d.name;let k=2;while(NET.names.includes(nm))nm=d.name+k++;
+    const pid=NET.names.length;
+    NET.names.push(nm);NET.conns.push(c);
+    c.send({t:'welcome',pid,name:nm});
+    netAll({t:'lobby',names:NET.names});
+    renderHostLobby();
+  }
+  else if(d.t==='nact'){mafiaNightInput(d.pid,d.pick);}
+  else if(d.t==='vote'){mafiaVoteInput(d.pid,d.pick);}
+}
+let myPrivOf=null;
+function clientOnData(d){
+  if(d.t==='welcome'){myPid=d.pid;if(d.name)myName=d.name;$('netBanner').style.display='none';renderClientLobby('입장 완료! 방장이 시작하길 기다리는 중…');}
+  else if(d.t==='lobby'){if(NET)NET.names=d.names;renderClientLobby('입장 완료! ('+d.names.join(', ')+')');}
+  else if(d.t==='reject'){render('<div class="card"><b style="color:var(--red)">'+esc(d.msg)+'</b></div><button class="bigBtn" onclick="home()">처음으로</button>');}
+  else if(d.t==='priv'){myPriv=d.data;if(d.data.polres!==undefined)return; renderMyPrivIfWaiting();}
+  else if(d.t==='scene'){clientScene(d);}
+}
+function renderClientLobby(msg){
+  render(`<div class="logo">🎭 K-<span class="g">파티게임</span></div>
+  <div class="card"><div class="big center">🚪 ${esc(roomCode)} 방</div>
+  <div class="sub center" style="margin-top:8px">${msg}</div></div>`);
+}
+function renderHostLobby(){
+  const n=NET.names.length;
+  render(`<div class="logo">🎭 K-<span class="g">파티게임</span></div>
+  <div class="card"><h3>초대 코드 — 친구들에게 알려주세요!</h3>
+    <div class="codeBox">${roomCode}</div>
+    <div class="sub">참여자 (${n}/12): <b>${NET.names.map(esc).join(', ')}</b></div>
+  </div>
+  <div class="card"><h3>🎮 게임 선택</h3>
+    <div class="chips">
+      <button class="chip ${selGame==='liar'?'sel':''}" onclick="selGame='liar';renderHostLobby()">🤥 라이어게임</button>
+      <button class="chip ${selGame==='mafia'?'sel':''}" onclick="selGame='mafia';renderHostLobby()">🔪 마피아</button>
+    </div>
+  </div>
+  ${(selGame==='liar'&&n>=3)||(selGame==='mafia'&&n>=4)
+    ?`<button class="bigBtn" onclick="netStartSettings()">⚙️ 설정하고 시작 (${n}명)</button>`
+    :`<div class="mini">${selGame==='liar'?'3':'4'}명 이상 모이면 시작할 수 있어요.</div>`}`);
+}
+function netStartSettings(){
+  const names=NET.names.slice();
+  if(selGame==='liar')liarSettings(names,true);
+  else mafiaSettings(names,true);
+}
+
+/* =====================================================
+   🤥 라이어게임
+===================================================== */
+let liarCfg={cat:'랜덤',mode:'normal'};
+function liarSettings(names,isNet){
+  let catChips=`<button class="chip sm ${liarCfg.cat==='랜덤'?'sel':''}" onclick="liarCfg.cat='랜덤';liarSettings(SC.names,SC.isNet)">🎲 랜덤</button>`;
+  CATS.forEach(c=>{catChips+=`<button class="chip sm ${liarCfg.cat===c?'sel':''}" onclick="liarCfg.cat='${c}';liarSettings(SC.names,SC.isNet)">${c}</button>`;});
+  SC={names,isNet};
+  render(`<div class="logo">🤥 <span class="g">라이어게임</span></div>
+  <div class="card"><h3>주제</h3><div class="chips">${catChips}</div></div>
+  <div class="card"><h3>모드</h3><div class="chips">
+    <button class="chip ${liarCfg.mode==='normal'?'sel':''}" onclick="liarCfg.mode='normal';liarSettings(SC.names,SC.isNet)">일반<br><small>라이어는 자신을 앎</small></button>
+    <button class="chip ${liarCfg.mode==='fool'?'sel':''}" onclick="liarCfg.mode='fool';liarSettings(SC.names,SC.isNet)">🃏 바보<br><small>라이어도 모름!</small></button>
+  </div></div>
+  <button class="bigBtn" onclick="liarStart()">시작!</button>
+  <button class="ghostBtn" onclick="${SC.isNet?'renderHostLobby()':'home()'}">← 뒤로</button>`);
+}
+function liarStart(){
+  const names=SC.names,isNet=SC.isNet;
+  const cat=liarCfg.cat==='랜덤'?CATS[rnd(CATS.length)]:liarCfg.cat;
+  const pool=WORDS[cat];
+  const word=pool[rnd(pool.length)];
+  let liarWord=null;
+  if(liarCfg.mode==='fool'){do{liarWord=pool[rnd(pool.length)];}while(liarWord===word);}
+  const liarIdx=rnd(names.length);
+  const order=shuffle(names.map((n,i)=>i));
+  LG={names,isNet,cat,word,liarWord,liarIdx,order,mode:liarCfg.mode};
+  if(isNet){
+    myPrivOf={};
+    names.forEach((nm,i)=>{
+      const isLiar=i===liarIdx;
+      const priv={game:'liar',cat,mode:LG.mode,
+        show:isLiar?(LG.mode==='fool'?liarWord:null):word,isLiar:LG.mode==='normal'?isLiar:null};
+      myPrivOf[i]=priv;
+      if(i===0)myPriv=priv; else sendTo(i,{t:'priv',data:priv});
+    });
+    lastScene={t:'scene',s:'liar-play',cat,order:order.map(i=>names[i]),mode:LG.mode};
+    netAll(lastScene);
+    liarPlayScreen(true);
+  } else {
+    liarRevealSeq(0);
+  }
+}
+/* 한 폰: 순서대로 몰래 확인 */
+function liarRevealSeq(i){
+  const names=LG.names;
+  if(i>=names.length){liarPlayScreen(false);return;}
+  render(`<div class="logo">🤥</div>
+  <div class="card center">
+    <div class="big">📱 ${esc(names[i])} 님 차례</div>
+    <div class="sub" style="margin:8px 0">다른 사람에게 보이지 않게 확인하세요 (${i+1}/${names.length})</div>
+    <button class="holdBtn" id="holdB">🔒 꾹~ 누르고 있는 동안 보임</button>
+    <div class="hugeWord" id="wordBox" style="visibility:hidden">?</div>
+    <button class="bigBtn green" onclick="liarRevealSeq(${i+1})">확인 완료 → 다음 사람</button>
+  </div>`);
+  const isLiar=i===LG.liarIdx;
+  let txt;
+  if(isLiar&&LG.mode==='normal')txt='🤫 당신이 <span class="roleLiar">라이어</span>!<br><small style="font-size:14px" class="sub">주제: '+LG.cat+' — 들키지 말고 아는 척하세요</small>';
+  else if(isLiar&&LG.mode==='fool')txt='📖 '+esc(LG.liarWord)+'<br><small style="font-size:14px" class="sub">주제: '+LG.cat+'</small>';
+  else txt='📖 '+esc(LG.word)+'<br><small style="font-size:14px" class="sub">주제: '+LG.cat+'</small>';
+  const hb=$('holdB'),wb=$('wordBox');
+  const show=e=>{e.preventDefault();wb.innerHTML=txt;wb.style.visibility='visible';};
+  const hide=e=>{e.preventDefault();wb.style.visibility='hidden';};
+  hb.addEventListener('touchstart',show);hb.addEventListener('touchend',hide);hb.addEventListener('touchcancel',hide);
+  hb.addEventListener('mousedown',show);hb.addEventListener('mouseup',hide);hb.addEventListener('mouseleave',hide);
+}
+function liarPlayScreen(isNet){
+  const orderNames=LG.order.map(i=>LG.names[i]);
+  render(`<div class="logo">🤥 <span class="g">토론 시간!</span></div>
+  ${isNet?myWordCardHTML():''}
+  <div class="card"><h3>🗣️ 발언 순서 (제시어를 한 문장씩 설명)</h3>
+    <div class="big" style="font-size:16px;line-height:2">${orderNames.map((n,i)=>(i+1)+'. '+esc(n)).join('<br>')}</div>
+  </div>
+  ${(!isNet||myPid===0)?`<button class="bigBtn red" onclick="liarReveal()">🔍 라이어 공개 (이야기 다 끝나면 클릭!)</button>`:'<div class="mini">이야기가 끝나면 방장이 공개합니다</div>'}
+  <div class="banner"><b>진행법</b>: 순서대로 제시어를 설명(단어 직접 말하기 금지!) → 자유롭게 이야기 → 셋 셀 때 동시에 라이어 지목 → 공개!<br>라이어가 지목당해도 <b>제시어를 맞히면 라이어 역전승</b>!</div>`);
+  if(isNet)_wireHold2();
+}
+function myWordCardHTML(){
+  if(!myPriv||myPriv.game!=='liar')return'';
+  let inner;
+  if(myPriv.isLiar===true)inner='🤫 당신이 <span class="roleLiar">라이어</span>!<br><small style="font-size:13px" class="sub">주제: '+esc(myPriv.cat)+'</small>';
+  else inner='📖 '+esc(myPriv.show)+'<br><small style="font-size:13px" class="sub">주제: '+esc(myPriv.cat)+'</small>';
+  return `<div class="card center"><h3>내 카드 (꾹 눌러 확인)</h3>
+    <button class="holdBtn" id="holdB2">🔒 누르는 동안 보임</button>
+    <div class="hugeWord" id="wordBox2" style="visibility:hidden;font-size:28px">?</div></div>`;
+}
+function _wireHold2(){
+  const hb=$('holdB2'),wb=$('wordBox2');
+  if(!hb)return;
+  let inner;
+  if(myPriv.isLiar===true)inner='🤫 당신이 <span class="roleLiar">라이어</span>!<br><small style="font-size:13px" class="sub">주제: '+esc(myPriv.cat)+'</small>';
+  else inner='📖 '+esc(myPriv.show)+'<br><small style="font-size:13px" class="sub">주제: '+esc(myPriv.cat)+'</small>';
+  const show=e=>{e.preventDefault();wb.innerHTML=inner;wb.style.visibility='visible';};
+  const hide=e=>{e.preventDefault();wb.style.visibility='hidden';};
+  hb.addEventListener('touchstart',show);hb.addEventListener('touchend',hide);hb.addEventListener('touchcancel',hide);
+  hb.addEventListener('mousedown',show);hb.addEventListener('mouseup',hide);hb.addEventListener('mouseleave',hide);
+}
+function liarReveal(){
+  if(LG.isNet){
+    lastScene={t:'scene',s:'liar-result',liar:LG.names[LG.liarIdx],word:LG.word,liarWord:LG.liarWord,mode:LG.mode,cat:LG.cat};
+    netAll(lastScene);
+    liarResultScreen(lastScene,true);
+  } else liarResultScreen({liar:LG.names[LG.liarIdx],word:LG.word,liarWord:LG.liarWord,mode:LG.mode,cat:LG.cat},false);
+}
+function liarResultScreen(d,isNet){
+  render(`<div class="logo">🎉</div>
+  <div class="card center">
+    <div class="sub">라이어는 바로…</div>
+    <div class="hugeWord roleLiar">${esc(d.liar)}</div>
+    <table class="tbl">
+      <tr><td>제시어</td><td><b>${esc(d.word)}</b></td></tr>
+      ${d.mode==='fool'?'<tr><td>라이어가 받은 단어</td><td><b>'+esc(d.liarWord)+'</b></td></tr>':''}
+      <tr><td>주제</td><td>${esc(d.cat)}</td></tr>
+    </table>
+  </div>
+  <div class="banner">라이어를 못 찾았거나, 라이어가 제시어를 맞혔다면 <b>라이어 승리</b>! 아니면 시민 승리 👏</div>
+  ${(!isNet||myPid===0)?`<button class="bigBtn" onclick="${isNet?'liarAgainNet()':'liarAgainLocal()'}">🔄 같은 멤버로 한 판 더</button>
+  <button class="ghostBtn" onclick="${isNet?'backToHostLobby()':'home()'}">${isNet?'로비로':'처음으로'}</button>`:'<div class="mini">방장이 다음 판을 시작할 수 있어요</div>'}`);
+}
+function liarAgainLocal(){liarSettings(LG.names,false);}
+function liarAgainNet(){liarSettings(NET.names.slice(),true);}
+function backToHostLobby(){LG=null;MG=null;lastScene=null;netAll({t:'lobby',names:NET.names});renderHostLobby();}
+
+/* =====================================================
+   🔪 마피아 — 앱이 사회자, 대화는 얼굴 보고!
+===================================================== */
+let mafCfg={mafia:1,police:1,doctor:1};
+function mafiaSettings(names,isNet){
+  const n=names.length;
+  // 자동 추천
+  const rec={mafia:n>=10?3:n>=7?2:1,police:1,doctor:n>=6?1:0};
+  if(SC.game!=='mafia'){mafCfg={...rec};}
+  SC={names,isNet,game:'mafia'};
+  const maxM=Math.max(1,Math.floor((n-1)/2));
+  const clamp=()=>{
+    mafCfg.mafia=Math.min(Math.max(1,mafCfg.mafia),maxM);
+    mafCfg.police=Math.min(Math.max(0,mafCfg.police),1);
+    mafCfg.doctor=Math.min(Math.max(0,mafCfg.doctor),1);
+    if(mafCfg.mafia+mafCfg.police+mafCfg.doctor>n-1){mafCfg.doctor=0;}
+    if(mafCfg.mafia+mafCfg.police+mafCfg.doctor>n-1){mafCfg.police=0;}
+  };
+  clamp();
+  const cit=n-mafCfg.mafia-mafCfg.police-mafCfg.doctor;
+  render(`<div class="logo">🔪 <span class="g">마피아</span></div>
+  <div class="card"><h3>역할 구성 (${n}명)</h3>
+    <div class="stepRow"><span>🔪 마피아</span><span>
+      <button class="qbtn" onclick="mafCfg.mafia--;mafiaSettings(SC.names,SC.isNet)">−</button>
+      <b style="font-size:18px;margin:0 10px">${mafCfg.mafia}</b>
+      <button class="qbtn" onclick="mafCfg.mafia++;mafiaSettings(SC.names,SC.isNet)">＋</button></span></div>
+    <div class="stepRow"><span>👮 경찰 (밤에 1명 조사)</span><span>
+      <button class="qbtn" onclick="mafCfg.police=1-mafCfg.police;mafiaSettings(SC.names,SC.isNet)">${mafCfg.police?'있음':'없음'}</button></span></div>
+    <div class="stepRow"><span>💉 의사 (밤에 1명 보호)</span><span>
+      <button class="qbtn" onclick="mafCfg.doctor=1-mafCfg.doctor;mafiaSettings(SC.names,SC.isNet)">${mafCfg.doctor?'있음':'없음'}</button></span></div>
+    <div class="sub">→ 시민 ${cit}명</div>
+  </div>
+  <button class="bigBtn red" onclick="mafiaStart()">밤이 찾아옵니다… 시작!</button>
+  <button class="ghostBtn" onclick="${isNet?'renderHostLobby()':'home()'}">← 뒤로</button>`);
+}
+function mafiaStart(){
+  const names=SC.names,isNet=SC.isNet;
+  const n=names.length;
+  const roles=[];
+  for(let i=0;i<mafCfg.mafia;i++)roles.push('mafia');
+  if(mafCfg.police)roles.push('police');
+  if(mafCfg.doctor)roles.push('doctor');
+  while(roles.length<n)roles.push('citizen');
+  const dealt=shuffle(roles);
+  MG={names,isNet,roles:dealt,alive:names.map(()=>true),round:1,
+      nightPicks:{},votes:{},phase:'reveal'};
+  if(isNet){
+    myPrivOf={};
+    const mafNames=names.filter((_,i)=>dealt[i]==='mafia');
+    names.forEach((nm,i)=>{
+      const priv={game:'mafia',role:dealt[i],mates:dealt[i]==='mafia'?mafNames:null};
+      myPrivOf[i]=priv;
+      if(i===0)myPriv=priv; else sendTo(i,{t:'priv',data:priv});
+    });
+    mafiaNightBegin();
+  } else {
+    mafiaRevealSeq(0);
+  }
+}
+const ROLE_KO={mafia:'🔪 마피아',police:'👮 경찰',doctor:'💉 의사',citizen:'👤 시민'};
+const ROLE_CLS={mafia:'roleMafia',police:'rolePolice',doctor:'roleDoctor',citizen:'roleCitizen'};
+function roleCardHTML(role,mates){
+  let extra='';
+  if(role==='mafia')extra='<div class="sub" style="margin-top:6px">동료 마피아: <b>'+mates.map(esc).join(', ')+'</b><br>밤마다 한 명을 제거하세요. 낮엔 시치미!</div>';
+  if(role==='police')extra='<div class="sub" style="margin-top:6px">밤마다 한 명이 마피아인지 조사할 수 있어요.</div>';
+  if(role==='doctor')extra='<div class="sub" style="margin-top:6px">밤마다 한 명을 지목해 마피아의 공격에서 보호해요. (본인 가능)</div>';
+  if(role==='citizen')extra='<div class="sub" style="margin-top:6px">토론과 투표로 마피아를 찾아내세요!</div>';
+  return '<span class="'+ROLE_CLS[role]+'">'+ROLE_KO[role]+'</span>'+extra;
+}
+/* --- 한 폰: 역할 확인 --- */
+function mafiaRevealSeq(i){
+  const names=MG.names;
+  if(i>=names.length){mafiaNightBegin();return;}
+  render(`<div class="logo">🔪</div>
+  <div class="card center">
+    <div class="big">📱 ${esc(names[i])} 님 차례</div>
+    <div class="sub" style="margin:8px 0">본인 역할을 몰래 확인 (${i+1}/${names.length})</div>
+    <button class="holdBtn" id="holdB">🔒 꾹~ 누르는 동안 보임</button>
+    <div class="hugeWord" id="wordBox" style="visibility:hidden;font-size:26px">?</div>
+    <button class="bigBtn green" onclick="mafiaRevealSeq(${i+1})">확인 완료 → 다음 사람</button>
+  </div>`);
+  const mates=MG.names.filter((_,k)=>MG.roles[k]==='mafia');
+  const inner=roleCardHTML(MG.roles[i],mates);
+  const hb=$('holdB'),wb=$('wordBox');
+  const show=e=>{e.preventDefault();wb.innerHTML=inner;wb.style.visibility='visible';};
+  const hide=e=>{e.preventDefault();wb.style.visibility='hidden';};
+  hb.addEventListener('touchstart',show);hb.addEventListener('touchend',hide);hb.addEventListener('touchcancel',hide);
+  hb.addEventListener('mousedown',show);hb.addEventListener('mouseup',hide);hb.addEventListener('mouseleave',hide);
+}
+/* --- 밤 시작 --- */
+function mafiaNightBegin(){
+  MG.phase='night';MG.nightPicks={};
+  if(MG.isNet){
+    lastScene={t:'scene',s:'night',round:MG.round,alive:MG.alive.slice(),names:MG.names};
+    netAll(lastScene);
+    mafiaNightScreenNet();
+  } else {
+    render(`<div class="logo">🌙</div>
+    <div class="card center">
+      <div class="big">${MG.round}번째 밤이 찾아왔습니다</div>
+      <div class="sub" style="margin:10px 0">전원 눈을 감고, 폰을 순서대로 돌리세요.<br>살아있는 모든 사람이 폰을 받아 조작합니다.<br>(시민도 화면을 받으니 역할이 안 들킵니다!)</div>
+      <button class="bigBtn" onclick="mafiaNightSeq(0)">폰 돌리기 시작</button>
+    </div>`);
+  }
+}
+/* --- 한 폰: 밤 개별 행동 --- */
+function mafiaNightSeq(i){
+  while(i<MG.names.length&&!MG.alive[i])i++;
+  if(i>=MG.names.length){mafiaNightResolve();return;}
+  render(`<div class="logo">🌙</div>
+  <div class="card center">
+    <div class="big">📱 ${esc(MG.names[i])} 님에게 폰을</div>
+    <div class="sub" style="margin:8px 0">본인만 화면을 보세요</div>
+    <button class="bigBtn" onclick="mafiaNightAction(${i})">나 ${esc(MG.names[i])} 맞음 — 화면 열기</button>
+  </div>`);
+}
+function mafiaNightAction(i){
+  const role=MG.roles[i];
+  let title,subT,allowSelf=false,targets=[];
+  if(role==='mafia'){title='🔪 제거할 사람은?';subT='동료: '+MG.names.filter((_,k)=>MG.roles[k]==='mafia'&&MG.alive[k]).map(esc).join(', ');}
+  else if(role==='police'){title='👮 조사할 사람은?';subT='선택하면 마피아 여부가 보입니다';}
+  else if(role==='doctor'){title='💉 보호할 사람은?';subT='마피아의 공격에서 지켜줍니다';allowSelf=true;}
+  else {title='👤 직감을 남겨보세요';subT='시민의 선택은 게임에 영향 없음 (역할 숨김용)';}
+  MG.names.forEach((nm,k)=>{
+    if(!MG.alive[k])return;
+    if(k===i&&!allowSelf&&role!=='citizen')return;
+    if(role==='mafia'&&MG.roles[k]==='mafia')return;
+    targets.push(k);
+  });
+  render(`<div class="logo">🌙</div>
+  <div class="card center">
+    <div class="big">${title}</div>
+    <div class="sub" style="margin:6px 0">${subT}</div>
+    <div class="grid">${targets.map(k=>`<button class="pick" onclick="mafiaNightPickLocal(${i},${k})">${esc(MG.names[k])}</button>`).join('')}</div>
+  </div>`);
+}
+function mafiaNightPickLocal(i,k){
+  const role=MG.roles[i];
+  MG.nightPicks[i]=k;
+  if(role==='police'){
+    const isMaf=MG.roles[k]==='mafia';
+    render(`<div class="logo">🌙</div>
+    <div class="card center">
+      <div class="big">조사 결과</div>
+      <div class="hugeWord" style="font-size:26px">${esc(MG.names[k])} — ${isMaf?'<span class="roleMafia">마피아다!</span>':'<span class="roleCitizen">마피아가 아니다</span>'}</div>
+      <button class="bigBtn green" onclick="mafiaNightSeq(${i+1})">기억했다! 다음 사람에게</button>
+    </div>`);
+  } else {
+    render(`<div class="logo">🌙</div>
+    <div class="card center">
+      <div class="big">✅ 선택 완료</div>
+      <div class="sub" style="margin:10px 0">화면을 닫고 다음 사람에게 폰을 넘기세요.</div>
+      <button class="bigBtn green" onclick="mafiaNightSeq(${i+1})">다음 사람에게</button>
+    </div>`);
+  }
+}
+/* --- 온라인: 밤 --- */
+function mafiaNightScreenNet(){ renderNightForMe(); }
+function renderNightForMe(){
+  const i=myPid,role=MG?MG.roles[i]:(myPriv?myPriv.role:null);
+  clientNightRender(i,role,MG?{alive:MG.alive,names:MG.names,round:MG.round}:lastSceneData());
+}
+function lastSceneData(){return lastScene?{alive:lastScene.alive,names:lastScene.names,round:lastScene.round}:null;}
+function clientScene(d){
+  lastScene=d;
+  if(d.s==='liar-play'){LG={isNet:true,order:d.order.map((_,i)=>i),names:d.order,cat:d.cat,mode:d.mode};
+    liarPlayScreen(true);}
+  else if(d.s==='liar-result')liarResultScreen(d,true);
+  else if(d.s==='night')clientNightRender(myPid,myPriv?myPriv.role:'citizen',{alive:d.alive,names:d.names,round:d.round});
+  else if(d.s==='morning')morningScreen(d,true);
+  else if(d.s==='vote')voteScreen(d,true);
+  else if(d.s==='exec')execScreen(d,true);
+  else if(d.s==='end')endScreen(d,true);
+  else if(d.t==='lobby')renderClientLobby('로비로 돌아왔습니다.');
+}
+function renderMyPrivIfWaiting(){/* priv 먼저 도착 대비 - scene 오면 그려짐 */}
+function clientNightRender(i,role,pub){
+  if(!pub)return;
+  const alive=pub.alive,names=pub.names;
+  if(!alive[i]){render(nightDeadHTML(pub.round));return;}
+  let title,subT,allowSelf=false;
+  if(role==='mafia'){title='🔪 제거할 사람은?';subT=myPriv&&myPriv.mates?'동료: '+myPriv.mates.map(esc).join(', '):'';}
+  else if(role==='police'){title='👮 조사할 사람은?';subT='선택하면 결과가 아침에 표시됩니다';}
+  else if(role==='doctor'){title='💉 보호할 사람은?';subT='본인도 가능';allowSelf=true;}
+  else {title='👤 직감을 남겨보세요';subT='시민의 선택은 영향 없음 (전원이 함께 선택해야 역할이 안 들켜요)';}
+  const targets=[];
+  names.forEach((nm,k)=>{
+    if(!alive[k])return;
+    if(k===i&&!allowSelf&&role!=='citizen')return;
+    if(role==='mafia'&&myPriv&&myPriv.mates&&myPriv.mates.includes(nm))return;
+    targets.push(k);
+  });
+  render(`<div class="logo">🌙 ${pub.round}번째 밤</div>
+  <div class="card center">
+    <div class="big">${title}</div>
+    <div class="sub" style="margin:6px 0">${subT}</div>
+    <div class="grid" id="nGrid">${targets.map(k=>`<button class="pick" onclick="netNightPick(${k},this)">${esc(names[k])}</button>`).join('')}</div>
+    <div class="mini" id="nWait">한 명을 선택하세요</div>
+  </div>
+  <div class="banner">지금은 <b>조용히!</b> 모두 제출하면 아침이 밝습니다.</div>`);
+}
+function nightDeadHTML(round){
+  return `<div class="logo">👻</div><div class="card center"><div class="big">당신은 사망했습니다</div>
+  <div class="sub" style="margin-top:8px">${round}번째 밤이 지나가는 중… 조용히 구경하세요 (발언 금지!)</div></div>`;
+}
+function netNightPick(k,btn){
+  document.querySelectorAll('#nGrid .pick').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  $('nWait').textContent='제출 완료! 다른 사람들을 기다리는 중…';
+  if(NET.host)mafiaNightInput(myPid,k);
+  else NET.c.send({t:'nact',pid:myPid,pick:k});
+}
+function mafiaNightInput(pid,pick){
+  if(!MG||MG.phase!=='night')return;
+  if(!MG.alive[pid])return;
+  MG.nightPicks[pid]=pick;
+  const need=MG.names.filter((_,i)=>MG.alive[i]).length;
+  if(Object.keys(MG.nightPicks).length>=need)mafiaNightResolve();
+}
+/* --- 밤 결과 --- */
+function mafiaNightResolve(){
+  // 마피아 다수결 (동률 시 랜덤)
+  const mafPicks=[];
+  MG.names.forEach((_,i)=>{if(MG.alive[i]&&MG.roles[i]==='mafia'&&MG.nightPicks[i]!=null)mafPicks.push(MG.nightPicks[i]);});
+  let kill=null;
+  if(mafPicks.length){
+    const cnt={};mafPicks.forEach(k=>cnt[k]=(cnt[k]||0)+1);
+    const mx=Math.max(...Object.values(cnt));
+    const top=Object.keys(cnt).filter(k=>cnt[k]===mx).map(Number);
+    kill=top[rnd(top.length)];
+  }
+  let heal=null;
+  MG.names.forEach((_,i)=>{if(MG.alive[i]&&MG.roles[i]==='doctor'&&MG.nightPicks[i]!=null)heal=MG.nightPicks[i];});
+  const saved=kill!=null&&kill===heal;
+  const killedName=(kill!=null&&!saved)?MG.names[kill]:null;
+  if(kill!=null&&!saved)MG.alive[kill]=false;
+  // 경찰 결과
+  MG.polResults={};
+  MG.names.forEach((_,i)=>{
+    if(MG.roles[i]==='police'&&MG.nightPicks[i]!=null){
+      const t=MG.nightPicks[i];
+      MG.polResults[i]={name:MG.names[t],isMafia:MG.roles[t]==='mafia'};
+    }
+  });
+  MG.phase='day';MG.lastKilled=killedName;MG.lastSaved=saved;
+  if(checkMafiaWin())return;
+  if(MG.isNet){
+    // 경찰에게 비밀 결과 전송
+    Object.keys(MG.polResults).forEach(i=>{
+      i=+i;
+      const pr={...myPrivOf[i],polres:MG.polResults[i]};
+      myPrivOf[i]=pr;
+      if(i===0)myPriv=pr; else sendTo(i,{t:'priv',data:pr});
+    });
+    lastScene={t:'scene',s:'morning',round:MG.round,killed:killedName,saved,
+      alive:MG.alive.slice(),names:MG.names};
+    netAll(lastScene);
+    morningScreen(lastScene,true);
+  } else {
+    morningScreen({round:MG.round,killed:killedName,saved,alive:MG.alive,names:MG.names},false);
+  }
+}
+function morningScreen(d,isNet){
+  const myPol=(isNet&&myPriv&&myPriv.polres)?myPriv.polres:null;
+  const localPol=null;
+  render(`<div class="logo">🌅</div>
+  <div class="card center">
+    <div class="big">${d.round}번째 아침이 밝았습니다</div>
+    <div class="hugeWord" style="font-size:24px">${d.killed?('🕯️ 지난 밤, <span class="roleMafia">'+esc(d.killed)+'</span> 님이 살해당했습니다'):(d.saved?'💉 의사의 활약으로 <b>아무도 죽지 않았습니다!</b>':'아무 일도 일어나지 않았습니다')}</div>
+    ${myPol?'<div class="banner">👮 <b>나의 조사 결과</b>: '+esc(myPol.name)+' — '+(myPol.isMafia?'<b class="roleMafia">마피아다!</b>':'마피아 아님')+'</div>':''}
+    <div class="sub">생존자: ${d.names.filter((_,i)=>d.alive[i]).map(esc).join(', ')}</div>
+  </div>
+  <div class="banner">☀️ <b>낮 토론</b> — 얼굴 보고 마음껏 이야기하세요! 시간 제한 없음. 이야기가 끝나면 아래 버튼으로 넘어갑니다.</div>
+  ${(!isNet||myPid===0)?`<button class="bigBtn gold" onclick="mafiaVoteBegin()">🗳️ 이야기 끝! 투표 시작</button>`:'<div class="mini">이야기가 끝나면 방장이 투표를 엽니다</div>'}`);
+}
+/* --- 투표 --- */
+function mafiaVoteBegin(){
+  MG.phase='vote';MG.votes={};
+  if(MG.isNet){
+    lastScene={t:'scene',s:'vote',alive:MG.alive.slice(),names:MG.names,round:MG.round};
+    netAll(lastScene);
+    voteScreen(lastScene,true);
+  } else {
+    voteScreen({alive:MG.alive,names:MG.names},false);
+  }
+}
+function voteScreen(d,isNet){
+  if(isNet&&!d.alive[myPid]){render(nightDeadHTML(d.round||'')+'<div class="mini">투표 진행 중…</div>');return;}
+  if(isNet){
+    render(`<div class="logo">🗳️</div>
+    <div class="card center">
+      <div class="big">처형할 사람에게 투표!</div>
+      <div class="grid" id="vGrid">${d.names.map((nm,k)=>d.alive[k]?`<button class="pick" onclick="netVotePick(${k},this)">${esc(nm)}</button>`:'').join('')}
+      <button class="pick" onclick="netVotePick(-1,this)">🙅 기권</button></div>
+      <div class="mini" id="vWait">한 명을 선택하세요</div>
+    </div>`);
+  } else {
+    render(`<div class="logo">🗳️</div>
+    <div class="card center">
+      <div class="big">다 함께 지목한 사람은?</div>
+      <div class="sub" style="margin:6px 0">토론으로 정한 처형 대상을 선택하세요</div>
+      <div class="grid">${d.names.map((nm,k)=>d.alive[k]?`<button class="pick" onclick="mafiaExecLocal(${k})">${esc(nm)}</button>`:'').join('')}
+      <button class="pick" onclick="mafiaExecLocal(-1)">🙅 처형 안 함</button></div>
+    </div>`);
+  }
+}
+function netVotePick(k,btn){
+  document.querySelectorAll('#vGrid .pick').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  $('vWait').textContent='투표 완료! 개표를 기다리는 중…';
+  if(NET.host)mafiaVoteInput(myPid,k);
+  else NET.c.send({t:'vote',pid:myPid,pick:k});
+}
+function mafiaVoteInput(pid,pick){
+  if(!MG||MG.phase!=='vote')return;
+  if(!MG.alive[pid])return;
+  MG.votes[pid]=pick;
+  const need=MG.names.filter((_,i)=>MG.alive[i]).length;
+  if(Object.keys(MG.votes).length>=need)mafiaVoteResolve();
+}
+function mafiaVoteResolve(){
+  const cnt={};
+  Object.values(MG.votes).forEach(k=>{if(k>=0)cnt[k]=(cnt[k]||0)+1;});
+  let exec=-1;
+  const vals=Object.values(cnt);
+  if(vals.length){
+    const mx=Math.max(...vals);
+    const top=Object.keys(cnt).filter(k=>cnt[k]===mx).map(Number);
+    if(top.length===1)exec=top[0]; // 동률이면 무처형
+  }
+  mafiaDoExec(exec,cnt);
+}
+function mafiaExecLocal(k){mafiaDoExec(k,null);}
+function mafiaDoExec(k,tally){
+  let execName=null,execRole=null;
+  if(k>=0){MG.alive[k]=false;execName=MG.names[k];execRole=MG.roles[k];}
+  MG.phase='exec';
+  const d={s:'exec',t:'scene',name:execName,role:execRole,tally,
+    alive:MG.alive.slice(),names:MG.names,round:MG.round};
+  if(checkMafiaWin())return;
+  MG.round++;
+  if(MG.isNet){lastScene=d;netAll(d);execScreen(d,true);}
+  else execScreen(d,false);
+}
+function execScreen(d,isNet){
+  let tallyHTML='';
+  if(d.tally){
+    tallyHTML='<table class="tbl">'+Object.keys(d.tally).map(k=>'<tr><td>'+esc(d.names[k])+'</td><td>'+d.tally[k]+'표</td></tr>').join('')+'</table>';
+  }
+  render(`<div class="logo">⚖️</div>
+  <div class="card center">
+    ${d.name?`<div class="big">${esc(d.name)} 님이 처형되었습니다</div>
+      <div class="hugeWord" style="font-size:26px">정체는… ${roleCardHTML(d.role,[]).split('<div')[0]}</div>`
+      :'<div class="big">아무도 처형되지 않았습니다</div><div class="sub" style="margin-top:6px">(동률 또는 기권)</div>'}
+    ${tallyHTML}
+  </div>
+  ${(!isNet||myPid===0)?`<button class="bigBtn red" onclick="mafiaNightBegin()">🌙 다시 밤이 됩니다</button>`:'<div class="mini">방장이 밤을 시작합니다</div>'}`);
+}
+function checkMafiaWin(){
+  const aliveMaf=MG.names.filter((_,i)=>MG.alive[i]&&MG.roles[i]==='mafia').length;
+  const aliveOther=MG.names.filter((_,i)=>MG.alive[i]&&MG.roles[i]!=='mafia').length;
+  let winner=null;
+  if(aliveMaf===0)winner='citizen';
+  else if(aliveMaf>=aliveOther)winner='mafia';
+  if(!winner)return false;
+  MG.phase='end';
+  const d={t:'scene',s:'end',winner,
+    roles:MG.names.map((nm,i)=>({name:nm,role:MG.roles[i],alive:MG.alive[i]}))};
+  if(MG.isNet){lastScene=d;netAll(d);endScreen(d,true);}
+  else endScreen(d,false);
+  return true;
+}
+function endScreen(d,isNet){
+  render(`<div class="logo">${d.winner==='mafia'?'🔪':'🎉'}</div>
+  <div class="card center">
+    <div class="hugeWord" style="font-size:28px">${d.winner==='mafia'?'<span class="roleMafia">마피아 승리!</span>':'<span class="roleCitizen">시민 승리!</span>'}</div>
+    <table class="tbl">${d.roles.map(r=>'<tr><td>'+esc(r.name)+(r.alive?'':' 💀')+'</td><td>'+ROLE_KO[r.role]+'</td></tr>').join('')}</table>
+  </div>
+  ${(!isNet||myPid===0)?`<button class="bigBtn" onclick="${isNet?'mafiaAgainNet()':'mafiaAgainLocal()'}">🔄 같은 멤버로 한 판 더</button>
+  <button class="ghostBtn" onclick="${isNet?'backToHostLobby()':'home()'}">${isNet?'로비로':'처음으로'}</button>`:'<div class="mini">방장이 다음 판을 시작할 수 있어요</div>'}`);
+}
+function mafiaAgainLocal(){mafiaSettings(MG.names,false);}
+function mafiaAgainNet(){mafiaSettings(NET.names.slice(),true);}
+
+/* ---------- 시작 ---------- */
+home();
+</script>
+</body>
+</html>

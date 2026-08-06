@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>머니플로우 코리아 — 경제적 자유 보드게임</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+<style>
+:root{
+  --bg:#0f1420; --panel:#1a2233; --panel2:#232e47; --line:#2e3b5c;
+  --txt:#eef2fb; --sub:#93a2c4; --gold:#ffc94d; --green:#3ecf8e; --red:#ff5d73; --blue:#4dabff; --purple:#b78bff;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{height:100%}
+body{background:var(--bg);color:var(--txt);font-family:'Apple SD Gothic Neo','Noto Sans KR',-apple-system,sans-serif;overscroll-behavior:none}
+button{font-family:inherit;border:none;cursor:pointer}
+.screen{display:none;min-height:100%;}
+.screen.on{display:block}
+/* ---------- 시작 화면 ---------- */
+#scrStart{padding:28px 20px 40px;max-width:520px;margin:0 auto}
+.logo{text-align:center;margin:18px 0 6px;font-size:34px;font-weight:900;letter-spacing:-1px}
+.logo .g{color:var(--gold)}
+.tag{text-align:center;color:var(--sub);font-size:14px;margin-bottom:22px;line-height:1.5}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.card h3{font-size:14px;color:var(--sub);margin-bottom:10px;font-weight:700}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{flex:1;min-width:56px;padding:12px 0;border-radius:12px;background:var(--panel2);color:var(--txt);font-size:17px;font-weight:800;border:2px solid transparent}
+.chip.sel{border-color:var(--gold);background:#33405f;color:var(--gold)}
+.nameIn{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:11px 12px;font-size:15px;margin-bottom:8px}
+.bigBtn{display:block;width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#ffc94d,#ff9f43);color:#1c1200;font-size:18px;font-weight:900;margin-top:6px}
+.ghostBtn{display:block;width:100%;padding:13px;border-radius:12px;background:var(--panel2);color:var(--sub);font-size:14px;font-weight:700;margin-top:10px}
+.goalBox{font-size:13px;color:var(--sub);line-height:1.7}
+.goalBox b{color:var(--gold)}
+/* ---------- 게임 화면 ---------- */
+#scrGame{padding:8px 8px 20px;max-width:520px;margin:0 auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 8px}
+.topbar .t{font-weight:900;font-size:16px}.topbar .t .g{color:var(--gold)}
+.topbar .btns{display:flex;gap:6px}
+.iconBtn{background:var(--panel2);color:var(--txt);border-radius:10px;padding:8px 11px;font-size:14px;font-weight:700}
+#board{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(7,1fr);gap:3px;aspect-ratio:1/1;width:100%;margin-bottom:8px}
+.tile{border-radius:9px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:800;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+.tile .em{font-size:15px;line-height:1.1}
+.tile .lb{font-size:8px;opacity:.85;letter-spacing:-.5px}
+.tile.cur{outline:2px solid #fff;outline-offset:-2px}
+.t-pay{background:#3a5f3f}.t-deal{background:#2a4468}.t-doodad{background:#63384a}
+.t-market{background:#5d4a2c}.t-event{background:#4c3a6b}.t-child{background:#6b3a5e}.t-charity{background:#803f45}
+.toks{position:absolute;bottom:2px;left:0;right:0;display:flex;justify-content:center;gap:2px;flex-wrap:wrap}
+.tok{width:8px;height:8px;border-radius:50%;border:1px solid #000}
+#center{grid-row:2/7;grid-column:2/7;background:radial-gradient(circle at 50% 30%,#1e2a45,#141b2c);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);padding:8px}
+#diceBox{font-size:44px;font-weight:900;min-height:52px;display:flex;align-items:center;gap:8px}
+#centerName{font-size:15px;font-weight:800}
+#centerSub{font-size:11px;color:var(--sub);text-align:center;line-height:1.5}
+#log{font-size:12px;color:var(--sub);text-align:center;min-height:16px;padding:0 8px;margin-bottom:6px}
+/* 플레이어 스트립 */
+#pstrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px}
+.pchip{flex-shrink:0;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:7px 10px;font-size:11px;display:flex;align-items:center;gap:6px}
+.pchip.cur{border-color:var(--gold);background:#2b3550}
+.pchip .d{width:10px;height:10px;border-radius:50%}
+.pchip .c{color:var(--sub)}
+.pchip.dead{opacity:.35;text-decoration:line-through}
+/* 현재 플레이어 패널 */
+#panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+.prow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+#pName{font-size:18px;font-weight:900}
+#pJob{font-size:12px;color:var(--sub)}
+#pCash{font-size:20px;font-weight:900;color:var(--gold)}
+.meterWrap{margin:10px 0 4px}
+.meterLbl{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-bottom:4px}
+.meter{height:12px;background:#101728;border-radius:6px;overflow:hidden}
+.meter>div{height:100%;background:linear-gradient(90deg,#3ecf8e,#ffc94d);border-radius:6px;transition:width .4s}
+.actRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.act{padding:13px 4px;border-radius:12px;font-size:15px;font-weight:800;background:var(--panel2);color:var(--txt)}
+.act.main{background:linear-gradient(135deg,#4dabff,#3a7ce0);color:#fff;grid-column:1/3;font-size:17px;padding:15px}
+.act.end{background:linear-gradient(135deg,#3ecf8e,#2aa46d);color:#04150c;grid-column:1/3;font-size:17px;padding:15px}
+.act:disabled{opacity:.35}
+.act.pulse{animation:pu 1.2s infinite}
+@keyframes pu{50%{filter:brightness(1.25)}}
+/* ---------- 모달 ---------- */
+#ovl{position:fixed;inset:0;background:rgba(5,8,15,.75);display:none;align-items:flex-end;justify-content:center;z-index:50;backdrop-filter:blur(2px)}
+#ovl.on{display:flex}
+#modal{width:100%;max-width:520px;max-height:88vh;overflow-y:auto;background:var(--panel);border-radius:22px 22px 0 0;padding:20px 18px 26px;border-top:2px solid var(--line)}
+#mTitle{font-size:19px;font-weight:900;margin-bottom:10px;line-height:1.4}
+#mBody{font-size:14px;line-height:1.65;color:#d6ddf0}
+#mBody .tip{margin-top:12px;background:#152238;border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12.5px;color:#cfd9f2;line-height:1.6}
+#mBody .tip b{color:var(--gold)}
+#mBody .amt{font-weight:900}
+.pos{color:var(--green)}.neg{color:var(--red)}
+#mBtns{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.mbtn{padding:14px;border-radius:12px;font-size:16px;font-weight:800;background:var(--panel2);color:var(--txt)}
+.mbtn.pri{background:linear-gradient(135deg,#ffc94d,#ff9f43);color:#1c1200}
+.mbtn.grn{background:linear-gradient(135deg,#3ecf8e,#2aa46d);color:#04150c}
+.mbtn.red{background:linear-gradient(135deg,#ff5d73,#d63a55);color:#fff}
+.mbtn:disabled{opacity:.35}
+/* 수량 선택기 */
+.qtyRow{display:flex;align-items:center;justify-content:center;gap:14px;margin:14px 0 6px}
+.qbtn{width:52px;height:52px;border-radius:14px;background:var(--panel2);color:var(--txt);font-size:24px;font-weight:900}
+#qVal{font-size:22px;font-weight:900;min-width:90px;text-align:center}
+.qMax{display:block;margin:0 auto;background:none;color:var(--blue);font-size:13px;font-weight:700;padding:6px}
+.costLine{text-align:center;font-size:15px;margin-top:8px}
+/* 표 */
+.tbl{width:100%;font-size:13px;border-collapse:collapse;margin:8px 0}
+.tbl td{padding:7px 4px;border-bottom:1px solid #26314d;vertical-align:middle}
+.tbl td:last-child{text-align:right}
+.sellBtn{background:var(--panel2);color:var(--blue);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800}
+.secH{font-size:13px;font-weight:900;color:var(--gold);margin:14px 0 2px}
+.turnOvl{position:fixed;inset:0;background:linear-gradient(160deg,#101728,#1c2740);z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:30px}
+.turnOvl.on{display:flex}
+.turnOvl .big{font-size:30px;font-weight:900}
+.turnOvl .sm{color:var(--sub);font-size:14px;line-height:1.7}
+.turnOvl .dot{width:20px;height:20px;border-radius:50%;display:inline-block;vertical-align:-3px;margin-right:6px}
+small.u{color:var(--sub)}
+/* 뷰어(조회 전용) 오버레이 — 언제든 열람 가능, 게임 진행과 무관 */
+#vovl{position:fixed;inset:0;background:rgba(5,8,15,.78);display:none;align-items:flex-end;justify-content:center;z-index:80;backdrop-filter:blur(2px)}
+#vovl.on{display:flex}
+#vmodal{width:100%;max-width:520px;max-height:88vh;overflow-y:auto;background:var(--panel);border-radius:22px 22px 0 0;padding:20px 18px 26px;border-top:2px solid var(--line)}
+#vTitle{font-size:19px;font-weight:900;margin-bottom:10px;line-height:1.4}
+#vBody{font-size:14px;line-height:1.65;color:#d6ddf0}
+#vBody .tip{margin-top:12px;background:#152238;border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12.5px;color:#cfd9f2;line-height:1.6}
+#vBody .tip b{color:var(--gold)}
+/* 온라인 로비 */
+#lobbyInfo{margin-top:10px;font-size:14px;line-height:1.8}
+#lobbyInfo .code{font-size:30px;font-weight:900;letter-spacing:6px;color:var(--gold);text-align:center;padding:8px;background:#101728;border-radius:12px;margin:8px 0}
+.netTag{font-size:10px;background:#1c3b2c;color:var(--green);border-radius:6px;padding:2px 6px;margin-left:6px;font-weight:800}
+.netTag.off{background:#3b1c22;color:var(--red)}
+#sudoWrap{display:none;font-size:11px;color:var(--sub);align-items:center;gap:4px}
+button.mineOnly:disabled{opacity:.25}
+#netBanner{display:none;position:fixed;top:0;left:0;right:0;background:#d63a55;color:#fff;font-size:13px;font-weight:800;text-align:center;padding:8px;z-index:90}
+</style>
+</head>
+<body>
+
+<!-- ============ 시작 화면 ============ -->
+<div id="scrStart" class="screen on">
+  <div class="logo">💸 머니플로우 <span class="g">코리아</span></div>
+  <div class="tag">월급쟁이 탈출! 대한민국에서 <b style="color:var(--gold)">경제적 자유</b> 달성하기<br>1~6인 · 한 폰으로 돌려가며 또는 📶 각자 폰으로 온라인!</div>
+
+  <div class="card">
+    <h3>📱 플레이 방식</h3>
+    <div class="chips">
+      <button class="chip sel" id="modeLocal">🏠 한 폰으로</button>
+      <button class="chip" id="modeNet">📶 각자 폰으로</button>
+    </div>
+    <div id="onlineBox" style="display:none;margin-top:12px">
+      <input class="nameIn" id="myName" maxlength="8" placeholder="내 이름">
+      <div class="chips">
+        <button class="chip" id="btnHost">🏠 방 만들기</button>
+        <button class="chip" id="btnJoin">🚪 참여하기</button>
+      </div>
+      <input class="nameIn" id="joinCode" maxlength="4" placeholder="초대 코드 4글자" style="display:none;margin-top:8px;text-transform:uppercase;letter-spacing:4px;text-align:center;font-size:20px;font-weight:900">
+      <div id="lobbyInfo"></div>
+    </div>
+  </div>
+
+  <div class="card" id="cardCnt">
+    <h3>👥 인원 수</h3>
+    <div class="chips" id="cntChips"></div>
+  </div>
+
+  <div class="card" id="cardNames">
+    <h3>✏️ 이름 입력 (직업은 랜덤 배정!)</h3>
+    <div id="nameBox"></div>
+  </div>
+
+  <div class="card">
+    <h3>🎯 게임 목표</h3>
+    <div class="goalBox">
+      일하지 않아도 들어오는 돈, 즉 <b>패시브인컴</b>(월세·배당·사업수익)이
+      매달 나가는 <b>총지출</b>보다 많아지면 <b>경제적 자유 달성 = 승리!</b><br><br>
+      💰 <b>월급날</b>을 지나면 월급+패시브인컴−지출 만큼 현금이 들어옵니다.<br>
+      📈 <b>기회</b> 칸에서 주식·코인·부동산·창업에 투자하세요.<br>
+      🧾 <b>지출</b>·⚡<b>이벤트</b> 칸은 한국인의 삶 그 자체… 경조사비 조심!<br>
+      🏛️ <b>시장</b> 칸에서 금리·부동산·주가가 요동칩니다.
+    </div>
+  </div>
+
+  <button class="bigBtn" id="btnStart">🎮 게임 시작</button>
+  <button class="ghostBtn" id="btnHelp0">❓ 자세한 규칙 · 경제 용어 사전</button>
+</div>
+
+<!-- ============ 게임 화면 ============ -->
+<div id="scrGame" class="screen">
+  <div class="topbar">
+    <div class="t">💸 머니플로우 <span class="g">코리아</span></div>
+    <div class="btns">
+      <label id="sudoWrap"><input type="checkbox" id="sudoChk">대리조작</label>
+      <button class="iconBtn" id="btnRank">🏆</button>
+      <button class="iconBtn" id="btnHelp">❓</button>
+    </div>
+  </div>
+  <div id="board"></div>
+  <div id="log">주사위를 굴려 시작하세요!</div>
+  <div id="pstrip"></div>
+  <div id="panel">
+    <div class="prow"><span id="pName"></span><span id="pCash"></span></div>
+    <div class="prow"><span id="pJob"></span><span id="pSub" style="font-size:11px;color:var(--sub)"></span></div>
+    <div class="meterWrap">
+      <div class="meterLbl"><span>🔥 경제적 자유 진행률</span><span id="mtxt"></span></div>
+      <div class="meter"><div id="mbar" style="width:0%"></div></div>
+    </div>
+    <div class="actRow">
+      <button class="act main" id="btnRoll">🎲 주사위 굴리기</button>
+      <button class="act" id="btnBank">🏦 은행</button>
+      <button class="act" id="btnFin">📊 재무제표</button>
+      <button class="act end" id="btnEnd" disabled>✅ 턴 종료</button>
+    </div>
+  </div>
+</div>
+
+<!-- 턴 전환 오버레이 -->
+<div class="turnOvl" id="turnOvl">
+  <div><span class="dot" id="toDot"></span><span class="big" id="toName"></span></div>
+  <div class="sm" id="toSub"></div>
+  <button class="bigBtn" style="max-width:280px" id="toGo">내 차례 시작 ▶</button>
+</div>
+
+<!-- 모달 (게임 진행용 — 온라인에서는 모든 폰에 동일하게 표시) -->
+<div id="ovl"><div id="modal">
+  <div id="mTitle"></div>
+  <div id="mBody"></div>
+  <div id="mBtns"></div>
+</div></div>
+
+<!-- 뷰어 모달 (조회 전용 — 각자 폰에서 언제든) -->
+<div id="vovl"><div id="vmodal">
+  <div id="vTitle"></div>
+  <div id="vBody"></div>
+  <div style="margin-top:14px"><button class="mbtn pri" id="vClose" style="width:100%">닫기</button></div>
+</div></div>
+
+<div id="netBanner"></div>
+
+<script>
+'use strict';
+/* =====================================================
+   머니플로우 코리아 — 한국형 캐시플로우 보드게임
+   단위: 모든 금액은 "만원" (정수)
+===================================================== */
+
+/* ---------- 유틸 ---------- */
+const $=id=>document.getElementById(id);
+function fmt(v){
+  const n=Math.round(v); const s=n<0?'-':''; const a=Math.abs(n);
+  if(a>=10000){const e=Math.floor(a/10000),m=a%10000;
+    return s+e+'억'+(m?' '+m.toLocaleString()+'만원':'원');}
+  return s+a.toLocaleString()+'만원';
+}
+function fmtAvg(v){return Number.isInteger(v)?fmt(v):v.toLocaleString(undefined,{maximumFractionDigits:2})+'만원';}
+/* 시드 고정 난수 (mulberry32) — 온라인 모드에서 모든 폰이 같은 카드/주사위를 보게 함 */
+let SEED=1;
+function srand(s){SEED=(s>>>0)||1;}
+function srnd(){SEED=(SEED+0x6D2B79F5)>>>0;let t=SEED;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;}
+function rnd(n){return Math.floor(srnd()*n);}          // 게임 로직용 (결정적)
+function rndUI(n){return Math.floor(Math.random()*n);} // 연출용 (동기화 무관)
+function shuffle(a){const b=a.slice();for(let i=b.length-1;i>0;i--){const j=rnd(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+/* =====================================================
+   액션 디스패처 (락스텝 동기화의 핵심)
+   - 모든 "게임을 바꾸는 클릭"은 액션으로 등록되고,
+     오프라인이면 즉시 실행, 온라인이면 방장을 거쳐
+     모든 폰에서 같은 순서로 실행된다.
+===================================================== */
+let NET=null;       // null=한 폰 모드, {host,conns,names,...} 또는 {host:false,c,names}
+let myPid=0;        // 온라인에서 내 플레이어 번호
+let ACTIONS=[];     // 현재 화면의 액션 핸들러 (append-only, showModal에서 리셋)
+let EPOCH=0;        // 모달 세대 (stale 클릭 방지)
+let ACTLOG=[];      // 방장이 보관하는 액션 로그 (재접속 복구용)
+let SEQ=0, expectSeq=0, pendQ={};
+let GAME_SEED=0;
+function resetActions(){ACTIONS=[];EPOCH++;}
+function curId(){return G?G.players[G.turn].id:0;}
+function wireAction(el,fn,owner){
+  const idx=ACTIONS.length;
+  ACTIONS.push({fn,o:owner});
+  el.onclick=()=>sendAct({k:'i',i:idx,e:EPOCH});
+  if(NET){const o=(owner!=null)?owner:curId();
+    if(o!==myPid&&!($('sudoChk')&&$('sudoChk').checked&&NET.host))el.classList.add('mineOnly'),el.disabled=true;}
+}
+const STATIC={};
+function requestStatic(n){sendAct({k:'s',n});}
+function sendAct(a){
+  a.p=myPid;
+  if(NET&&NET.host&&$('sudoChk')&&$('sudoChk').checked)a.sudo=1;
+  if(!NET){doAct(a);return;}
+  if(NET.host){if(doAct(a)){ACTLOG.push(a);netAll({t:'a',a,q:SEQ++,c:chk()});}}
+  else NET.c.send({t:'a',a});
+}
+function doAct(a){
+  if(!G)return false;
+  if(a.k==='s'){
+    if(NET&&a.p!==curId()&&a.sudo!==1)return false;
+    const f=STATIC[a.n];if(!f)return false;f();return true;
+  }
+  if(a.e!==EPOCH)return false;
+  const h=ACTIONS[a.i];if(!h)return false;
+  const owner=(h.o!=null)?h.o:curId();
+  if(NET&&a.p!==owner&&a.sudo!==1)return false;
+  h.fn();return true;
+}
+function chk(){ // 상태 체크섬 — 폰 간 불일치 감지
+  let s=(G.turn*31+EPOCH*7)|0;
+  s=(s+{await:1,roll:2,resolving:3,done:4}[G.phase]*3)|0;
+  G.players.forEach(p=>{
+    s=(s+p.cash*3+p.loan*5+p.deposit*7+p.pos*11+p.months*13+p.children*17+p.assets.length*19+p.salary*23)|0;
+    for(const k in p.hold)s=(s+p.hold[k].qty*29)|0;
+  });
+  for(const k in prices)s=(s+prices[k]*37)|0;
+  return s;
+}
+
+/* ---------- 게임 상수 ---------- */
+const CHILD_COST=60;          // 자녀 1명당 월 지출(사교육비 포함)
+const LOAN_RATE=0.01;         // 신용대출 월 이자 1% (연 12%)
+const DEP_RATE=0.003;         // 예금 월 이자 0.3% (연 3.6%)
+const LOAN_UNIT=500, DEP_UNIT=500;
+const REIT_DIV=1;           // K리츠 1구좌당 월 배당 0.8만원
+const COLORS=['#ff5d73','#ffc94d','#3ecf8e','#4dabff','#b78bff','#ff8fd8'];
+
+const JOBS=[
+ {name:'9급 공무원',emoji:'🏛️',salary:230,expense:140,cash:500,secure:true,desc:'정년 보장의 힘! 구조조정(실직) 카드가 통하지 않습니다.'},
+ {name:'대기업 사원',emoji:'🏢',salary:480,expense:300,cash:800,desc:'월급은 높지만 씀씀이도 큰 K-직장인.'},
+ {name:'중소기업 사원',emoji:'🏭',salary:280,expense:170,cash:400,desc:'월급은 적지만 지출도 적어 저축률은 나쁘지 않아요.'},
+ {name:'의사',emoji:'⚕️',salary:1100,expense:700,cash:2000,desc:'고소득 전문직. 하지만 지출도 크고, 자유에 필요한 패시브인컴도 큽니다.'},
+ {name:'초등학교 교사',emoji:'🍎',salary:320,expense:190,cash:600,secure:true,desc:'안정의 아이콘. 구조조정 카드 면역.'},
+ {name:'프리랜서 개발자',emoji:'💻',salary:550,expense:320,cash:700,desc:'몸값은 높지만 고용 안정성은 스스로 챙겨야 합니다.'},
+ {name:'치킨집 사장',emoji:'🍗',salary:400,expense:260,cash:600,desc:'대한민국 자영업의 상징. 오늘도 닭을 튀깁니다.'},
+ {name:'유튜버',emoji:'📹',salary:350,expense:250,cash:300,desc:'구독과 좋아요로 먹고사는 신흥 직업.'},
+];
+
+/* 보드: 24칸 */
+const TILES=[
+ {t:'pay'},{t:'deal'},{t:'doodad'},{t:'deal'},{t:'market'},{t:'deal'},{t:'event'},{t:'deal'},
+ {t:'pay'},{t:'deal'},{t:'doodad'},{t:'deal'},{t:'market'},{t:'deal'},{t:'child'},{t:'deal'},
+ {t:'pay'},{t:'deal'},{t:'doodad'},{t:'deal'},{t:'market'},{t:'deal'},{t:'charity'},{t:'deal'}
+];
+const TINFO={
+ pay:{em:'💰',lb:'월급날',cls:'t-pay'}, deal:{em:'📈',lb:'기회',cls:'t-deal'},
+ doodad:{em:'🧾',lb:'지출',cls:'t-doodad'}, market:{em:'🏛️',lb:'시장',cls:'t-market'},
+ event:{em:'⚡',lb:'이벤트',cls:'t-event'}, child:{em:'👶',lb:'자녀',cls:'t-child'},
+ charity:{em:'❤️',lb:'기부',cls:'t-charity'}
+};
+const RING=[];
+for(let c=0;c<7;c++)RING.push([1,c+1]);
+for(let r=1;r<7;r++)RING.push([r+1,7]);
+for(let c=5;c>=0;c--)RING.push([7,c+1]);
+for(let r=5;r>=1;r--)RING.push([r+1,1]);
+
+/* ---------- 시세 (전 플레이어 공통) ---------- */
+const UNITS={'KS전자':{unit:'주',step:10},'K바이오':{unit:'주',step:10},'K리츠':{unit:'구좌',step:1},'K코인':{unit:'개',step:1}};
+let prices;
+
+/* ---------- 카드 덱 ---------- */
+function st(sym,price,desc,tip){return{kind:'stock',sym,price,desc,tip};}
+const SMALL_DEALS=[
+ st('KS전자',4,'국가대표 반도체 우량주. 반도체 불황으로 역대급 저평가 구간입니다.','우량주는 쌀 때 사서 오래 들고 가는 게 정석. 워런 버핏도 "공포에 사라"고 했죠.'),
+ st('KS전자',5,'외국인 매도세로 주가가 눌려 있습니다.','주가가 내 매수가보다 낮아도 팔지 않으면 손실이 확정되지 않습니다(평가손실).'),
+ st('KS전자',7,'실적 회복 기대감에 완만한 상승 중.','분산투자: 한 종목에 전 재산을 넣지 마세요.'),
+ st('KS전자',9,'HBM 특수로 신고가 근접!','이미 오른 주식을 쫓아 사는 것을 "추격 매수"라고 합니다. 신중히!'),
+ st('KS전자',11,'사상 최고가 경신! 온 나라가 반도체 이야기뿐.','모두가 사라고 할 때가 고점인 경우가 많습니다. 욕심을 경계하세요.'),
+ st('K바이오',2,'임상 실패 소문에 폭락한 바이오주.','바이오주는 변동성이 극단적입니다. 잃어도 되는 돈만 투자!'),
+ st('K바이오',3,'저점 매수 세력이 들어오는 중.','"하이 리스크 하이 리턴" — 수익이 큰 만큼 위험도 큽니다.'),
+ st('K바이오',8,'신약 임상 2상 통과 뉴스!','뉴스가 나온 뒤엔 이미 가격에 반영된 경우가 많습니다.'),
+ st('K바이오',15,'임상 3상 기대감 최고조.','테마주 급등엔 늘 급락의 그림자가 따라다닙니다.'),
+ st('K바이오',20,'증권가 목표가 상향 러시! 광풍 그 자체.','FOMO(나만 소외되는 공포)에 휩쓸린 투자는 대부분 후회로 끝납니다.'),
+ st('K리츠',80,'부동산 간접투자 상품 리츠가 저평가 구간.','리츠(REITs)는 여러 사람의 돈을 모아 빌딩에 투자하고 임대료를 배당으로 나눠주는 상품. 소액으로 건물주 되기!'),
+ st('K리츠',95,'안정적 배당 매력이 부각되는 중.','K리츠는 1구좌당 매달 1만원 배당 = 패시브인컴이 생기는 자산입니다.'),
+ st('K리츠',110,'저금리 기대감에 리츠 인기 상승.','배당수익률 = 연 배당금 ÷ 가격. 가격이 오르면 수익률은 낮아집니다.'),
+ {kind:'coin',sym:'K코인',price:300,desc:'크립토 윈터. "코인은 끝났다"는 기사가 도배 중.',tip:'코인은 이자도 배당도 없는, 오직 시세차익만 노리는 자산입니다. 현금흐름 0!'},
+ {kind:'coin',sym:'K코인',price:800,desc:'슬금슬금 반등 중. 커뮤니티가 술렁입니다.',tip:'투자 원칙: 왜 오르는지 설명 못 하는 자산엔 큰돈을 넣지 않기.'},
+ {kind:'coin',sym:'K코인',price:1500,desc:'뉴스에 연일 코인 소식. 직장 동료도 샀다고 합니다.',tip:'"택시기사님도 얘기하면 고점"이라는 오랜 격언이 있습니다.'},
+ {kind:'coin',sym:'K코인',price:2500,desc:'역대 최고가! 온 국민이 코인 이야기 중.',tip:'급등 자산일수록 "잃어도 되는 돈"만. 빚내서 코인은 절대 금물!'},
+ {kind:'re',name:'소형 오피스텔 급매',equity:2000,propPrice:7000,cf:50,tag:'op',desc:'급한 사정으로 시세보다 싸게 나온 매물. 매매가 7,000만원, 실투자 2,000만원(나머지 대출), 월세 순수익 50만원.',tip:'월세 수익률 = 연 월세수입 ÷ 실투자금. 급매로 싸게 산 덕분에 연 30%! 좋은 매물은 발품에서 나옵니다.'},
+ {kind:'re',name:'원룸 빌라 (전세 끼고)',equity:800,propPrice:4000,cf:0,tag:'gap',desc:'매매가 4,000만원, 전세보증금 3,200만원. 800만원만 있으면 집주인! 단, 월수입은 0원.',tip:'이것이 "갭투자". 적은 돈으로 집을 사지만 전세금은 언젠가 돌려줘야 할 부채이며, 집값이 올라야만 돈을 법니다.'},
+ {kind:'biz',name:'푸드트럭 사업 인수',equity:1500,propPrice:1500,cf:40,tag:'biz',desc:'핫플레이스 앞 자리 확보된 푸드트럭. 인수가 1,500만원, 월 순수익 40만원.',tip:'작은 사업도 훌륭한 현금흐름 자산이 됩니다. 월급 외 소득의 첫걸음!'},
+ {kind:'re',name:'지방 소도시 상가 지분',equity:1200,propPrice:3000,cf:30,tag:'shop',desc:'소액으로 참여하는 상가 공동투자. 실투자 1,200만원, 월 30만원.',tip:'상가는 수익률이 높지만 "공실"(세입자가 없는 상태)이 최대 리스크입니다.'},
+ st('KS전자',6,'박스권 횡보 중. 거래량이 줄었습니다.','지루한 구간을 버티는 것도 투자 실력입니다.'),
+ st('K바이오',5,'기관 매수세 유입 소식.','종목 선택이 어렵다면 여러 종목을 담는 펀드/ETF도 방법입니다.'),
+ st('K리츠',100,'리츠 시장 평년 수준.','투자 판단 기준: 이 가격에 사면 배당수익률이 몇 %인가?'),
+];
+const BIG_DEALS=[
+ {kind:'re',name:'지방 아파트 갭투자',equity:4000,propPrice:24000,cf:-5,tag:'gap',desc:'매매가 2.4억, 전세 2억. 실투자 4,000만원. 보유세·수리비로 매달 5만원 지출.',tip:'갭투자는 현금흐름이 마이너스여도 시세차익을 노립니다. 단, 집값이 안 오르면 세금만 내는 애물단지가 됩니다.'},
+ {kind:'re',name:'수도권 아파트 갭투자',equity:9000,propPrice:45000,cf:-10,tag:'gap',desc:'매매가 4.5억, 전세 3.6억. 실투자 9,000만원. 월 −10만원(보유세).',tip:'수도권 아파트는 상승장에서 시세차익이 크지만, 규제 카드 한 방에 얼어붙기도 합니다.'},
+ {kind:'re',name:'역세권 오피스텔 임대',equity:3500,propPrice:12000,cf:90,tag:'op',desc:'매매가 1.2억(대출 8,500만 포함). 실투자 3,500만원, 대출이자 제외 월세 순수익 90만원.',tip:'남의 돈(대출)으로 수익률을 높이는 것을 "레버리지"라고 합니다. 양날의 검!'},
+ {kind:'re',name:'1층 코너 상가',equity:8000,propPrice:20000,cf:220,tag:'shop',desc:'유동인구 많은 사거리 상가. 실투자 8,000만원, 월 순수익 220만원.',tip:'상가는 아파트보다 수익률이 높은 대신 경기를 심하게 탑니다. 공실 대란 카드를 조심!'},
+ {kind:'biz',name:'치킨집 창업',equity:7000,propPrice:7000,cf:180,tag:'biz',desc:'프랜차이즈 가맹비+인테리어 7,000만원. 월 순수익 180만원.',tip:'한국 자영업의 상징. 사업은 부동산보다 수익률이 높지만 내 시간과 노력이 들어갑니다.'},
+ {kind:'biz',name:'편의점 창업',equity:5000,propPrice:5000,cf:125,tag:'biz',desc:'24시간 불이 꺼지지 않는 대한민국 편의점. 투자 5,000만원, 월 125만원.',tip:'본사와 수익을 나누는 프랜차이즈 구조를 이해하고 계약서를 꼼꼼히!'},
+ {kind:'biz',name:'무인 스터디카페',equity:4000,propPrice:4000,cf:100,tag:'biz',desc:'인건비 없는 무인 매장. 투자 4,000만원, 월 100만원.',tip:'무인 매장은 인건비가 없어 순수익률이 높은 "요즘" 사업 모델입니다.'},
+ {kind:'startup',name:'스타트업 엔젤투자',equity:3000,propPrice:3000,cf:0,tag:'su',desc:'대학 후배가 창업한 AI 스타트업 지분 투자. 3,000만원. 월수익 0원.',tip:'스타트업 10곳 중 9곳은 망합니다. 하지만 1곳이 상장(IPO)하면 투자금의 몇 배를 돌려받죠.'},
+ {kind:'biz',name:'태양광 발전소 지분',equity:6000,propPrice:6000,cf:140,tag:'biz',desc:'전력 판매 수익을 나눠 받는 태양광 지분. 6,000만원, 월 140만원.',tip:'국가가 전기를 사주는 안정적 현금흐름 자산. 이런 걸 "인컴형 자산"이라 부릅니다.'},
+ {kind:'re',name:'꼬마빌딩 공동투자',equity:12000,propPrice:40000,cf:300,tag:'shop',desc:'4층짜리 꼬마빌딩 지분. 실투자 1.2억, 월 순수익 300만원.',tip:'건물주의 꿈! 하지만 큰돈이 묶이는 만큼 급하게 팔면 제값을 못 받습니다(유동성 리스크).'},
+ {kind:'re',name:'신축 오피스텔 분양',equity:4500,propPrice:15000,cf:110,tag:'op',desc:'역 도보 3분 신축. 실투자 4,500만원, 월세 순수익 110만원.',tip:'분양 광고의 "확정 수익률"은 대부분 과장입니다. 주변 시세로 직접 검증하세요.'},
+ {kind:'biz',name:'세차장 인수',equity:5500,propPrice:5500,cf:135,tag:'biz',desc:'단골 확보된 셀프 세차장. 5,500만원, 월 135만원.',tip:'이미 검증된 사업을 인수하면 창업보다 리스크가 낮습니다.'},
+];
+const DOODADS=[
+ {name:'💸 친구 결혼식 축의금',cost:20,tip:'경조사비는 한국인 지출의 복병. 미리 예산에 넣어두면 타격이 없습니다.'},
+ {name:'🎂 부모님 칠순 잔치',cost:100,tip:'가족 행사 비용은 형제자매와 미리 분담 계획을 세우는 게 현명합니다.'},
+ {name:'🚗 자동차 수리비 폭탄',cost:80,tip:'차는 사는 순간부터 돈을 먹는 "부채성 소비재"입니다.'},
+ {name:'📱 최신 스마트폰 구매',cost:150,tip:'"지름신"이 오면 3일만 기다려보세요. 대부분 사라집니다.'},
+ {name:'🏥 갑작스러운 병원비',cost:120,tip:'생활비 3~6개월치 "비상금"이 필요한 이유. 비상금이 없으면 빚을 지게 됩니다.'},
+ {name:'🎁 명절 선물세트 + 부모님 용돈',cost:60,tip:'설·추석 지출은 1년에 두 번 반드시 옵니다. 예측 가능한 지출은 저축으로 대비!'},
+ {name:'❄️ 김치냉장고 교체',cost:180,tip:'가전은 "지금 필요한가, 갖고 싶은가"를 구분하는 게 소비의 기술.'},
+ {name:'🐶 반려견 병원비',cost:90,tip:'반려동물 의료비는 보험이 잘 안 됩니다. 키우기 전에 비용을 계산하세요.'},
+ {name:'✈️ 홧김에 해외여행 결제',cost:300,tip:'스트레스성 소비는 부자의 최대 적. "보복 소비" 후엔 카드값이 복수합니다.'},
+ {name:'📚 자녀 학원 3곳 등록',cost:200,alt:{name:'🧧 조카 용돈',cost:20},needChild:true,tip:'한국 가구의 사교육비는 세계 최고 수준. 자녀가 있으면 지출 계획이 완전히 달라집니다.'},
+ {name:'🍗 야식·배달음식 과소비',cost:40,tip:'하루 만원의 배달비도 한 달이면 30만원. "새는 돈"부터 막는 게 재테크 1단계.'},
+ {name:'👔 경조사 3연타 주말',cost:60,tip:'축의금·부의금·돌잔치… 인간관계에도 예산이 필요합니다.'},
+];
+const EVENTS=[
+ {id:'bonus',name:'🎉 성과급 지급!',tip:'보너스 같은 일시 소득은 "없던 돈"처럼 저축·투자하는 게 부자들의 습관입니다.'},
+ {id:'tax',name:'💰 연말정산 환급',amt:60,tip:'"13월의 월급" 연말정산! 소득공제·세액공제를 챙기면 세금을 돌려받습니다.'},
+ {id:'job',name:'🚀 이직 성공! 연봉 10% 인상',tip:'월급을 올리는 가장 빠른 방법은 이직이라는 말이 있죠. 몸값을 키우는 것도 투자입니다.'},
+ {id:'fired',name:'📉 회사 구조조정…',tip:'실직하면 소득은 끊겨도 지출은 계속됩니다. 이래서 비상금과 패시브인컴이 필요합니다.'},
+ {id:'phish',name:'🚨 보이스피싱 피해!',amt:-200,tip:'검찰·은행은 절대 전화로 돈을 요구하지 않습니다. 의심되면 일단 끊고 112!'},
+ {id:'prize',name:'🍀 아파트 경품 이벤트 당첨',amt:100,tip:'공돈이 생겼을 때의 선택이 부자와 빈자를 가릅니다. 쓸까요, 굴릴까요?'},
+ {id:'parents',name:'🏥 부모님 병원비 지원',amt:-150,tip:'부모님 의료비는 갑자기 옵니다. 가족 간 미리 대비책을 이야기해두세요.'},
+ {id:'self',name:'📖 자격증 취득! 월급 5% 인상',tip:'자기계발은 수익률이 가장 확실한 투자입니다.'},
+ {id:'cashback',name:'💳 카드 캐시백 정산',amt:30,tip:'같은 소비라면 혜택 좋은 카드로. 단, 혜택 때문에 더 쓰면 본말전도!'},
+ {id:'fine',name:'🚨 과속 카메라의 습격',amt:-15,tip:'벌금·연체료는 아무 가치 없는 100% 손실 지출입니다.'},
+];
+const MARKETS=[
+ {id:'re-up',name:'🏠 부동산 대세 상승장!',desc:'전국 집값이 들썩입니다. 아파트·빌라·오피스텔·상가 보유자는 <b>매매가의 +25%</b> 프리미엄으로 매도할 수 있습니다.',tags:['gap','op','shop'],mul:0.25,tip:'상승장에서 팔면 시세차익, 계속 들고 가면 미래를 노립니다. 정답은 없습니다. 다만 "팔아야 내 돈"입니다.'},
+ {id:'re-down',name:'📉 강력한 부동산 규제 발표',desc:'대출 규제+세금 강화 발표. 그래도 팔겠다면 <b>매매가의 −15%</b>로만 팔립니다.',tags:['gap','op','shop'],mul:-0.15,tip:'가격이 떨어졌다고 급하게 파는 것을 "패닉셀"이라 합니다. 팔지 않으면 손실은 확정되지 않습니다.'},
+ {id:'op-offer',name:'🏢 오피스텔 매수 문의',desc:'월세 수익형 부동산을 찾는 매수자가 나타났습니다. 오피스텔 보유자는 <b>매매가 +10%</b>에 매도 가능.',tags:['op'],mul:0.10,tip:'수익형 부동산의 가치는 "월세가 얼마 나오나"로 결정됩니다.'},
+ {id:'vac',name:'🏪 상가 공실 대란',desc:'경기 침체로 빈 가게가 속출! 상가 보유자는 상가 1개당 <b>50만원</b>의 공실 손실을 냅니다.',tip:'상가 투자의 최대 리스크가 바로 공실입니다. 수익률만 보고 사면 안 되는 이유.'},
+ {id:'rate-up',name:'🏦 한국은행 기준금리 인상',desc:'금리가 오르면 대출이자 부담이 커집니다. 모든 플레이어는 <b>대출 잔액의 2%</b>를 즉시 추가 이자로 냅니다.',tip:'금리 인상 = 빚 있는 사람의 재난, 예금자의 축복. 금리는 경제의 중력입니다.'},
+ {id:'dep-bonus',name:'🏦 은행 특판 예금 이벤트',desc:'고금리 특판! 예금 보유자는 <b>예금액의 1%</b>를 보너스 이자로 받습니다.',tip:'금리 상승기에는 안전한 예금의 매력이 커집니다.'},
+ {id:'px',sym:'KS전자',mul:1.3,name:'📈 KS전자 어닝 서프라이즈!',tip:'실적이 좋아지면 주가가 오릅니다. 주가는 결국 기업의 이익을 따라갑니다.'},
+ {id:'px',sym:'KS전자',mul:0.7,name:'📉 반도체 다운사이클',tip:'반도체는 호황과 불황이 반복되는 사이클 산업. 한국 경제가 출렁이는 이유이기도 하죠.'},
+ {id:'px',sym:'K바이오',mul:2.0,name:'🧬 K바이오 신약 허가!',tip:'바이오주가 재료(뉴스) 하나로 2배가 되는 순간. 그래서 도박처럼 위험하기도 합니다.'},
+ {id:'px',sym:'K바이오',mul:0.5,name:'💥 임상 3상 실패…',tip:'바이오주는 하루 만에 반토막도 납니다. 몰빵 금지!'},
+ {id:'px',sym:'K코인',mul:2.0,name:'🚀 코인 불장 도래!',tip:'급등할 때 욕심을 다스리는 것이 코인 투자의 90%입니다.'},
+ {id:'px',sym:'K코인',mul:0.4,name:'🥶 크립토 윈터',tip:'현금흐름 없는 자산은 겨울이 오면 버티기 힘듭니다.'},
+ {id:'px',sym:'K리츠',mul:1.15,name:'📈 리츠 인기 상승',tip:'배당 자산은 시세가 안 올라도 배당이 나와 버티기 쉽습니다.'},
+ {id:'ipo',name:'🎉 스타트업 상장(IPO) 대박!',desc:'투자했던 스타트업이 코스닥 상장에 성공! 지분 보유자는 <b>투자금의 5배</b>를 회수합니다.',tip:'이것이 엔젤투자의 로망. 단, 이 카드가 안 나오면 그 돈은 계속 묶여 있었겠죠?'},
+ {id:'biz-offer',name:'🤝 프랜차이즈 본사의 인수 제안',desc:'사업이 잘된다는 소문에 인수 제안이! 사업 보유자는 <b>투자금의 150%</b>에 매각할 수 있습니다.',tags:['biz'],tip:'사업의 최종 목표 중 하나는 "잘 키워서 파는 것"(엑싯)입니다.'},
+ {id:'jeonse-up',name:'🏠 전세가 급등',desc:'전세 낀 집(갭투자) 보유자는 세입자와 재계약하며 <b>집 1채당 500만원</b>의 전세금 인상분을 받습니다.',tip:'주의! 올려받은 전세금은 공짜가 아니라 나중에 돌려줘야 할 "부채"입니다. 이 게임에선 현금으로 드리지만, 현실에선 함부로 쓰면 큰일나요.'},
+];
+
+/* ---------- 상태 ---------- */
+let G=null; // 게임 상태
+let modalQ=[]; // 모달 체인
+
+function newDecks(){
+  return {small:shuffle(SMALL_DEALS),big:shuffle(BIG_DEALS),doodad:shuffle(DOODADS),event:shuffle(EVENTS),market:shuffle(MARKETS)};
+}
+function draw(deck){
+  if(G.decks[deck].length===0){
+    const src={small:SMALL_DEALS,big:BIG_DEALS,doodad:DOODADS,event:EVENTS,market:MARKETS}[deck];
+    G.decks[deck]=shuffle(src);
+  }
+  return G.decks[deck].pop();
+}
+
+/* ---------- 재무 계산 ---------- */
+function passive(p){
+  let s=0;
+  for(const a of p.assets) s+=a.cf;
+  const r=p.hold['K리츠']; if(r) s+=r.qty*REIT_DIV;
+  s+=Math.round(p.deposit*DEP_RATE);
+  return Math.round(s);
+}
+function expenses(p){
+  return p.expense + p.children*CHILD_COST + Math.round(p.loan*LOAN_RATE);
+}
+function loanCap(p){return p.salary*20;}
+function stockVal(p){
+  let s=0; for(const sym in p.hold) s+=p.hold[sym].qty*prices[sym];
+  return Math.round(s);
+}
+function netWorth(p){
+  let s=p.cash+p.deposit+stockVal(p)-p.loan;
+  for(const a of p.assets) s+=a.equity;
+  return Math.round(s);
+}
+function freedomPct(p){
+  const e=expenses(p); if(e<=0) return 100;
+  return Math.min(100,Math.round(passive(p)/e*100));
+}
+function alive(){return G.players.filter(p=>!p.bankrupt);}
+function cur(){return G.players[G.turn];}
+
+/* ---------- 모달 ---------- */
+function showModal(title,bodyHTML,btns,opts){
+  resetActions();
+  $('mTitle').innerHTML=title;
+  $('mBody').innerHTML=bodyHTML;
+  const bb=$('mBtns'); bb.innerHTML='';
+  btns.forEach(b=>{
+    const el=document.createElement('button');
+    el.className='mbtn'+(b.cls?' '+b.cls:'');
+    el.innerHTML=b.label;
+    if(b.disabled) el.disabled=true;
+    const run=()=>{ if(b.keep!==true) closeModal(); if(b.fn) b.fn(); };
+    if(b.local) el.onclick=run;          // 로컬 전용 버튼 (예: 새 게임)
+    else wireAction(el,run,b.owner);     // 동기화 대상 버튼
+    bb.appendChild(el);
+  });
+  $('ovl').classList.add('on');
+  $('modal').scrollTop=0;
+}
+function closeModal(){$('ovl').classList.remove('on');}
+/* 뷰어 모달 — 조회 전용, 각자 폰에서 언제든 */
+function vShow(title,html){$('vTitle').innerHTML=title;$('vBody').innerHTML=html;$('vovl').classList.add('on');$('vmodal').scrollTop=0;}
+function tipHTML(t){return t?'<div class="tip"><b>💡 경제 한 스푼</b><br>'+t+'</div>':'';}
+
+/* ---------- 시작 화면 ---------- */
+let selCnt=2;
+function buildStart(){
+  const cc=$('cntChips'); cc.innerHTML='';
+  for(let i=1;i<=6;i++){
+    const b=document.createElement('button');
+    b.className='chip'+(i===selCnt?' sel':''); b.textContent=i+'명';
+    b.onclick=()=>{selCnt=i;buildStart();};
+    cc.appendChild(b);
+  }
+  const nb=$('nameBox');
+  const old=[...nb.querySelectorAll('input')].map(x=>x.value);
+  nb.innerHTML='';
+  for(let i=0;i<selCnt;i++){
+    const inp=document.createElement('input');
+    inp.className='nameIn'; inp.maxLength=8;
+    inp.placeholder='플레이어 '+(i+1)+' 이름';
+    if(old[i]) inp.value=old[i];
+    nb.appendChild(inp);
+  }
+}
+$('btnStart').onclick=()=>{
+  if(netMode)return;
+  const names=[...$('nameBox').querySelectorAll('input')].map((x,i)=>x.value.trim()||('플레이어'+(i+1)));
+  srand(Math.floor(Math.random()*2147483646)+1);
+  startGame(names);
+};
+$('btnHelp0').onclick=()=>showHelp();
+
+/* ---------- 온라인 로비 ---------- */
+let netMode=false, peer=null, myName='', roomCode='';
+$('modeLocal').onclick=()=>setMode(false);
+$('modeNet').onclick=()=>setMode(true);
+function setMode(on){
+  netMode=on;
+  $('modeLocal').classList.toggle('sel',!on);
+  $('modeNet').classList.toggle('sel',on);
+  $('onlineBox').style.display=on?'block':'none';
+  $('cardCnt').style.display=on?'none':'block';
+  $('cardNames').style.display=on?'none':'block';
+  $('btnStart').style.display=on?'none':'block';
+  if(on&&typeof Peer==='undefined')
+    $('lobbyInfo').innerHTML='<b class="neg">⚠️ 인터넷 연결이 필요합니다.</b><br>온라인 모드는 접속 중계 서버를 사용하므로 와이파이/데이터를 켜고 페이지를 새로고침 해주세요.';
+}
+function makeCode(){const CS='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<4;i++)c+=CS[Math.floor(Math.random()*CS.length)];return c;}
+function nameOK(){myName=$('myName').value.trim();if(!myName){$('lobbyInfo').innerHTML='<b class="neg">이름을 먼저 입력하세요!</b>';return false;}return true;}
+$('btnHost').onclick=()=>{
+  if(typeof Peer==='undefined'||!nameOK())return;
+  roomCode=makeCode();
+  $('lobbyInfo').innerHTML='방 만드는 중…';
+  peer=new Peer('mfk-'+roomCode);
+  peer.on('open',()=>{
+    NET={host:true,conns:[],names:[myName],dead:{}}; myPid=0;
+    renderLobby();
+  });
+  peer.on('connection',c=>{
+    c.on('data',d=>hostOnData(c,d));
+    c.on('close',()=>hostDropConn(c));
+    c.on('error',()=>hostDropConn(c));
+  });
+  peer.on('error',e=>{
+    if(String(e.type)==='unavailable-id'){roomCode=makeCode();peer.destroy();$('btnHost').onclick();}
+    else $('lobbyInfo').innerHTML='<b class="neg">연결 오류: '+e.type+'</b><br>잠시 후 다시 시도해주세요.';
+  });
+};
+$('btnJoin').onclick=()=>{
+  if(typeof Peer==='undefined'||!nameOK())return;
+  if($('joinCode').style.display==='none'){$('joinCode').style.display='block';$('joinCode').focus();
+    $('lobbyInfo').innerHTML='방장에게 받은 초대 코드를 입력하고 다시 [참여하기]를 누르세요.';return;}
+  const code=$('joinCode').value.trim().toUpperCase();
+  if(code.length!==4){$('lobbyInfo').innerHTML='<b class="neg">코드는 4글자입니다.</b>';return;}
+  roomCode=code; clientConnect();
+};
+function clientConnect(){
+  $('lobbyInfo').innerHTML='방에 접속하는 중…';
+  if(peer)try{peer.destroy();}catch(e){}
+  peer=new Peer();
+  peer.on('open',()=>{
+    const c=peer.connect('mfk-'+roomCode,{reliable:true});
+    let opened=false;
+    c.on('open',()=>{opened=true;NET={host:false,c,names:[]};c.send({t:'hello',name:myName});});
+    c.on('data',d=>clientOnData(d));
+    c.on('close',()=>connLost());
+    c.on('error',()=>connLost());
+    setTimeout(()=>{if(!opened)$('lobbyInfo').innerHTML='<b class="neg">방을 찾을 수 없습니다.</b> 코드를 확인해주세요.';},8000);
+  });
+  peer.on('error',e=>{
+    if(String(e.type)==='peer-unavailable')$('lobbyInfo').innerHTML='<b class="neg">방을 찾을 수 없습니다.</b> 코드를 확인하거나 방장이 방을 만들었는지 확인하세요.';
+  });
+}
+function renderLobby(){
+  if(!NET)return;
+  let h='';
+  if(NET.host){
+    h+='<div>친구들에게 이 코드를 알려주세요!</div><div class="code">'+roomCode+'</div>';
+    h+='참여자 ('+NET.names.length+'/6): <b>'+NET.names.join(', ')+'</b><br>';
+    h+=(NET.names.length>=2)?'<button class="bigBtn" id="btnNetStart" style="margin-top:10px">🎮 게임 시작 ('+NET.names.length+'명)</button>'
+      :'<small class="u">2명 이상 모이면 시작할 수 있어요.</small>';
+    $('lobbyInfo').innerHTML=h;
+    const b=$('btnNetStart');
+    if(b)b.onclick=()=>{
+      GAME_SEED=Math.floor(Math.random()*2147483646)+1;
+      const names=NET.names.slice();
+      netAll({t:'start',seed:GAME_SEED,names});
+      ACTLOG=[];SEQ=0;
+      srand(GAME_SEED);startGame(names);
+    };
+  } else {
+    h+='<b class="pos">✅ 입장 완료!</b> ('+(NET.names.length?NET.names.join(', '):myName)+')<br>방장이 시작하면 자동으로 게임이 열립니다.';
+    $('lobbyInfo').innerHTML=h;
+  }
+}
+/* ---- 방장 수신 ---- */
+function netAll(m){if(NET&&NET.host)NET.conns.forEach(c=>{if(c&&c.open)try{c.send(m);}catch(e){}});}
+function hostOnData(c,d){
+  if(d.t==='hello'){
+    if(G){ // 게임 중 재접속: 이름으로 자리 찾기
+      const pid=NET.names.indexOf(d.name);
+      if(pid>0){NET.conns[pid-1]=c;NET.dead[pid]=false;c.send({t:'welcome',pid});fullSync(c);setNetBanner();}
+      else c.send({t:'reject',msg:'게임이 이미 진행 중입니다.'});
+      return;
+    }
+    if(NET.names.length>=6){c.send({t:'reject',msg:'방이 가득 찼습니다 (6명).'});return;}
+    let nm=d.name;let k=2;while(NET.names.includes(nm))nm=d.name+k++;
+    const pid=NET.names.length;
+    NET.names.push(nm);NET.conns.push(c);
+    c.send({t:'welcome',pid,name:nm});
+    netAll({t:'lobby',names:NET.names});
+    renderLobby();
+  }
+  else if(d.t==='a'){if(doAct(d.a)){ACTLOG.push(d.a);netAll({t:'a',a:d.a,q:SEQ++,c:chk()});}}
+  else if(d.t==='resync'){fullSync(c);}
+}
+function hostDropConn(c){
+  if(!NET||!NET.host)return;
+  const i=NET.conns.indexOf(c);
+  if(i>=0){NET.dead[i+1]=true;setNetBanner();if(!G){NET.names.splice(i+1,1);NET.conns.splice(i,1);netAll({t:'lobby',names:NET.names});renderLobby();}}
+}
+function fullSync(c){c.send({t:'sync',seed:GAME_SEED,names:NET.names,log:ACTLOG,q:SEQ});}
+/* ---- 클라이언트 수신 ---- */
+function clientOnData(d){
+  if(d.t==='welcome'){myPid=d.pid;if(d.name)myName=d.name;renderLobby();}
+  else if(d.t==='lobby'){NET.names=d.names;renderLobby();}
+  else if(d.t==='reject'){$('lobbyInfo').innerHTML='<b class="neg">'+d.msg+'</b>';NET=null;}
+  else if(d.t==='start'){
+    GAME_SEED=d.seed;NET.names=d.names;expectSeq=0;pendQ={};
+    srand(d.seed);startGame(d.names);
+  }
+  else if(d.t==='a'){
+    pendQ[d.q]=d;
+    while(pendQ[expectSeq]){
+      const m=pendQ[expectSeq];delete pendQ[expectSeq];expectSeq++;
+      doAct(m.a);
+      if(chk()!==m.c){NET.c.send({t:'resync'});break;}
+    }
+  }
+  else if(d.t==='sync'){
+    GAME_SEED=d.seed;NET.names=d.names;
+    srand(d.seed);FAST=true;startGame(d.names);
+    d.log.forEach(a=>doAct(a));
+    FAST=false;expectSeq=d.q;pendQ={};
+    renderAll();setNetBanner(false);
+  }
+}
+let FAST=false;
+function connLost(){
+  if(!NET||NET.host)return;
+  setNetBanner(true);
+}
+function setNetBanner(lost){
+  const nb=$('netBanner');
+  if(NET&&!NET.host){
+    if(lost){nb.style.display='block';nb.innerHTML='📡 연결이 끊겼습니다 — <u>탭하여 재접속</u>';
+      nb.onclick=()=>{nb.innerHTML='재접속 중…';clientConnect();};}
+    else nb.style.display='none';
+  }
+  if(NET&&NET.host){
+    const deadNames=Object.keys(NET.dead).filter(k=>NET.dead[k]).map(k=>NET.names[k]);
+    if(deadNames.length&&G){nb.style.display='block';nb.onclick=null;
+      nb.innerHTML='📡 '+deadNames.join(', ')+' 연결 끊김 — 재접속 대기 중 (우측 상단 [대리조작]으로 대신 진행 가능)';}
+    else nb.style.display='none';
+  }
+}
+
+/* ---------- 게임 시작 ---------- */
+function startGame(names){
+  prices={'KS전자':7,'K바이오':5,'K리츠':100,'K코인':800};
+  const jobPool=shuffle(JOBS).slice(0,names.length);
+  EPOCH=0;ACTIONS=[]; // 동기화 기준점 리셋 (재접속 복구가 항상 같은 세대에서 시작하도록)
+  G={
+    players:names.map((nm,i)=>({
+      id:i,name:nm,color:COLORS[i],job:jobPool[i],
+      salary:jobPool[i].salary,expense:jobPool[i].expense,
+      cash:jobPool[i].cash,deposit:0,loan:0,
+      hold:{},assets:[],children:0,pos:0,months:0,
+      skip:0,charity:0,bankrupt:false,
+    })),
+    turn:0,decks:newDecks(),phase:'await',totalTurns:0,
+  };
+  $('scrStart').classList.remove('on');
+  $('scrGame').classList.add('on');
+  $('sudoWrap').style.display=(NET&&NET.host)?'flex':'none';
+  buildBoard();
+  // 직업 공개 모달
+  let html='<table class="tbl">';
+  G.players.forEach(p=>{
+    html+='<tr><td><span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+p.color+';margin-right:6px"></span><b>'+p.name+'</b></td>'+
+      '<td>'+p.job.emoji+' '+p.job.name+'<br><small class="u">월급 '+fmt(p.salary)+' · 지출 '+fmt(p.expense)+' · 현금 '+fmt(p.cash)+'</small></td></tr>';
+  });
+  html+='</table><div style="margin-top:8px;font-size:12px;color:var(--sub)">👆 게임 중 상단의 플레이어 칩을 탭하면 <b>누구든 재산현황을 언제나</b> 볼 수 있어요!</div>'+tipHTML('월급이 높으면 돈이 빨리 모이지만, 지출도 커서 경제적 자유에 필요한 패시브인컴도 큽니다. 어느 직업이든 공평하게 자유를 노릴 수 있어요!');
+  showModal('👔 직업 랜덤 배정 결과',html,[{label:'좋아, 시작!',cls:'pri',fn:()=>turnBanner()}]);
+  renderAll();
+}
+
+/* ---------- 보드 렌더 ---------- */
+function buildBoard(){
+  const bd=$('board'); bd.innerHTML='';
+  TILES.forEach((t,i)=>{
+    const inf=TINFO[t.t];
+    const d=document.createElement('div');
+    d.className='tile '+inf.cls; d.id='tile'+i;
+    d.style.gridRow=RING[i][0]; d.style.gridColumn=RING[i][1];
+    d.innerHTML='<div class="em">'+inf.em+'</div><div class="lb">'+inf.lb+'</div><div class="toks" id="tok'+i+'"></div>';
+    bd.appendChild(d);
+  });
+  const c=document.createElement('div');
+  c.id='center';
+  c.innerHTML='<div id="diceBox">🎲</div><div id="centerName"></div><div id="centerSub"></div>';
+  bd.appendChild(c);
+}
+function renderAll(){
+  // 토큰
+  TILES.forEach((_,i)=>{ $('tok'+i).innerHTML=''; $('tile'+i).classList.remove('cur'); });
+  G.players.forEach(p=>{
+    if(p.bankrupt)return;
+    const tk=document.createElement('div');
+    tk.className='tok'; tk.style.background=p.color;
+    $('tok'+p.pos).appendChild(tk);
+  });
+  const p=cur();
+  if(!p.bankrupt) $('tile'+p.pos).classList.add('cur');
+  // 스트립
+  const ps=$('pstrip'); ps.innerHTML='';
+  G.players.forEach((q,i)=>{
+    const d=document.createElement('div');
+    d.className='pchip'+(i===G.turn?' cur':'')+(q.bankrupt?' dead':'');
+    d.innerHTML='<span class="d" style="background:'+q.color+'"></span><b>'+q.name+'</b><span class="c">'+fmt(q.cash)+'</span>';
+    d.onclick=()=>viewRead(q); // 조회 전용 뷰어 — 언제든, 누구든
+    ps.appendChild(d);
+  });
+  // 패널
+  $('pName').textContent=p.name;
+  $('pJob').textContent=p.job.emoji+' '+p.job.name+' · '+p.months+'개월차'+(p.children?' · 👶×'+p.children:'');
+  $('pCash').textContent=fmt(p.cash);
+  $('pCash').style.color=p.cash<0?'var(--red)':'var(--gold)';
+  const pas=passive(p),ex=expenses(p);
+  $('pSub').textContent='패시브 '+fmt(pas)+' / 지출 '+fmt(ex);
+  $('mtxt').textContent=freedomPct(p)+'%';
+  $('mbar').style.width=freedomPct(p)+'%';
+  $('centerName').innerHTML='<span style="color:'+p.color+'">●</span> '+p.name;
+  $('centerSub').innerHTML='패시브인컴 <b class="pos">'+fmt(pas)+'</b> vs 지출 <b class="neg">'+fmt(ex)+'</b><br>100% 달성 시 🏆경제적 자유!';
+  // 버튼 (온라인이면 내 차례가 아닐 때 비활성)
+  const myTurn=!NET||p.id===myPid||($('sudoChk')&&$('sudoChk').checked&&NET.host);
+  const rollable=G.phase==='roll'&&myTurn;
+  $('btnRoll').disabled=!rollable;
+  $('btnRoll').textContent=(NET&&p.id!==myPid)?('🎲 '+p.name+' 님이 굴릴 차례'):(p.charity>0?'🎲 굴리기 (기부효과: 1~2개 선택)':'🎲 주사위 굴리기');
+  $('btnBank').disabled=!myTurn;
+  $('btnFin').disabled=!myTurn;
+  $('btnEnd').disabled=G.phase!=='done'||!myTurn;
+  $('btnEnd').classList.toggle('pulse',G.phase==='done'&&myTurn);
+}
+function log(s){$('log').innerHTML=s;}
+
+/* ---------- 턴 진행 ---------- */
+function turnBanner(){
+  G.phase='await';
+  const p=cur();
+  $('toDot').style.background=p.color;
+  const mine=!NET||p.id===myPid;
+  $('toName').textContent=(NET&&mine)?'내 차례!':(p.name+' 님 차례');
+  $('toSub').innerHTML=p.job.emoji+' '+p.job.name+' · '+p.months+'개월차<br>'+
+    (NET?(mine?'주사위를 굴릴 준비를 하세요!':p.name+' 님의 폰에서 진행 중…'):('폰을 '+p.name+' 님에게 넘겨주세요!'));
+  const sudo=NET&&NET.host&&$('sudoChk')&&$('sudoChk').checked;
+  $('toGo').disabled=NET&&!mine&&!sudo;
+  $('toGo').textContent=(NET&&!mine&&!sudo)?'⏳ 대기 중…':'내 차례 시작 ▶';
+  $('turnOvl').classList.add('on');
+  renderAll();
+}
+$('toGo').onclick=()=>requestStatic('go');
+STATIC.go=()=>{
+  if(G.phase!=='await')return;
+  $('turnOvl').classList.remove('on');
+  const p=cur();
+  if(p.cash<0){ openCrisis(()=>afterCrisisStart()); return; }
+  afterCrisisStart();
+};
+function afterCrisisStart(){
+  const p=cur();
+  if(p.skip>0){
+    p.skip--;
+    showModal('😔 구직 활동 중…','<b>'+p.name+'</b> 님은 실직 상태입니다. 이번 턴을 쉽니다.<br>남은 휴식 턴: <b>'+p.skip+'</b>'+tipHTML('소득이 끊겨도 시간은 갑니다. 패시브인컴이 있었다면 이 시간이 두렵지 않았을 텐데요.'),
+      [{label:'확인',cls:'pri',fn:()=>endTurn()}]);
+    return;
+  }
+  G.phase='roll';
+  renderAll();
+  log('🎲 주사위를 굴리세요!');
+}
+$('btnRoll').onclick=()=>requestStatic('roll');
+STATIC.roll=()=>{
+  if(G.phase!=='roll')return;
+  const p=cur();
+  if(p.charity>0){
+    showModal('❤️ 기부 효과 발동!','기부의 힘으로 주사위를 <b>1개 또는 2개</b> 굴릴 수 있습니다. (남은 횟수 '+p.charity+'회)',
+      [{label:'🎲 1개 굴리기',fn:()=>{p.charity--;doRoll(1);}},
+       {label:'🎲🎲 2개 굴리기',cls:'pri',fn:()=>{p.charity--;doRoll(2);}}]);
+  } else doRoll(1);
+};
+function doRoll(nDice){
+  G.phase='resolving'; renderAll();
+  const d1=1+rnd(6), d2=nDice===2?1+rnd(6):0, steps=d1+d2;
+  animateDice(d1,d2,nDice);
+  moveAndResolve(steps); // 게임 로직은 즉시(동기) 처리 — 동기화 안정성
+}
+function animateDice(d1,d2,nDice){ // 순수 연출 (게임 상태와 무관)
+  if(FAST){$('diceBox').textContent=d1+(nDice===2?' · '+d2:'');return;}
+  const db=$('diceBox'); let cnt=0;
+  const iv=setInterval(()=>{
+    if(++cnt>6){clearInterval(iv);db.textContent=d1+(nDice===2?' · '+d2:'');return;}
+    db.textContent=(1+rndUI(6))+(nDice===2?' · '+(1+rndUI(6)):'');
+  },60);
+}
+function moveAndResolve(steps){
+  const p=cur();
+  let paydays=0;
+  for(let i=1;i<=steps;i++) if(TILES[(p.pos+i)%24].t==='pay') paydays++;
+  p.pos=(p.pos+steps)%24;
+  const tile=TILES[p.pos].t;
+  log('🎲 '+steps+'칸 이동! → '+TINFO[tile].em+' '+TINFO[tile].lb+' 칸');
+  renderAll();
+  if(paydays>0) doPayday(paydays,()=>{ tile==='pay'?finishResolve():resolveTile(); });
+  else resolveTile();
+}
+function doPayday(n,next){
+  const p=cur();
+  const pas=passive(p), ex=expenses(p), net=(p.salary+pas-ex)*n;
+  p.cash+=net; p.months+=n;
+  const html=
+    (n>1?'<b>월급날을 '+n+'번</b> 지났습니다!<br>':'')+
+    '<table class="tbl">'+
+    '<tr><td>💼 월급</td><td class="pos">+'+fmt(p.salary*n)+'</td></tr>'+
+    '<tr><td>🏦 패시브인컴</td><td class="pos">+'+fmt(pas*n)+'</td></tr>'+
+    '<tr><td>🧾 총지출 (생활비'+(p.children?'+자녀':'')+(p.loan?'+대출이자':'')+')</td><td class="neg">−'+fmt(ex*n)+'</td></tr>'+
+    '<tr><td><b>실수령</b></td><td class="amt '+(net>=0?'pos':'neg')+'">'+(net>=0?'+':'')+fmt(net)+'</td></tr>'+
+    '</table>'+
+    tipHTML('월급−지출 = 저축 가능액. 이 돈을 자산으로 바꾸는 사람만 쳇바퀴를 탈출합니다.');
+  showModal('💰 월급날!',html,[{label:'확인',cls:'grn',fn:()=>{
+    if(p.cash<0){ openCrisis(()=>{ checkWin(p)||next(); }); }
+    else { checkWin(p)||next(); }
+  }}]);
+  renderAll();
+}
+
+/* ---------- 칸 해결 ---------- */
+function finishResolve(){
+  G.phase='done'; renderAll();
+  log('✅ 턴 종료를 눌러 다음 사람에게 넘기세요. (은행·재무제표 이용 가능)');
+}
+function resolveTile(){
+  const t=TILES[cur().pos].t;
+  if(t==='deal') tileDeal();
+  else if(t==='doodad') tileDoodad();
+  else if(t==='market') tileMarket();
+  else if(t==='event') tileEvent();
+  else if(t==='child') tileChild();
+  else if(t==='charity') tileCharity();
+  else finishResolve();
+}
+
+/* --- 기회 --- */
+function tileDeal(){
+  showModal('📈 투자 기회!','어떤 매물을 볼까요?<br><small class="u">소액: 주식·코인·리츠·소형부동산 (수천만원 이하)<br>대형: 아파트·상가·창업 (수천만~억대)</small>',
+    [{label:'💵 소액 투자 보기',fn:()=>showDeal(draw('small'))},
+     {label:'💰 대형 투자 보기',cls:'pri',fn:()=>showDeal(draw('big'))},
+     {label:'👀 이번엔 패스',fn:()=>finishResolve()}]);
+}
+function showDeal(c){
+  const p=cur();
+  if(c.kind==='stock'||c.kind==='coin'){
+    prices[c.sym]=c.price; // 시세 갱신
+    openQty({
+      title:(c.kind==='coin'?'🪙 ':'📈 ')+c.sym+' — '+fmt(c.price)+'/'+UNITS[c.sym].unit,
+      sub:c.desc,tip:c.tip,unitPrice:c.price,step:UNITS[c.sym].step,unit:UNITS[c.sym].unit,
+      maxCost:p.cash,confirm:'매수',
+      onDone:(qty)=>{
+        if(qty>0){
+          const cost=qty*c.price;
+          p.cash-=cost;
+          const h=p.hold[c.sym]||(p.hold[c.sym]={qty:0,avg:0});
+          h.avg=Math.round((h.avg*h.qty+cost)/(h.qty+qty)*100)/100;
+          h.qty+=qty;
+          log('🛒 '+c.sym+' '+qty+UNITS[c.sym].unit+' 매수 (−'+fmt(cost)+')');
+          if(checkWin(p))return;
+        }
+        finishResolve();
+      }
+    });
+  } else {
+    const shortage=Math.max(0,c.equity-p.cash);
+    const loanNeed=Math.ceil(shortage/LOAN_UNIT)*LOAN_UNIT;
+    const canLoan=shortage>0 && p.loan+loanNeed<=loanCap(p);
+    const btns=[];
+    if(shortage===0){
+      btns.push({label:'✅ 구매 ('+fmt(c.equity)+')',cls:'pri',fn:()=>buyAsset(c,0)});
+    } else if(canLoan){
+      btns.push({label:'💳 부족분 '+fmt(loanNeed)+' 대출 후 구매',cls:'pri',fn:()=>buyAsset(c,loanNeed)});
+    }
+    btns.push({label:'안 사기',fn:()=>finishResolve()});
+    showModal(c.name,
+      c.desc+'<table class="tbl">'+
+      '<tr><td>실투자금</td><td><b>'+fmt(c.equity)+'</b></td></tr>'+
+      (c.propPrice!==c.equity?'<tr><td>매매가</td><td>'+fmt(c.propPrice)+'</td></tr>':'')+
+      '<tr><td>월 현금흐름</td><td class="'+(c.cf>=0?'pos':'neg')+'"><b>'+(c.cf>=0?'+':'')+fmt(c.cf)+'</b></td></tr>'+
+      '<tr><td>내 현금</td><td>'+fmt(p.cash)+(shortage>0?' <span class="neg">('+fmt(shortage)+' 부족)</span>':'')+'</td></tr>'+
+      '</table>'+tipHTML(c.tip),btns);
+  }
+}
+function buyAsset(c,loanAdd){
+  const p=cur();
+  if(loanAdd>0){p.loan+=loanAdd;p.cash+=loanAdd;}
+  p.cash-=c.equity;
+  p.assets.push({name:c.name,equity:c.equity,propPrice:c.propPrice,cf:c.cf,tag:c.tag,kind:c.kind});
+  log('🏠 '+c.name+' 구매! 월 현금흐름 '+(c.cf>=0?'+':'')+fmt(c.cf));
+  if(checkWin(p))return;
+  finishResolve();
+}
+
+/* 수량 선택 모달 (매수/매도 공용) */
+function openQty(o){
+  let qty=o.step;
+  const maxQty=o.maxQtyFixed!=null?o.maxQtyFixed:Math.floor(o.maxCost/(o.unitPrice*o.step))*o.step;
+  function body(){
+    return o.sub+'<div class="qtyRow">'+
+      '<button class="qbtn" id="qm">−</button><div id="qVal">'+qty.toLocaleString()+o.unit+'</div><button class="qbtn" id="qp">＋</button></div>'+
+      '<button class="qMax" id="qmax">최대 ('+maxQty.toLocaleString()+o.unit+')</button>'+
+      '<div class="costLine">'+(o.sell?'매도 금액':'필요 금액')+': <b class="'+(o.sell?'pos':'')+'">'+fmt(qty*o.unitPrice)+'</b></div>'+
+      tipHTML(o.tip);
+  }
+  function wire(){
+    wireAction($('qm'),()=>{qty=Math.max(o.step,qty-o.step);refresh();});
+    wireAction($('qp'),()=>{qty=Math.min(maxQty||o.step,qty+o.step);refresh();});
+    wireAction($('qmax'),()=>{qty=Math.max(o.step,maxQty);refresh();});
+  }
+  function refresh(){$('mBody').innerHTML=body();wire();}
+  if(maxQty<o.step){
+    showModal(o.title,o.sub+'<br><br><b class="neg">'+(o.sell?'보유 수량이 없습니다.':'현금이 부족해 최소 단위('+o.step+o.unit+')도 살 수 없습니다.')+'</b>'+tipHTML(o.tip),
+      [{label:'닫기',fn:()=>o.onDone(0)}]);
+    return;
+  }
+  showModal(o.title,body(),[
+    {label:o.confirm,cls:o.sell?'grn':'pri',fn:()=>o.onDone(qty)},
+    {label:'취소',fn:()=>o.onDone(0)}
+  ]);
+  wire();
+}
+
+/* --- 지출 --- */
+function tileDoodad(){
+  const p=cur();
+  let c=draw('doodad');
+  let use=c;
+  if(c.needChild && p.children===0) use=c.alt;
+  const cost=use.cost;
+  showModal('🧾 예상 못한 지출!','<b>'+use.name+'</b><br>'+fmt(cost)+'이 빠져나갑니다…'+tipHTML(c.tip),
+    [{label:'💸 지불 (−'+fmt(cost)+')',cls:'red',fn:()=>{
+      payCur(cost,()=>finishResolve());
+    }}]);
+}
+function payCur(amt,next){
+  const p=cur();
+  p.cash-=amt; renderAll();
+  if(p.cash<0) openCrisis(next);
+  else next();
+}
+
+/* --- 이벤트 --- */
+function tileEvent(){
+  const p=cur();
+  const c=draw('event');
+  let body='',btns=[{label:'확인',cls:'pri',fn:()=>finishResolve()}];
+  if(c.id==='bonus'){ p.cash+=p.salary; body='월급 100% 성과급! <b class="pos">+'+fmt(p.salary)+'</b>'; }
+  else if(c.id==='job'){ p.salary=Math.round(p.salary*1.1); body='새 직장 연봉 협상 성공! 월급이 <b class="pos">'+fmt(p.salary)+'</b>이 되었습니다.'; }
+  else if(c.id==='self'){ p.salary=Math.round(p.salary*1.05); body='몸값 상승! 월급이 <b class="pos">'+fmt(p.salary)+'</b>이 되었습니다.'; }
+  else if(c.id==='fired'){
+    if(p.job.secure){ body=p.job.name+'은(는) 정년이 보장됩니다. <b class="pos">구조조정 무효!</b> 부러움의 시선이 느껴집니다.'; }
+    else{
+      const ex=expenses(p);
+      body='구조조정 대상이 되었습니다… 위로금은 없고, 생활비 <b class="neg">−'+fmt(ex)+'</b>를 내고 <b>2턴</b>을 쉽니다.';
+      btns=[{label:'😭 받아들인다',cls:'red',fn:()=>{ p.skip=2; payCur(ex,()=>finishResolve()); }}];
+    }
+  }
+  else{ p.cash+=c.amt; body=(c.amt>=0?'<b class="pos">+':'<b class="neg">')+fmt(c.amt)+'</b>'; }
+  showModal('⚡ '+c.name,body+tipHTML(c.tip),btns);
+  renderAll();
+}
+
+/* --- 자녀 --- */
+function tileChild(){
+  const p=cur();
+  if(p.children<3){
+    p.children++;
+    showModal('👶 축하합니다! 자녀 탄생!','우리 집에 천사가 찾아왔습니다.<br>기쁨과 함께 매달 <b class="neg">'+fmt(CHILD_COST)+'</b>의 양육·사교육비가 추가됩니다. (현재 자녀 '+p.children+'명)'+
+      tipHTML('아이 1명을 대학까지 키우는 데 수억 원이 든다고 하죠. 그래서 재무 계획이 더욱 중요합니다.'),
+      [{label:'사랑으로 키운다 ❤️',cls:'pri',fn:()=>finishResolve()}]);
+  } else {
+    showModal('🎂 자녀 생일 파티','벌써 셋째까지! 가족 파티 비용 <b class="neg">−'+fmt(30)+'</b>'+tipHTML('가족과의 시간은 돈으로 살 수 없는 자산입니다.'),
+      [{label:'지불',cls:'red',fn:()=>payCur(30,()=>finishResolve())}]);
+  }
+  renderAll();
+}
+
+/* --- 기부 --- */
+function tileCharity(){
+  const p=cur();
+  const cost=Math.max(10,Math.round((p.salary+passive(p))*0.1));
+  showModal('❤️ 연말 이웃돕기 성금','총수입의 10%인 <b>'+fmt(cost)+'</b>를 기부하면, 세상도 돕고 좋은 기운도 받습니다.<br><b>다음 3번의 굴림</b>에서 주사위를 1~2개 중 선택해 굴릴 수 있어요!'+
+    tipHTML('나눔은 부자들의 오랜 습관입니다. 기부금 세액공제도 있다는 사실!'),
+    [{label:'😇 기부한다 (−'+fmt(cost)+')',cls:'pri',fn:()=>{ p.charity=3; payCur(cost,()=>finishResolve()); }},
+     {label:'다음에 할게요',fn:()=>finishResolve()}]);
+}
+
+/* --- 시장 --- */
+function tileMarket(){
+  const c=draw('market');
+  if(c.id==='px'){
+    const old=prices[c.sym];
+    prices[c.sym]=Math.max(1,Math.round(prices[c.sym]*c.mul));
+    pxReaction(c,old);
+  }
+  else if(c.id==='rate-up'){
+    let msg='';
+    alive().forEach(q=>{
+      const pay=Math.round(q.loan*0.02);
+      if(pay>0){ q.cash-=pay; msg+='<br>'+q.name+': <span class="neg">−'+fmt(pay)+'</span>'; }
+    });
+    showModal('🏛️ '+c.name,c.desc+(msg||'<br><b class="pos">대출자가 없어 아무 일도 일어나지 않았습니다!</b>')+tipHTML(c.tip),
+      [{label:'확인',cls:'pri',fn:()=>afterGlobalPay()}]);
+  }
+  else if(c.id==='dep-bonus'){
+    let msg='';
+    alive().forEach(q=>{
+      const b=Math.round(q.deposit*0.01);
+      if(b>0){ q.cash+=b; msg+='<br>'+q.name+': <span class="pos">+'+fmt(b)+'</span>'; }
+    });
+    showModal('🏛️ '+c.name,c.desc+(msg||'<br><small class="u">예금 보유자가 없네요.</small>')+tipHTML(c.tip),
+      [{label:'확인',cls:'pri',fn:()=>finishResolve()}]);
+  }
+  else if(c.id==='vac'){
+    let msg='';
+    alive().forEach(q=>{
+      const n=q.assets.filter(a=>a.tag==='shop').length;
+      if(n>0){ q.cash-=50*n; msg+='<br>'+q.name+': 상가 '+n+'개 <span class="neg">−'+fmt(50*n)+'</span>'; }
+    });
+    showModal('🏛️ '+c.name,c.desc+(msg||'<br><small class="u">상가 보유자가 없어 모두 무사합니다.</small>')+tipHTML(c.tip),
+      [{label:'확인',cls:'pri',fn:()=>afterGlobalPay()}]);
+  }
+  else if(c.id==='ipo'){
+    let msg='';
+    alive().forEach(q=>{
+      const sus=q.assets.filter(a=>a.tag==='su');
+      sus.forEach(a=>{ q.cash+=a.equity*5; msg+='<br>'+q.name+': '+a.name+' <span class="pos">+'+fmt(a.equity*5)+'</span> 회수!'; });
+      q.assets=q.assets.filter(a=>a.tag!=='su');
+    });
+    showModal('🏛️ '+c.name,c.desc+(msg||'<br><small class="u">스타트업 투자자가 없었습니다. 아쉽다!</small>')+tipHTML(c.tip),
+      [{label:'확인',cls:'pri',fn:()=>finishResolve()}]);
+  }
+  else if(c.id==='jeonse-up'){
+    let msg='';
+    alive().forEach(q=>{
+      const n=q.assets.filter(a=>a.tag==='gap').length;
+      if(n>0){ q.cash+=500*n; msg+='<br>'+q.name+': <span class="pos">+'+fmt(500*n)+'</span>'; }
+    });
+    showModal('🏛️ '+c.name,c.desc+(msg||'<br><small class="u">갭투자 보유자가 없습니다.</small>')+tipHTML(c.tip),
+      [{label:'확인',cls:'pri',fn:()=>finishResolve()}]);
+  }
+  else if(c.id==='biz-offer'){ sellOfferModal(c,(a)=>Math.round(a.equity*1.5)); }
+  else { /* re-up / re-down / op-offer */ sellOfferModal(c,(a)=>a.equity+Math.round(a.propPrice*c.mul)); }
+}
+/* 주가 변동 카드: 보유자 전원이 그 자리에서 매도 가능 (온라인이면 각자 자기 폰에서!) */
+function pxReaction(c,old){
+  const sym=c.sym;
+  function build(){
+    let rows='',any=false;
+    alive().forEach(q=>{
+      const hd=q.hold[sym]; if(!hd||hd.qty<=0)return; any=true;
+      const val=Math.round(hd.qty*prices[sym]);
+      const pl=Math.round((prices[sym]-hd.avg)*hd.qty);
+      rows+='<tr><td><b style="color:'+q.color+'">'+q.name+'</b> '+hd.qty.toLocaleString()+UNITS[sym].unit+
+        '<br><small class="u">평단 '+fmtAvg(hd.avg)+' · 손익 <span class="'+(pl>=0?'pos':'neg')+'">'+(pl>=0?'+':'')+fmt(pl)+'</span></small></td>'+
+        '<td><button class="sellBtn pxh" data-p="'+q.id+'">절반 매도</button><br>'+
+        '<button class="sellBtn pxa" data-p="'+q.id+'" style="margin-top:4px">전량 +'+fmt(val)+'</button></td></tr>';
+    });
+    return '<b>'+sym+'</b> 시세: '+fmt(old)+' → <b class="'+(c.mul>=1?'pos':'neg')+'">'+fmt(prices[sym])+'</b>/'+UNITS[sym].unit+
+      (any?'<br><small class="u">보유자는 지금 바로 매도 결정! '+(NET?'각자 자기 폰에서 누르세요.':'각자 결정하세요.')+'</small><table class="tbl">'+rows+'</table>'
+          :'<br><small class="u">이 종목 보유자가 없습니다.</small>')+tipHTML(c.tip);
+  }
+  function sellFor(q,half){
+    const hd=q.hold[sym]; if(!hd||hd.qty<=0)return;
+    let qty=half?Math.floor(hd.qty/2/UNITS[sym].step)*UNITS[sym].step:hd.qty;
+    if(qty<=0)qty=hd.qty;
+    q.cash+=Math.round(qty*prices[sym]);
+    hd.qty-=qty; if(hd.qty<=0)delete q.hold[sym];
+    log('💱 '+q.name+': '+sym+' '+qty.toLocaleString()+UNITS[sym].unit+' 매도!');
+    $('mBody').innerHTML=build(); wire(); renderAll();
+  }
+  function wire(){
+    $('mBody').querySelectorAll('.pxh').forEach(b=>wireAction(b,()=>sellFor(G.players[+b.dataset.p],true),+b.dataset.p));
+    $('mBody').querySelectorAll('.pxa').forEach(b=>wireAction(b,()=>sellFor(G.players[+b.dataset.p],false),+b.dataset.p));
+  }
+  showModal('🏛️ '+c.name,build(),[{label:'마감 (다음으로)',cls:'pri',fn:()=>finishResolve()}]);
+  wire();
+}
+function afterGlobalPay(){
+  // 현재 플레이어가 마이너스면 즉시 해결, 타인은 자기 턴 시작 시 해결
+  renderAll();
+  if(cur().cash<0) openCrisis(()=>finishResolve());
+  else finishResolve();
+}
+function sellOfferModal(c,calcProceeds){
+  function build(){
+    let rows='',any=false;
+    alive().forEach(q=>{
+      q.assets.forEach((a,ai)=>{
+        if(!c.tags.includes(a.tag))return;
+        any=true;
+        const pr=calcProceeds(a);
+        const profit=pr-a.equity;
+        rows+='<tr><td><b style="color:'+q.color+'">'+q.name+'</b><br>'+a.name+'<br><small class="u">실투자 '+fmt(a.equity)+' · 월 '+(a.cf>=0?'+':'')+fmt(a.cf)+'</small></td>'+
+          '<td>회수 <b>'+fmt(pr)+'</b><br><span class="'+(profit>=0?'pos':'neg')+'">'+(profit>=0?'+':'')+fmt(profit)+'</span><br><button class="sellBtn" data-p="'+q.id+'" data-a="'+ai+'">매도</button></td></tr>';
+      });
+    });
+    return c.desc+(any?'<table class="tbl">'+rows+'</table>':'<br><small class="u">해당하는 자산을 가진 사람이 없습니다.</small>')+tipHTML(c.tip);
+  }
+  function wire(){
+    $('mBody').querySelectorAll('.sellBtn').forEach(b=>{
+      wireAction(b,()=>{
+        const q=G.players[+b.dataset.p]; const a=q.assets[+b.dataset.a];
+        if(!a)return;
+        const pr=calcProceeds(a);
+        q.assets.splice(+b.dataset.a,1);
+        q.cash+=pr;
+        log('🏷️ '+q.name+': '+a.name+' 매도 (+'+fmt(pr)+')');
+        $('mBody').innerHTML=build(); wire(); renderAll();
+      },+b.dataset.p);
+    });
+  }
+  showModal('🏛️ '+c.name,build(),[{label:'마감',cls:'pri',fn:()=>finishResolve()}]);
+  wire();
+}
+
+/* ---------- 은행 ---------- */
+$('btnBank').onclick=()=>requestStatic('bank');
+STATIC.bank=()=>{ if(G.phase==='resolving'||G.phase==='await')return; openBank(); };
+function openBank(){
+  const p=cur();
+  function body(){
+    return '<table class="tbl">'+
+      '<tr><td>💵 현금</td><td><b>'+fmt(p.cash)+'</b></td></tr>'+
+      '<tr><td>💳 신용대출 잔액 <small class="u">(월 이자 1%)</small></td><td class="neg">'+fmt(p.loan)+'</td></tr>'+
+      '<tr><td>대출 한도 <small class="u">(월급×20)</small></td><td>'+fmt(loanCap(p))+'</td></tr>'+
+      '<tr><td>🏦 정기예금 <small class="u">(월 이자 0.3%)</small></td><td class="pos">'+fmt(p.deposit)+'</td></tr>'+
+      '</table>'+tipHTML('대출이자(연 12%)는 예금이자(연 3.6%)보다 훨씬 큽니다. 빚 갚는 것이 곧 최고의 재테크인 이유! 단, 대출로 산 자산이 이자보다 더 벌어주면 이야기가 달라집니다(레버리지).');
+  }
+  function refresh(){ $('mBody').innerHTML=body(); renderAll(); }
+  showModal('🏦 은행',body(),[
+    {label:'💳 대출 받기 +'+fmt(LOAN_UNIT),keep:true,fn:()=>{
+      if(cur().loan+LOAN_UNIT<=loanCap(cur())){cur().loan+=LOAN_UNIT;cur().cash+=LOAN_UNIT;}
+      refresh();
+    }},
+    {label:'💳 대출 갚기 −'+fmt(LOAN_UNIT),keep:true,fn:()=>{
+      const q=cur();
+      if(q.loan>=LOAN_UNIT&&q.cash>=LOAN_UNIT){q.loan-=LOAN_UNIT;q.cash-=LOAN_UNIT;checkWin(q);}
+      refresh();
+    }},
+    {label:'🏦 예금하기 +'+fmt(DEP_UNIT),keep:true,fn:()=>{
+      const q=cur();
+      if(q.cash>=DEP_UNIT){q.cash-=DEP_UNIT;q.deposit+=DEP_UNIT;checkWin(q);}
+      refresh();
+    }},
+    {label:'🏦 예금 찾기 −'+fmt(DEP_UNIT),keep:true,fn:()=>{
+      const q=cur();
+      if(q.deposit>=DEP_UNIT){q.deposit-=DEP_UNIT;q.cash+=DEP_UNIT;}
+      refresh();
+    }},
+    {label:'닫기',cls:'pri'}
+  ]);
+}
+
+/* ---------- 재무제표 ---------- */
+$('btnFin').onclick=()=>requestStatic('fin');
+STATIC.fin=()=>{ if(G.phase==='resolving'||G.phase==='await')return; viewFin(cur()); };
+/* 조회 전용 재산현황 — 어느 폰에서든, 언제든 (게임 진행 방해 없음) */
+function viewRead(p){ vShow('📊 '+p.name+'의 재산현황'+(NET&&p.id===myPid?' (나)':''),finHTML(p,false)); }
+function viewFin(p){
+  const interactive=(p===cur())&&(G.phase==='roll'||G.phase==='done')&&!p.bankrupt;
+  function body(){ return finHTML(p,interactive); }
+  function wire(){
+    if(!interactive)return;
+    $('mBody').querySelectorAll('.sellBtn').forEach(b=>{
+      wireAction(b,()=>{
+        const sym=b.dataset.sym,hd=p.hold[sym];
+        if(!hd)return;
+        openQty({
+          title:'📉 '+sym+' 매도 — 현재가 '+fmt(prices[sym])+'/'+UNITS[sym].unit,
+          sub:'보유 '+hd.qty.toLocaleString()+UNITS[sym].unit+' · 평단 '+fmtAvg(hd.avg),
+          unit:UNITS[sym].unit,step:UNITS[sym].step,unitPrice:prices[sym],
+          maxQtyFixed:hd.qty,sell:true,confirm:'매도 확정',
+          tip:'수익은 실현해야 내 돈. 하지만 너무 자주 사고팔면 수수료와 세금이 갉아먹습니다.',
+          onDone:(qty)=>{
+            if(qty>0){
+              p.cash+=Math.round(qty*prices[sym]);
+              hd.qty-=qty; if(hd.qty<=0)delete p.hold[sym];
+              log('💱 '+sym+' '+qty+UNITS[sym].unit+' 매도');
+            }
+            viewFin(p);
+          }
+        });
+      });
+    });
+  }
+  showModal('📊 '+p.name+'의 재산현황',body(),[{label:'닫기',cls:'pri'}]);
+  wire(); renderAll();
+}
+function finHTML(p,interactive){
+    const pas=passive(p),ex=expenses(p);
+    let h='<div class="secH">📥 수입 (월)</div><table class="tbl">'+
+      '<tr><td>💼 월급 ('+p.job.name+')</td><td class="pos">+'+fmt(p.salary)+'</td></tr>';
+    p.assets.forEach(a=>{h+='<tr><td>'+a.name+'</td><td class="'+(a.cf>=0?'pos':'neg')+'">'+(a.cf>=0?'+':'')+fmt(a.cf)+'</td></tr>';});
+    const r=p.hold['K리츠'];
+    if(r)h+='<tr><td>K리츠 배당 ('+r.qty+'구좌)</td><td class="pos">+'+fmt(r.qty*REIT_DIV)+'</td></tr>';
+    if(p.deposit)h+='<tr><td>예금 이자</td><td class="pos">+'+fmt(Math.round(p.deposit*DEP_RATE))+'</td></tr>';
+    h+='<tr><td><b>패시브인컴 합계</b></td><td class="pos"><b>+'+fmt(pas)+'</b></td></tr></table>';
+    h+='<div class="secH">📤 지출 (월)</div><table class="tbl">'+
+      '<tr><td>생활비</td><td class="neg">−'+fmt(p.expense)+'</td></tr>'+
+      (p.children?'<tr><td>👶 자녀 양육 ×'+p.children+'</td><td class="neg">−'+fmt(p.children*CHILD_COST)+'</td></tr>':'')+
+      (p.loan?'<tr><td>💳 대출이자 (1%)</td><td class="neg">−'+fmt(Math.round(p.loan*LOAN_RATE))+'</td></tr>':'')+
+      '<tr><td><b>총지출</b></td><td class="neg"><b>−'+fmt(ex)+'</b></td></tr></table>';
+    h+='<div class="secH">💼 투자 자산'+(interactive?' (매도 가능)':' <small class="u">— 매도는 본인 턴에만</small>')+'</div><table class="tbl">';
+    let anyH=false;
+    for(const sym in p.hold){
+      const hd=p.hold[sym]; if(hd.qty<=0)continue; anyH=true;
+      const val=Math.round(hd.qty*prices[sym]);
+      const pl=Math.round((prices[sym]-hd.avg)*hd.qty);
+      h+='<tr><td>'+sym+' '+hd.qty.toLocaleString()+UNITS[sym].unit+'<br><small class="u">평단 '+fmtAvg(hd.avg)+' · 현재 '+fmt(prices[sym])+'</small></td>'+
+        '<td>'+fmt(val)+'<br><span class="'+(pl>=0?'pos':'neg')+'">'+(pl>=0?'+':'')+fmt(pl)+'</span>'+(interactive?' <button class="sellBtn" data-sym="'+sym+'">매도</button>':'')+'</td></tr>';
+    }
+    if(!anyH)h+='<tr><td colspan="2"><small class="u">보유 주식·코인·리츠 없음</small></td></tr>';
+    h+='</table>';
+    if(p.assets.length){
+      h+='<div class="secH">🏠 부동산·사업 (시장 카드로만 매도)</div><table class="tbl">';
+      p.assets.forEach(a=>{h+='<tr><td>'+a.name+'</td><td><small class="u">실투자 '+fmt(a.equity)+'</small></td></tr>';});
+      h+='</table>';
+    }
+    h+='<div class="secH">🏦 은행</div><table class="tbl">'+
+      '<tr><td>💵 현금</td><td><b>'+fmt(p.cash)+'</b></td></tr>'+
+      '<tr><td>예금</td><td class="pos">'+fmt(p.deposit)+'</td></tr>'+
+      '<tr><td>대출 잔액</td><td class="neg">'+fmt(p.loan)+'</td></tr></table>';
+    h+='<div class="secH">🧮 요약</div><table class="tbl">'+
+      '<tr><td>순자산 (현금+예금+자산−부채)</td><td><b>'+fmt(netWorth(p))+'</b></td></tr>'+
+      '<tr><td>경제적 자유 진행률</td><td><b style="color:var(--gold)">'+freedomPct(p)+'%</b></td></tr></table>';
+    return h;
+}
+
+/* ---------- 위기(현금 부족) ---------- */
+function openCrisis(onResolved){
+  const p=cur();
+  function build(){
+    const need=-p.cash;
+    let h='<b class="neg">현금이 '+fmt(need)+' 부족합니다!</b><br>대출을 받거나 자산을 팔아 현금을 0원 이상으로 만드세요.'+
+      '<table class="tbl"><tr><td>현재 현금</td><td class="neg">'+fmt(p.cash)+'</td></tr></table>';
+    h+='<div class="secH">해결 수단</div><table class="tbl">';
+    const canL=p.loan+LOAN_UNIT<=loanCap(p);
+    h+='<tr><td>💳 신용대출 (한도 '+fmt(loanCap(p)-p.loan)+' 남음)</td><td>'+(canL?'<button class="sellBtn" id="crLoan">+'+fmt(LOAN_UNIT)+' 대출</button>':'<small class="u">한도 초과</small>')+'</td></tr>';
+    if(p.deposit>0)h+='<tr><td>🏦 예금 '+fmt(p.deposit)+'</td><td><button class="sellBtn" id="crDep">전액 해지</button></td></tr>';
+    for(const sym in p.hold){
+      const hd=p.hold[sym];if(hd.qty<=0)continue;
+      h+='<tr><td>'+sym+' '+hd.qty.toLocaleString()+UNITS[sym].unit+'</td><td><button class="sellBtn crStock" data-sym="'+sym+'">전량 매도 +'+fmt(Math.round(hd.qty*prices[sym]))+'</button></td></tr>';
+    }
+    p.assets.forEach((a,ai)=>{
+      h+='<tr><td>'+a.name+'<br><small class="u">급매는 실투자금의 70%만 회수</small></td><td><button class="sellBtn crAsset" data-a="'+ai+'">급매 +'+fmt(Math.round(a.equity*0.7))+'</button></td></tr>';
+    });
+    h+='</table>'+tipHTML('현금이 마르면 아무리 자산이 많아도 헐값에 팔아야 합니다(급매). "현금흐름 관리"가 부자의 기본기인 이유!');
+    return h;
+  }
+  function refresh(){
+    if(p.cash>=0){
+      closeModal(); renderAll();
+      showModal('😮‍💨 위기 탈출!','현금이 다시 플러스가 되었습니다. 다음부터는 비상금을 챙겨두세요!',[{label:'계속',cls:'grn',fn:onResolved}]);
+      return;
+    }
+    // 파산 판정: 더 이상 수단이 없는가
+    const canL=p.loan+LOAN_UNIT<=loanCap(p);
+    const hasStock=Object.values(p.hold).some(h=>h.qty>0);
+    if(!canL&&!hasStock&&p.deposit<=0&&p.assets.length===0){
+      closeModal(); doBankrupt(p); return;
+    }
+    $('mBody').innerHTML=build(); wire(); renderAll();
+  }
+  function wire(){
+    const L=$('crLoan'); if(L)wireAction(L,()=>{p.loan+=LOAN_UNIT;p.cash+=LOAN_UNIT;refresh();});
+    const D=$('crDep'); if(D)wireAction(D,()=>{p.cash+=p.deposit;p.deposit=0;refresh();});
+    $('mBody').querySelectorAll('.crStock').forEach(b=>{
+      wireAction(b,()=>{const sym=b.dataset.sym,hd=p.hold[sym];
+        if(!hd)return;
+        p.cash+=Math.round(hd.qty*prices[sym]); delete p.hold[sym]; refresh();});
+    });
+    $('mBody').querySelectorAll('.crAsset').forEach(b=>{
+      wireAction(b,()=>{const a=p.assets[+b.dataset.a];
+        if(!a)return;
+        p.cash+=Math.round(a.equity*0.7); p.assets.splice(+b.dataset.a,1); refresh();});
+    });
+  }
+  showModal('🚨 현금 위기!',build(),[]);
+  wire();
+}
+function doBankrupt(p){
+  p.bankrupt=true;
+  showModal('💀 파산…','<b>'+p.name+'</b> 님은 빚을 감당하지 못하고 파산했습니다.'+tipHTML('게임에서의 파산은 다시 시작하면 그만이지만, 현실의 빚은 그렇지 않습니다. 감당 가능한 빚만!'),
+    [{label:'확인',cls:'red',fn:()=>{
+      const al=alive();
+      if(al.length===1){ gameOver(al[0],'생존'); }
+      else if(al.length===0){ gameOver(null,'전원 파산'); }
+      else endTurn();
+    }}]);
+  renderAll();
+}
+
+/* ---------- 승리 ---------- */
+function checkWin(p){
+  if(p.bankrupt)return false;
+  const ex=expenses(p);
+  if(ex>0&&passive(p)>=ex){ gameOver(p,'경제적 자유'); return true; }
+  return false;
+}
+function gameOver(winner,how){
+  const ranked=G.players.slice().sort((a,b)=>{
+    if(a.bankrupt!==b.bankrupt)return a.bankrupt?1:-1;
+    const fa=freedomPct(a),fb=freedomPct(b);
+    if(fb!==fa)return fb-fa;
+    return netWorth(b)-netWorth(a);
+  });
+  let h='';
+  if(winner){
+    h+=(how==='경제적 자유'
+      ?'<b style="color:var(--gold);font-size:18px">🏆 '+winner.name+' 님, 경제적 자유 달성!</b><br>패시브인컴이 지출을 넘었습니다. 이제 일하지 않아도 통장에 돈이 쌓입니다. ('+winner.months+'개월 만에 달성)'
+      :'<b style="color:var(--gold);font-size:18px">🏆 '+winner.name+' 님이 최후의 생존자!</b>');
+  } else h+='<b class="neg">전원 파산… 대한민국 경제가 여러분을 기다립니다.</b>';
+  h+='<div class="secH">최종 순위</div><table class="tbl">';
+  ranked.forEach((q,i)=>{
+    h+='<tr><td>'+(i+1)+'위 <b style="color:'+q.color+'">'+q.name+'</b>'+(q.bankrupt?' 💀':'')+'</td>'+
+      '<td>자유 '+freedomPct(q)+'%<br><small class="u">순자산 '+fmt(netWorth(q))+'</small></td></tr>';
+  });
+  h+='</table>'+tipHTML('오늘의 교훈: 월급은 시작일 뿐, 지출을 통제하고 현금흐름 자산을 모으는 사람이 결국 자유를 얻습니다.');
+  showModal('🎊 게임 종료',h,[{label:'🔄 새 게임 (이 폰에서)',cls:'pri',local:true,fn:()=>location.reload()}]);
+}
+
+/* ---------- 턴 종료 / 순위 / 도움말 ---------- */
+$('btnEnd').onclick=()=>requestStatic('end');
+STATIC.end=()=>{ if(G.phase==='done') endTurn(); };
+$('vClose').onclick=()=>$('vovl').classList.remove('on');
+function endTurn(){
+  if(alive().length===0)return;
+  do{ G.turn=(G.turn+1)%G.players.length; }while(cur().bankrupt);
+  G.totalTurns++;
+  turnBanner();
+}
+$('btnRank').onclick=()=>{
+  if(!G)return;
+  const ranked=G.players.slice().sort((a,b)=>freedomPct(b)-freedomPct(a)||netWorth(b)-netWorth(a));
+  let h='<table class="tbl">';
+  ranked.forEach((q,i)=>{
+    h+='<tr><td>'+(i+1)+'위 <b style="color:'+q.color+'">'+q.name+'</b>'+(q.bankrupt?' 💀':'')+'<br><small class="u">'+q.job.emoji+' '+q.job.name+'</small></td>'+
+      '<td>자유 <b>'+freedomPct(q)+'%</b><br><small class="u">순자산 '+fmt(netWorth(q))+' · 패시브 '+fmt(passive(q))+'</small></td></tr>';
+  });
+  h+='</table><div class="secH">📊 현재 시세</div><table class="tbl">';
+  for(const sym in prices)h+='<tr><td>'+sym+'</td><td>'+fmt(prices[sym])+'/'+UNITS[sym].unit+'</td></tr>';
+  h+='</table>';
+  vShow('🏆 실시간 순위',h); // 조회 전용 — 각자 폰에서 언제든
+};
+$('btnHelp').onclick=()=>showHelp();
+function showHelp(){
+  const h=
+  '<div class="secH">🎯 승리 조건</div>일하지 않아도 들어오는 <b>패시브인컴</b>(월세·배당·사업수익·이자)이 <b>총지출</b>(생활비+자녀+대출이자)보다 커지면 <b>경제적 자유 달성 = 즉시 승리!</b>'+
+  '<div class="secH">🎲 진행 방법</div>자기 차례에 주사위를 굴려 이동합니다. <b>월급날💰을 지날 때마다</b> [월급+패시브인컴−지출]을 받습니다. 이동한 칸의 지시를 따른 뒤 "턴 종료"를 눌러 폰을 다음 사람에게 넘깁니다.'+
+  '<div class="secH">📈 기회 칸</div>소액(주식·코인·리츠·소형부동산) 또는 대형(아파트·상가·창업) 매물을 볼 수 있습니다. 사도 되고 안 사도 됩니다. 주식·코인은 카드가 보여주는 가격으로 <b>전체 시세가 갱신</b>됩니다.'+
+  '<div class="secH">📊 재산현황</div>상단 플레이어 칩을 탭하면 <b>언제든 누구의 재산현황이든</b> 볼 수 있습니다. 월급·이자·지출·손익은 전부 자동 계산됩니다.'+
+  '<div class="secH">💱 매도</div>주식·코인·리츠는 내 턴에 <b>재무제표</b>에서 현재 시세로 팔 수 있습니다. 부동산·사업은 <b>시장 카드</b>에서 매수자가 나타날 때만 팔 수 있습니다(현실도 그렇죠).'+
+  '<div class="secH">🏦 은행</div>월급×20까지 신용대출(월 이자 1%) 가능. 예금은 월 0.3% 이자를 줍니다. 현금이 마이너스가 되면 대출·매각·급매로 해결해야 하며, 불가능하면 <b>파산</b>입니다.'+
+  '<div class="secH">📖 경제 용어 사전</div>'+
+  '<b>패시브인컴</b>: 노동 없이 자산이 벌어주는 소득. 이 게임의 핵심!<br>'+
+  '<b>갭투자</b>: 전세를 끼고 적은 돈으로 집을 사는 것. 시세차익형 투자.<br>'+
+  '<b>리츠(REITs)</b>: 여러 명의 돈을 모아 부동산에 투자해 임대료를 배당하는 상품.<br>'+
+  '<b>레버리지</b>: 대출로 투자 규모를 키우는 것. 수익도 손실도 커짐.<br>'+
+  '<b>순자산</b>: 내 재산 전부에서 빚을 뺀 진짜 내 돈.<br>'+
+  '<b>공실</b>: 상가·건물에 세입자가 없는 상태. 수익 0, 관리비만 나감.<br>'+
+  '<b>금리</b>: 돈의 가격. 오르면 대출자는 힘들고 예금자는 웃습니다.<br>'+
+  '<b>급매</b>: 급하게 파는 것. 제값을 못 받음. 현금관리가 중요한 이유.'+
+  '<div class="secH">📶 온라인 모드 (각자 폰)</div>한 명이 <b>방 만들기</b>로 초대 코드를 받아 친구들에게 알려주면, 각자 폰의 이 파일에서 <b>참여하기</b>로 입장합니다. 전원 인터넷 연결 필요. 시장 카드가 나오면 <b>보유자 전원이 각자 자기 폰에서</b> 매도 버튼을 누를 수 있습니다. 연결이 끊기면 상단 빨간 배너를 탭해 재접속하면 진행 상황이 자동 복구됩니다.';
+  vShow('❓ 게임 방법 & 경제 사전',h); // 조회 전용
+}
+
+/* ---------- 초기화 ---------- */
+$('sudoChk').onchange=()=>{if(G)renderAll();};
+buildStart();
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎮 우리들의 게임천국</title>
+<style>
+:root{--bg:#0e1220;--panel:#1a2135;--line:#2c3a5c;--txt:#eef2fb;--sub:#93a2c4;
+--gold:#ffc94d;--green:#3ecf8e;--red:#ff5d73;--blue:#4dabff;--purple:#b78bff}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{height:100%}
+body{background:radial-gradient(circle at 50% 0%,#182036,var(--bg) 70%);color:var(--txt);
+font-family:'Apple SD Gothic Neo','Noto Sans KR',-apple-system,sans-serif;overscroll-behavior:none}
+#app{max-width:520px;margin:0 auto;padding:34px 18px 50px}
+.logo{text-align:center;font-size:34px;font-weight:900;letter-spacing:-1px;margin-bottom:6px}
+.logo .g{background:linear-gradient(135deg,#ffc94d,#ff9f43);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tag{text-align:center;color:var(--sub);font-size:14px;margin-bottom:26px;line-height:1.6}
+a.game{display:block;text-decoration:none;color:var(--txt);background:var(--panel);
+border:1px solid var(--line);border-radius:20px;padding:20px 18px;margin-bottom:14px;
+transition:transform .15s}
+a.game:active{transform:scale(.98)}
+.gTitle{font-size:20px;font-weight:900;display:flex;align-items:center;gap:10px}
+.gTitle .em{font-size:30px}
+.gDesc{color:var(--sub);font-size:13px;line-height:1.7;margin-top:8px}
+.gDesc b{color:var(--gold)}
+.gMeta{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:11px;font-weight:800;padding:4px 10px;border-radius:20px;background:#232e47}
+.pill.p1{color:var(--gold)}.pill.p2{color:var(--green)}.pill.p3{color:var(--blue)}.pill.p4{color:var(--purple)}
+.foot{text-align:center;color:var(--sub);font-size:12px;margin-top:26px;line-height:1.8}
+.b1{border-left:4px solid var(--gold)}
+.b2{border-left:4px solid var(--purple)}
+.b3{border-left:4px solid var(--green)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="logo">🎮 우리들의 <span class="g">게임천국</span></div>
+  <div class="tag">보드게임부터 파티게임까지 — 폰 하나로, 또는 각자 폰으로!</div>
+
+  <a class="game b1" href="moneyflow.html">
+    <div class="gTitle"><span class="em">💸</span>머니플로우 코리아</div>
+    <div class="gDesc">한국판 캐시플로우 보드게임. 월급쟁이로 시작해 갭투자·주식·창업으로 패시브인컴을 만들고 <b>경제적 자유</b>를 달성하라! 놀면서 배우는 경제 상식 팁 가득.</div>
+    <div class="gMeta"><span class="pill p1">1~6인</span><span class="pill p2">한 폰 or 각자 폰</span><span class="pill p3">60~90분</span><span class="pill p4">경제 공부</span></div>
+  </a>
+
+  <a class="game b2" href="party.html">
+    <div class="gTitle"><span class="em">🎭</span>K-파티게임 (라이어 & 마피아)</div>
+    <div class="gDesc">라이어게임(일반/바보 모드)과 마피아. 대화는 얼굴 보고, 폰은 비밀 역할 배분과 밤 진행만! 꾹 눌러야 보이는 비밀 카드로 안전하게.</div>
+    <div class="gMeta"><span class="pill p1">3~12인</span><span class="pill p2">한 폰 or 각자 폰</span><span class="pill p3">판당 10~20분</span><span class="pill p4">심리전</span></div>
+  </a>
+
+  <a class="game b3" href="pension.html">
+    <div class="gTitle"><span class="em">🏕️</span>펜션게임 팩</div>
+    <div class="gDesc">이마 스피드퀴즈 · 몸으로 말해요 · 폭탄 돌리기 · 초성 퀴즈 · 밸런스 게임 · 벌칙 룰렛. 폰은 소품이자 사회자, 노는 건 사람! 여행 필수템.</div>
+    <div class="gMeta"><span class="pill p1">2~12인</span><span class="pill p2">한 폰이면 충분</span><span class="pill p3">인터넷 불필요</span><span class="pill p4">복불복</span></div>
+  </a>
+
+  <div class="foot">
+    💡 온라인 모드(각자 폰)는 인터넷 연결이 필요해요.<br>
+    한 명이 방을 만들고 초대 코드 4글자를 공유하면 끝!
+  </div>
+</div>
+</body>
+</html>
