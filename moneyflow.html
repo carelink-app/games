@@ -103,6 +103,8 @@ button{font-family:inherit;border:none;cursor:pointer}
 .tbl td:last-child{text-align:right}
 .sellBtn{background:var(--panel2);color:var(--blue);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800}
 .secH{font-size:13px;font-weight:900;color:var(--gold);margin:14px 0 2px}
+.gTerm{border-bottom:1.5px dotted #7ec3ff;color:#9fd0ff;cursor:pointer}
+.gTerm::after{content:'?';font-size:9px;vertical-align:super;color:#7ec3ff;font-weight:900;margin-left:1px}
 .turnOvl{position:fixed;inset:0;background:linear-gradient(160deg,#101728,#1c2740);z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:30px}
 .turnOvl.on{display:flex}
 .turnOvl .big{font-size:30px;font-weight:900}
@@ -196,6 +198,7 @@ window.addEventListener('error',function(ev){
   <button class="ghostBtn" id="btnHelp0">❓ 자세한 규칙 · 경제 용어 사전</button>
   <button class="ghostBtn" id="btnLib0" style="border:1px solid var(--line);color:var(--txt)">📚 부의 서재 — 흥미진진 경제 역사 13장면</button>
   <button class="ghostBtn" id="btnLearnTg" style="border:1px solid var(--gold);color:var(--gold)">🎓 학습 모드 ON — 게임 중 전문가 조언 카드</button>
+  <button class="ghostBtn" id="btnEasyTg" style="border:1px solid #7ec3ff;color:#9fd0ff">📖 쉬운 말 ON — 어려운 용어 탭하면 뜻 보기</button>
 </div>
 
 <!-- ============ 게임 화면 ============ -->
@@ -360,11 +363,11 @@ function reitDiv(){return G?G.reitDiv:REIT_DIV;}
 const COLORS=['#ff5d73','#ffc94d','#3ecf8e','#4dabff','#b78bff','#ff8fd8'];
 
 const JOBS=[
- {name:'9급 공무원',emoji:'🏛️',salary:256,expense:136,cash:560,secure:true,perk:'safe',
+ {name:'9급 공무원',emoji:'🏛️',salary:251,expense:139,cash:552,secure:true,perk:'safe',
   desc:'월급은 적지만 지출도 적어, 자유에 필요한 패시브인컴이 가장 작습니다. 정년 보장으로 구조조정 카드 면역!'},
  {name:'중소기업 사원',emoji:'🏭',salary:280,expense:162,cash:590,perk:'frugal',
   desc:'알뜰함이 무기. 예상 못한 지출 카드를 25% 깎아서 냅니다.'},
- {name:'초등학교 교사',emoji:'🍎',salary:319,expense:188,cash:668,secure:true,perk:'safe',
+ {name:'초등학교 교사',emoji:'🍎',salary:322,expense:184,cash:676,secure:true,perk:'safe',
   desc:'안정의 아이콘. 구조조정 카드 면역으로 소득이 끊길 걱정이 없습니다.'},
  {name:'유튜버',emoji:'📹',salary:350,expense:205,cash:700,perk:'viral',
   desc:'구독자가 곧 자산! 좋은 이벤트(환급·당첨·캐시백)가 2배로 터집니다. 저축률도 최고 수준.'},
@@ -518,6 +521,7 @@ let COPYS={"introSlides": [{"title": "통장 속의 돈은, 자고 있는 게 �
 
 /* ---------- 학습 모드: 전문가 조언 엔진 ---------- */
 let LEARN=true; // 학습 모드 (시작 화면 토글)
+let EASY=true;  // 쉬운 말 도우미 (용어 탭하면 뜻 표시) — 화면 표시 전용
 function adviceHTML(trigger,extra){
   if(!LEARN||!G)return '';
   if(!G.advSeen)G.advSeen={};
@@ -640,6 +644,86 @@ function feedAdd(t){
 }
 
 /* ---------- 모달 ---------- */
+
+/* ---------- 📖 쉬운 말 도우미: 어려운 경제 용어를 탭하면 뜻이 나옵니다 ---------- */
+const GLOSSARY={
+ '패시브인컴':'내가 일하지 않아도 저절로 들어오는 돈. 월세·배당·이자처럼 잠자는 동안에도 벌어주는 돈이에요.',
+ '현금흐름':'매달 들어오는 돈에서 나가는 돈을 뺀 것. 이게 플러스면 돈이 쌓이고, 마이너스면 줄어들어요.',
+ '갭투자':'전세 사는 사람의 돈을 끼고 집을 사는 방법. 내 돈은 조금만 들지만, 전세금은 나중에 돌려줘야 할 빚이에요.',
+ '전세':'집주인에게 큰돈을 맡기고 사는 대신 월세를 안 내는 한국식 제도. 나갈 때 그 돈을 돌려받아요.',
+ '리츠':'여러 사람이 돈을 모아 큰 빌딩을 사고, 거기서 나오는 월세를 나눠 갖는 상품. 소액으로 건물주 되기!',
+ 'REITs':'여러 사람이 돈을 모아 빌딩을 사고 월세를 나눠 갖는 상품(리츠).',
+ '레버리지':'남의 돈(대출)을 지렛대처럼 써서 크게 투자하는 것. 벌 때도 크게 벌지만 잃을 때도 크게 잃어요.',
+ '배당수익률':'지금 가격으로 샀을 때 1년에 몇 %를 돌려받는지. 높을수록 좋지만 너무 높으면 위험 신호일 수도.',
+ '배당':'회사나 건물이 번 돈을 주주에게 나눠주는 것. 주식을 갖고만 있어도 받는 용돈 같은 거예요.',
+ '평단':'내가 여러 번 나눠 산 가격의 평균. 지금 가격이 평단보다 높으면 이득, 낮으면 손해예요.',
+ '시세':'지금 시장에서 사고팔리는 가격.',
+ '실투자금':'실제로 내 주머니에서 나가는 돈. 나머지는 대출이나 전세금으로 채워요.',
+ '매매가':'그 집이나 가게의 전체 가격.',
+ '순자산':'내가 가진 것 전부에서 빚을 뺀, 진짜 내 돈.',
+ '공실':'가게나 집에 세입자가 없어 비어 있는 상태. 돈은 안 들어오는데 관리비는 나가요.',
+ '급매':'현금이 급해서 제값보다 싸게 파는 것. 그래서 평소에 비상금이 필요해요.',
+ '호가':'내가 팔겠다고 부르는 값. 싸게 부를수록 빨리 팔려요.',
+ '유동성':'필요할 때 얼마나 빨리 현금으로 바꿀 수 있는지. 주식은 높고 부동산은 낮아요.',
+ '환금성':'현금으로 바꾸기 쉬운 정도. 부동산은 사줄 사람이 나타나야 팔려서 낮아요.',
+ '분산투자':'한 곳에 몰지 않고 여러 곳에 나눠 담는 것. 하나가 잘못돼도 나머지가 지켜줘요.',
+ '분할매수':'한 번에 다 사지 않고 여러 번 나눠 사는 것. 비쌀 때도 쌀 때도 사서 평균 가격이 안전해져요.',
+ '기회비용':'이걸 선택하느라 포기한 다른 것의 값. 사치품을 사면 그 돈이 벌어줬을 돈을 포기하는 거예요.',
+ '복리':'이자에 또 이자가 붙는 것. 눈덩이처럼 시간이 갈수록 커져요.',
+ '인플레이션':'물가가 올라 같은 돈으로 살 수 있는 게 줄어드는 것. 가만히 둔 돈은 매년 조금씩 힘이 약해져요.',
+ '구조조정':'회사가 어려워서 직원을 내보내는 것. 갑자기 월급이 끊길 수 있어요.',
+ '원금':'처음에 넣은 돈. 이걸 지켜야 계속 돈이 벌려요.',
+ '엑싯':'키운 사업이나 투자를 좋은 값에 팔고 빠져나오는 것.',
+ '자산':'내 주머니에 돈을 넣어주는 것 (월세 나오는 집, 배당 주는 주식).',
+ '부채':'내 주머니에서 돈을 빼가는 것 (대출, 할부, 유지비 드는 물건).',
+ '시세차익':'싸게 사서 비싸게 팔아 남기는 돈. 팔아야만 진짜 내 돈이 돼요.'
+};
+const GLOSS_KEYS=Object.keys(GLOSSARY).sort((a,b)=>b.length-a.length);
+function showTerm(t){
+  const g=GLOSSARY[t]; if(!g)return;
+  let ov=document.getElementById('termOvl');
+  if(!ov){ov=document.createElement('div');ov.id='termOvl';
+    ov.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:24px';
+    document.body.appendChild(ov);}
+  ov.innerHTML='<div style="max-width:340px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px">'+
+    '<div style="color:var(--gold);font-weight:900;font-size:18px;margin-bottom:8px">📖 '+esc(t)+'</div>'+
+    '<div style="font-size:14.5px;line-height:1.8">'+esc(g)+'</div>'+
+    '<button id="termClose" style="margin-top:16px;width:100%;padding:12px;border-radius:12px;background:var(--panel2);color:var(--txt);font-weight:800;font-size:14px">알았어요!</button></div>';
+  ov.onclick=(e)=>{if(e.target===ov)ov.remove();};
+  document.getElementById('termClose').onclick=()=>ov.remove();
+}
+/* 렌더된 화면의 '글자'만 훑어서 용어에 밑줄+탭 기능 부여 (HTML 구조는 절대 안 건드림) */
+function easyTerms(root){
+  if(!root||!EASY)return;
+  const skip={BUTTON:1,INPUT:1,TEXTAREA:1,SCRIPT:1,STYLE:1,SUMMARY:1};
+  const seen={};
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);
+  const jobs=[];
+  let n;
+  while(n=walker.nextNode()){
+    let bad=false;
+    for(let el=n.parentNode;el&&el!==root;el=el.parentNode){
+      if(skip[el.nodeName]||(el.className&&String(el.className).indexOf('gTerm')>=0)){bad=true;break;}
+    }
+    if(bad)continue;
+    const txt=n.nodeValue; if(!txt||txt.length<2)continue;
+    for(const k of GLOSS_KEYS){
+      if(seen[k])continue;
+      const i=txt.indexOf(k);
+      if(i>=0){jobs.push({node:n,key:k,idx:i});seen[k]=1;break;}
+    }
+  }
+  jobs.forEach(j=>{
+    try{
+      const after=j.node.splitText(j.idx);
+      after.splitText(j.key.length);
+      const sp=document.createElement('span');
+      sp.className='gTerm'; sp.textContent=j.key;
+      sp.onclick=(e)=>{e.stopPropagation();showTerm(j.key);};
+      after.parentNode.replaceChild(sp,after);
+    }catch(e){}
+  });
+}
 function showModal(title,bodyHTML,btns,opts){
   resetActions();
   $('mTitle').innerHTML=title;
@@ -655,12 +739,13 @@ function showModal(title,bodyHTML,btns,opts){
     else wireAction(el,run,b.owner,b.valueFn); // 동기화 대상 버튼 (입력값 동봉 가능)
     bb.appendChild(el);
   });
+  easyTerms($('mBody'));
   $('ovl').classList.add('on');
   $('modal').scrollTop=0;
 }
 function closeModal(){$('ovl').classList.remove('on');}
 /* 뷰어 모달 — 조회 전용, 각자 폰에서 언제든 */
-function vShow(title,html){$('vTitle').innerHTML=title;$('vBody').innerHTML=html;$('vovl').classList.add('on');$('vmodal').scrollTop=0;}
+function vShow(title,html){$('vTitle').innerHTML=title;$('vBody').innerHTML=html;easyTerms($('vBody'));$('vovl').classList.add('on');$('vmodal').scrollTop=0;}
 function tipHTML(t){return t?'<div class="tip"><b>💡 경제 한 스푼</b><br>'+t+'</div>':'';}
 
 /* ---------- 시작 화면 ---------- */
@@ -703,6 +788,11 @@ $('btnStart').onclick=()=>{
 };
 $('btnHelp0').onclick=()=>showHelp();
 $('btnLib0').onclick=()=>showLibrary();
+$('btnEasyTg').onclick=()=>{EASY=!EASY;
+  const b=$('btnEasyTg');
+  b.textContent=EASY?'📖 쉬운 말 ON — 어려운 용어 탭하면 뜻 보기':'📖 쉬운 말 OFF — 용어 설명 없이';
+  b.style.borderColor=EASY?'#7ec3ff':'var(--line)';
+  b.style.color=EASY?'#9fd0ff':'var(--sub)';};
 $('btnLearnTg').onclick=()=>{LEARN=!LEARN;
   const b=$('btnLearnTg');
   b.textContent=LEARN?'🎓 학습 모드 ON — 게임 중 전문가 조언 카드':'🎓 학습 모드 OFF — 조언 없이 실전처럼';
@@ -913,6 +1003,7 @@ function startGame(names,winPct,learn){
   $('scrGame').classList.add('on');
   $('sudoWrap').style.display=(NET&&NET.host)?'flex':'none';
   buildBoard();
+  armBackGuard();
   // 직업 공개 모달
   let html='<table class="tbl">';
   G.players.forEach(p=>{
@@ -1496,11 +1587,11 @@ function tileTempt(){
   const p=cur();
   if(!G.decks.tempt||!G.decks.tempt.length)G.decks.tempt=shuffle(TEMPTS);
   const c=G.decks.tempt.pop();
-  let cost=scaleAmt(p,c.cost);
-  // 현실 고증: 지름은 카드 한도(월급 1개월치)와 잔고 안에서 — 사치로 파산까지 가진 않게
-  const avail=Math.floor(Math.max(0,p.cash)/10)*10;
-  const cap=Math.min(p.salary,avail);
-  if(cap<50){ // 텅장 — 지를 돈조차 없다
+  // 지름은 '한 달 용돈' 수준으로 (월급의 35% + 잔고 안에서) — 한 방에 휘청이지 않게
+  let cost=Math.round(scaleAmt(p,c.cost)*0.45/10)*10;
+  const avail=Math.floor(Math.max(0,p.cash)*0.6/10)*10;
+  const cap=Math.min(Math.round(p.salary*0.35/10)*10,avail);
+  if(cap<30){ // 텅장 — 지를 돈조차 없다
     feedAdd('🛍️ '+p.name+': 지름신이 왔지만… 텅장이라 그냥 지나갔다 😌');
     showModal('🛍️ 지름신 강림…?','<div style="font-size:46px;text-align:center">🪙</div><b>'+esc(c.name)+'</b>이(가) 눈에 아른거리지만…<br><b class="pos">잔고가 없어 지름 실패!</b> 가난이 지켜준 하루입니다.'+tipHTML('지갑에 돈이 없으면 유혹도 힘을 못 씁니다. 반대로 말하면, 현금이 많을수록 지출 통제가 더 중요해집니다.'),
       [{label:'😌 다행이다…',cls:'grn',fn:()=>finishResolve()}]);
@@ -1508,7 +1599,7 @@ function tileTempt(){
   }
   const modest=cost>cap; if(modest)cost=cap;
   // 💳 할부·구독의 늪: 지른 것의 월 유지비가 평생 따라온다 (자유 문턱 상승!)
-  const up=Math.max(5,Math.round(scaleAmt(p,c.upkeep)*0.5/5)*5);
+  const up=Math.max(5,Math.round(scaleAmt(p,c.upkeep)*0.22/5)*5);
   p.luxUpkeep+=up; p.luxItems.push({name:c.name,upkeep:up});
   const reitN=Math.floor(cost/prices['K리츠']);
   const oppo=reitN>0
@@ -2121,6 +2212,27 @@ function showHelp(){
   '<b>급매</b>: 급하게 파는 것. 제값을 못 받음. 현금관리가 중요한 이유.'+
   '<div class="secH">📶 온라인 모드 (각자 폰)</div>한 명이 <b>방 만들기</b>로 초대 코드를 받아 친구들에게 알려주면, 각자 폰의 이 파일에서 <b>참여하기</b>로 입장합니다. 전원 인터넷 연결 필요. 시장 카드가 나오면 <b>보유자 전원이 각자 자기 폰에서</b> 매도 버튼을 누를 수 있습니다. 연결이 끊기면 상단 빨간 배너를 탭해 재접속하면 진행 상황이 자동 복구됩니다.';
   vShow('❓ 게임 방법 & 경제 사전',h); // 조회 전용
+}
+
+/* ---------- 📱 뒤로가기 방지: 게임 중 실수로 나가지 않도록 ---------- */
+let backGuard=false, backWarnAt=0;
+function armBackGuard(){
+  if(backGuard)return; backGuard=true;
+  try{ history.pushState({dr:1},''); }catch(e){}
+  window.addEventListener('popstate',()=>{
+    if(!G||(G&&G.over)){ return; } // 게임 전/후엔 정상 동작
+    const now=Number(new Date());
+    try{ history.pushState({dr:1},''); }catch(e){}
+    if(now-backWarnAt<2500){ backGuard=false; history.back(); return; } // 2.5초 안에 두 번 = 진짜 나가기
+    backWarnAt=now;
+    let t=document.getElementById('backToast');
+    if(!t){ t=document.createElement('div'); t.id='backToast';
+      t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1a2135;border:1px solid #2c3a5c;color:#eef2fb;font-size:13.5px;font-weight:700;padding:12px 18px;border-radius:24px;z-index:10001;box-shadow:0 6px 24px rgba(0,0,0,.5)';
+      document.body.appendChild(t); }
+    t.textContent='게임 중이에요! 정말 나가려면 뒤로가기를 한 번 더 누르세요';
+    t.style.display='block';
+    setTimeout(()=>{ try{t.style.display='none';}catch(e){} },2500);
+  });
 }
 
 /* ---------- 초기화 ---------- */
