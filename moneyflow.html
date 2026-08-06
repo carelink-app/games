@@ -1460,15 +1460,30 @@ function tileTempt(){
     '<tr><td>월 유지비 <small class="u">(할부·보험·구독… 평생 따라옴)</small></td><td class="neg">−'+fmt(upkeep)+'/월</td></tr>'+
     '<tr><td>1년 뒤 총 부담</td><td class="neg">'+fmt(cost+upkeep*12)+'</td></tr></table>'+
     adviceHTML('luxury_tempt')+tipHTML(c.tip),
-    [{label:'😈 지른다! (−'+fmt(cost)+', 월 −'+fmt(upkeep)+')',cls:'red',fn:()=>{
+    [{label:'😈 그냥 지른다! (−'+fmt(cost)+', 월 −'+fmt(upkeep)+')',cls:'red',fn:()=>{
         p.luxUpkeep+=upkeep; p.luxItems.push({name:c.name,upkeep});
         feedAdd('😈 '+p.name+': '+c.name+' 질렀다! "'+c.flex+'"');
         payCur(cost,()=>finishResolve());
       }},
-     {label:'🧘 참는다 (미래의 나를 위해)',cls:'grn',fn:()=>{
-        p.resisted+=cost;
-        feedAdd('🧘 '+p.name+': '+c.name+' 참았다. '+c.resist);
-        finishResolve();
+     {label:'🧘 참아본다 — 🎲 의지력 주사위! <small>(3 이상 성공 · 1~2면 충동에 무너짐)</small>',cls:'grn',fn:()=>{
+        const d=rnd(6)+1;
+        if(d>=3){
+          p.resisted+=cost;
+          feedAdd('🧘 '+p.name+': 의지력 주사위 '+d+'! '+c.name+' 참아냈다.');
+          showModal('🎲 의지력 주사위: '+d+' — 성공!',
+            '<div style="font-size:46px;text-align:center">🧘</div><b class="pos">참아냈습니다!</b><br>'+esc(c.resist)+
+            '<br><small class="u">🏅 절제의 기록 +'+fmt(cost)+' (게임 끝에 공개!)</small>',
+            [{label:'뿌듯하게 다음으로',cls:'grn',fn:()=>finishResolve()}]);
+        } else {
+          p.luxUpkeep+=upkeep; p.luxItems.push({name:c.name,upkeep});
+          feedAdd('😈 '+p.name+': 의지력 주사위 '+d+'… 충동에 무너져 '+c.name+' 질렀다!! "'+c.flex+'"');
+          showModal('🎲 의지력 주사위: '+d+'… 실패!',
+            '<div style="font-size:46px;text-align:center">😈</div><b class="neg">손이 먼저 나가버렸다…!</b><br>"'+esc(c.flex)+'"'+
+            '<table class="tbl"><tr><td>지름값</td><td class="neg">−'+fmt(cost)+'</td></tr>'+
+            '<tr><td>월 유지비 (평생)</td><td class="neg">−'+fmt(upkeep)+'/월</td></tr></table>'+
+            '<small class="u">충동은 의지만으로 못 막습니다. 애초에 유혹 앞에 서지 않는 것이 부자들의 방법!</small>',
+            [{label:'😭 카드값은 다음 달의 나에게…',cls:'red',fn:()=>payCur(cost,()=>finishResolve())}]);
+        }
       }}]);
 }
 function houseTempt(){
@@ -2065,7 +2080,7 @@ $('btnFeed').onclick=()=>{
 function showHelp(){
   const h=
   '<div class="secH">🎯 승리 조건 — 자유, 그리고 꿈</div>① 일하지 않아도 들어오는 <b>패시브인컴</b>(잠자는 동안 버는 돈 — 월세·배당·사업수익·이자)이 <b>총지출</b>을 넘으면 <b>경제적 자유</b>! 퇴사를 선언할 수 있습니다.<br>② 퇴사하면 월급은 0원, 지출은 미니멀 라이프로 −40%. 남는 돈이 매달 <b>꿈 계좌</b>에 자동 적립됩니다.<br>③ 시작할 때 고른 <b>나의 꿈</b>의 가격만큼 모으면 <b>꿈 달성 = 최종 승리!</b> 단, 자산을 다 팔아 패시브인컴이 지출 밑으로 내려가면 꿈을 이룰 수 없습니다 (황금알 낳는 거위를 지키세요).'+
-  '<div class="secH">🛍️ 유혹 칸</div>신차·명품·호캉스… 지르면 지금 행복하지만 <b>월 유지비가 평생</b> 따라붙어 자유가 멀어집니다. 참으면 그 금액이 "절제의 기록"에 쌓이고, 게임 끝에 공개됩니다. 가끔 <b>내집마련 유혹</b>도 옵니다 — 집은 자산이지만 대출이자·관리비로 매달 현금을 빼가는 양날의 검!'+
+  '<div class="secH">🛍️ 유혹 칸</div>신차·명품·호캉스… 그냥 지를 수도 있고, <b>🎲 의지력 주사위</b>(3 이상 성공)로 참아볼 수도 있습니다. 1~2가 나오면 충동에 무너져 강제로 지르게 됩니다 — 충동은 의지만으로 못 막으니까요! 참아낸 금액은 "절제의 기록"에 쌓여 게임 끝에 공개됩니다. 가끔 <b>내집마련 유혹</b>도 옵니다 — 집은 자산이지만 대출이자·관리비로 매달 현금을 빼가는 양날의 검!'+
   '<div class="secH">🎓 학습 모드 & 📚 부의 서재</div>학습 모드를 켜면 투자·대출·위기의 순간마다 <b>전문가 한마디</b> 카드가 나타납니다 (분할매수, 분산투자, 비상금 원칙…). 상단 📚 버튼의 <b>부의 서재</b>에서는 튤립 버블부터 IMF, 2008 금융위기까지 실제 경제 역사 13장면을 아이도 이해할 수 있게 읽을 수 있어요.'+
   '<div class="secH">🎲 진행 방법</div>자기 차례에 주사위를 굴려 이동합니다. <b>월급날💰을 지날 때마다</b> [월급+패시브인컴−지출]을 받습니다. 이동한 칸의 지시를 따른 뒤 "턴 종료"를 눌러 폰을 다음 사람에게 넘깁니다.'+
   '<div class="secH">📈 기회 칸</div>소액(주식·코인·리츠·소형부동산) 또는 대형(아파트·상가·창업) 매물을 볼 수 있습니다. 사도 되고 안 사도 됩니다. 주식·코인은 카드가 보여주는 가격으로 <b>전체 시세가 갱신</b>됩니다.'+
