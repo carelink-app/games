@@ -206,6 +206,7 @@ window.addEventListener('error',function(ev){
   <button class="ghostBtn" id="btnLib0" style="border:1px solid var(--line);color:var(--txt)">📚 부의 서재 — 흥미진진 경제 역사 13장면</button>
   <button class="ghostBtn" id="btnLearnTg" style="border:1px solid var(--gold);color:var(--gold)">🎓 학습 모드 ON — 게임 중 전문가 조언 카드</button>
   <button class="ghostBtn" id="btnEasyTg" style="border:1px solid #7ec3ff;color:#9fd0ff">📖 쉬운 말 ON — 어려운 용어 탭하면 뜻 보기</button>
+  <button class="ghostBtn" id="btnSnd0" style="border:1px solid #ff9f43;color:#ffc94d">🔊 소리 켜짐 — 신나는 배경음악 &amp; 효과음</button>
 </div>
 
 <!-- ============ 게임 화면 ============ -->
@@ -216,6 +217,7 @@ window.addEventListener('error',function(ev){
       <label id="sudoWrap"><input type="checkbox" id="sudoChk">대리조작</label>
       <button class="iconBtn" id="btnFeed">📜</button>
       <button class="iconBtn" id="btnRank">🏆</button>
+      <button class="iconBtn" id="btnSnd">🔊</button>
       <button class="iconBtn" id="btnHow">🎓</button>
       <button class="iconBtn" id="btnLib">📚</button>
       <button class="iconBtn" id="btnHelp">❓</button>
@@ -654,6 +656,122 @@ function feedAdd(t){
 
 /* ---------- 모달 ---------- */
 
+
+/* ═══════════════ 🔊 사운드 엔진 (파일 없이 Web Audio로 직접 합성) ═══════════════
+   게임 로직·동기화와 완전히 분리된 '연출 전용'. rnd() 절대 사용 안 함. */
+const SND={ctx:null,on:true,master:null,bgmGain:null,bgmTimer:null,step:0,started:false};
+function sctx(){
+  if(!SND.ctx){
+    try{ SND.ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+    SND.master=SND.ctx.createGain(); SND.master.gain.value=0.9; SND.master.connect(SND.ctx.destination);
+    SND.bgmGain=SND.ctx.createGain(); SND.bgmGain.gain.value=0.16; SND.bgmGain.connect(SND.master);
+  }
+  return SND.ctx;
+}
+function sndUnlock(){ // 아이폰/안드로이드는 첫 터치가 있어야 소리가 납니다
+  const c=sctx(); if(!c)return;
+  if(c.state==='suspended')c.resume();
+}
+document.addEventListener('touchstart',sndUnlock,{passive:true});
+document.addEventListener('click',sndUnlock);
+function mtof(m){return 440*Math.pow(2,(m-69)/12);}
+/* 단음 */
+function tone(m,t0,dur,type,vol,dst){
+  const c=sctx(); if(!c||!SND.on)return;
+  const o=c.createOscillator(),g=c.createGain();
+  o.type=type||'square'; o.frequency.setValueAtTime(mtof(m),t0);
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.0002,vol||0.2),t0+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  o.connect(g); g.connect(dst||SND.master);
+  o.start(t0); o.stop(t0+dur+0.03);
+}
+/* 미끄러지는 음 (슝~) */
+function slide(m1,m2,t0,dur,type,vol){
+  const c=sctx(); if(!c||!SND.on)return;
+  const o=c.createOscillator(),g=c.createGain();
+  o.type=type||'sawtooth';
+  o.frequency.setValueAtTime(mtof(m1),t0);
+  o.frequency.exponentialRampToValueAtTime(mtof(m2),t0+dur);
+  g.gain.setValueAtTime(vol||0.18,t0);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  o.connect(g); g.connect(SND.master); o.start(t0); o.stop(t0+dur+0.03);
+}
+/* 노이즈 (주사위 달그락, 하이햇) */
+function noise(t0,dur,vol,hp){
+  const c=sctx(); if(!c||!SND.on)return;
+  const n=Math.floor(c.sampleRate*dur);
+  const buf=c.createBuffer(1,Math.max(1,n),c.sampleRate);
+  const dat=buf.getChannelData(0);
+  for(let i=0;i<n;i++)dat[i]=(Math.random()*2-1)*(1-i/n);
+  const src=c.createBufferSource(); src.buffer=buf;
+  const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp||2000;
+  const g=c.createGain(); g.gain.value=vol||0.12;
+  src.connect(f); f.connect(g); g.connect(SND.master); src.start(t0);
+}
+/* 효과음 모음 */
+function sfx(name){
+  const c=sctx(); if(!c||!SND.on)return;
+  if(c.state==='suspended')c.resume();
+  const t=c.currentTime;
+  switch(name){
+    case 'tap':   tone(84,t,0.05,'square',0.10); break;
+    case 'roll':  for(let i=0;i<7;i++)noise(t+i*0.055,0.05,0.13,3000); break;
+    case 'step':  tone(79,t,0.06,'square',0.13); break;
+    case 'land':  tone(72,t,0.08,'square',0.18); tone(79,t+0.07,0.12,'square',0.18); break;
+    case 'card':  slide(60,74,t,0.13,'triangle',0.14); break;
+    case 'coin':  [76,81,88].forEach((m,i)=>tone(m,t+i*0.055,0.13,'square',0.2)); break;
+    case 'money': [72,76,79,84,88].forEach((m,i)=>tone(m,t+i*0.05,0.16,'square',0.2)); break;
+    case 'buy':   [69,73,76,81].forEach((m,i)=>tone(m,t+i*0.06,0.18,'square',0.2)); break;
+    case 'good':  [72,76,79,84].forEach((m,i)=>tone(m,t+i*0.07,0.2,'triangle',0.22)); break;
+    case 'bad':   [70,66,61].forEach((m,i)=>tone(m,t+i*0.11,0.24,'sawtooth',0.16)); break;
+    case 'alarm': for(let i=0;i<3;i++){tone(83,t+i*0.22,0.11,'square',0.2);tone(77,t+i*0.22+0.11,0.11,'square',0.2);} break;
+    case 'turn':  [67,72,76,79].forEach((m,i)=>tone(m,t+i*0.075,0.22,'square',0.24));
+                  noise(t,0.1,0.1,4000); break;
+    case 'free':  [72,76,79,84,88,91].forEach((m,i)=>{tone(m,t+i*0.09,0.42,'square',0.24);tone(m-12,t+i*0.09,0.42,'triangle',0.16);}); break;
+    case 'win':   [72,72,72,76,74,76,79,84].forEach((m,i)=>{const tt=t+i*0.13;tone(m,tt,0.3,'square',0.26);tone(m-12,tt,0.3,'triangle',0.18);});
+                  [0,1,2,3].forEach(i=>noise(t+i*0.26,0.08,0.1,5000)); break;
+    case 'lose':  [64,62,59,55].forEach((m,i)=>tone(m,t+i*0.2,0.4,'sawtooth',0.18)); break;
+  }
+}
+/* ── 신나는 BGM (칩튠 루프: 멜로디 + 베이스 + 하이햇) ── */
+const BGM_MEL=[ // [음(MIDI, 0=쉼), 길이(8분음표 단위)]
+ [76,1],[76,1],[0,1],[76,1],[0,1],[72,1],[76,1],[79,2],[0,2],[67,2],[0,2],
+ [72,2],[0,1],[67,2],[0,1],[64,2],[0,1],[69,1],[71,1],[70,1],[69,1],
+ [67,1],[76,1],[79,1],[81,1],[77,1],[79,1],[0,1],[76,1],[72,1],[74,1],[71,1],[0,2],
+ [72,2],[0,1],[67,2],[0,1],[64,2],[0,1],[69,1],[71,1],[70,1],[69,1],
+ [67,1],[76,1],[79,1],[81,1],[77,1],[79,1],[0,1],[76,1],[72,1],[74,1],[71,1],[0,2]
+];
+const BGM_BASS=[48,0,55,0,52,0,55,0, 45,0,52,0,48,0,52,0, 43,0,50,0,47,0,50,0, 41,0,48,0,45,0,48,0];
+function bgmStart(){
+  const c=sctx(); if(!c||!SND.on||SND.bgmTimer)return;
+  if(c.state==='suspended')c.resume();
+  const spb=60/136/2; // 8분음표 길이 (136 BPM)
+  let idx=0, bi=0, next=c.currentTime+0.1;
+  SND.bgmTimer=setInterval(()=>{
+    if(!SND.on)return;
+    const now=c.currentTime;
+    while(next<now+0.25){
+      const [m,len]=BGM_MEL[idx%BGM_MEL.length];
+      if(m>0)tone(m,next,spb*len*0.92,'square',0.13,SND.bgmGain);
+      const b=BGM_BASS[bi%BGM_BASS.length];
+      if(b>0)tone(b,next,spb*0.9,'triangle',0.2,SND.bgmGain);
+      if(bi%2===0)noise(next,0.03,0.035,6000);
+      next+=spb*len; idx++; bi+=len;
+    }
+  },60);
+}
+function bgmStop(){ if(SND.bgmTimer){clearInterval(SND.bgmTimer);SND.bgmTimer=null;} }
+function soundToggle(){
+  SND.on=!SND.on;
+  if(SND.on){ sndUnlock(); if(G&&!G.over)bgmStart(); sfx('tap'); } else bgmStop();
+  paintSoundBtns();
+}
+function paintSoundBtns(){
+  ['btnSnd','btnSnd0'].forEach(id=>{const b=document.getElementById(id);if(b)b.textContent=SND.on?'🔊':'🔇';});
+  const b0=document.getElementById('btnSnd0');
+  if(b0)b0.textContent=SND.on?'🔊 소리 켜짐 — 신나는 배경음악 & 효과음':'🔇 소리 꺼짐';
+}
 /* ---------- 📖 쉬운 말 도우미: 어려운 경제 용어를 탭하면 뜻이 나옵니다 ---------- */
 const GLOSSARY={
  '패시브인컴':'내가 일하지 않아도 저절로 들어오는 돈. 월세·배당·이자처럼 잠자는 동안에도 벌어주는 돈이에요.',
@@ -798,6 +916,7 @@ $('btnStart').onclick=()=>{
 };
 $('btnHelp0').onclick=()=>showHelp();
 $('btnHowTo').onclick=()=>showHowTo();
+$('btnSnd0').onclick=()=>soundToggle();
 /* ---------- 🎓 30초 사용법 (그림처럼 큰 글씨로) ---------- */
 function showHowTo(){
   const step=(n,em,t,b)=>'<div style="display:flex;gap:12px;align-items:flex-start;background:var(--panel2);border-radius:14px;padding:13px 14px;margin-bottom:9px">'+
@@ -1053,7 +1172,7 @@ function startGame(names,winPct,learn){
   html+='</table><div style="margin-top:8px;font-size:12px;color:var(--sub)">👆 게임 중 상단의 플레이어 칩을 탭하면 <b>누구든 재산현황을 언제나</b> 볼 수 있어요!</div>'+adviceHTML('game_start')+tipHTML('월급이 높으면 돈이 빨리 모이지만, 지출도 커서 경제적 자유에 필요한 패시브인컴도 큽니다. 어느 직업이든 공평하게 자유를 노릴 수 있어요!');
   showModal('👔 직업 랜덤 배정 결과',html,[{label:'다음: 꿈 선택 →'+(NET?' <small>(방장이 진행)</small>':''),cls:'pri',owner:0,fn:()=>dreamSelectSeq(0)}]);
   renderAll();
-  if(!FAST)showIntro(); // 🎬 각자 폰에서 인트로 연출 (탭해서 넘김, 동기화 무관)
+  if(!FAST){ showIntro(); sndUnlock(); bgmStart(); } // 🎬 인트로 + 🎵 배경음악 시작
 }
 /* 🌟 꿈 선택 — 이 게임의 진짜 목적지 (각자 순서대로, 온라인은 자기 폰에서) */
 function dreamSelectSeq(i){
@@ -1216,6 +1335,7 @@ function turnBanner(){
   $('toGo').disabled=NET&&!mine&&!sudo;
   $('toGo').textContent=(NET&&!mine&&!sudo)?'⏳ 대기 중…':'내 차례 시작 ▶';
   $('turnOvl').classList.add('on');
+  if(!FAST){ sfx('turn'); bgmStart(); }
   renderAll();
 }
 $('toGo').onclick=()=>requestStatic('go');
@@ -1267,6 +1387,7 @@ STATIC.roll=()=>{
 function doRoll(nDice){
   G.phase='resolving'; renderAll();
   const d1=1+rnd(6), d2=nDice===2?1+rnd(6):0, steps=d1+d2;
+  if(!FAST)sfx('roll');
   animateDice(d1,d2,nDice);
   moveAndResolve(steps); // 게임 로직은 즉시(동기) 처리 — 동기화 안정성
 }
@@ -1285,6 +1406,7 @@ function moveAndResolve(steps){
   p.pos=(p.pos+steps)%24;
   const tile=TILES[p.pos].t;
   log('🎲 '+steps+'칸 이동! → '+TINFO[tile].em+' '+TINFO[tile].lb+' 칸');
+  if(!FAST){ for(let i=0;i<steps;i++)setTimeout(()=>sfx('step'),380+i*95); setTimeout(()=>sfx('land'),380+steps*95); }
   renderAll();
   if(paydays>0) doPayday(paydays,()=>{ tile==='pay'?finishResolve():resolveTile(); });
   else resolveTile();
@@ -1336,6 +1458,7 @@ function doPayday(n,next){
     (soldMsgs.length?'<div class="secH">🏠 매물 소식</div>'+soldMsgs.join('<br>'):'')+
     payAdv+
     tipHTML('월급−지출 = 저축 가능액. 이 돈을 자산으로 바꾸는 사람만 쳇바퀴를 탈출합니다.');
+  if(!FAST)sfx(net>=0?'money':'bad');
   showModal('💰 월급날!',html,[{label:'확인',cls:'grn',fn:()=>{
     if(p.cash<0){ openCrisis(()=>{ checkWin(p)||next(); }); }
     else { checkWin(p)||next(); }
@@ -1408,6 +1531,7 @@ function showDeal(c){
           const h=p.hold[c.sym]||(p.hold[c.sym]={qty:0,avg:0});
           h.avg=Math.round((h.avg*h.qty+cost)/(h.qty+qty)*100)/100;
           h.qty+=qty;
+          if(!FAST)sfx('buy');
           feedAdd('🛒 '+p.name+': '+c.sym+' '+qty.toLocaleString()+UNITS[c.sym].unit+' 매수 (−'+fmt(cost)+(loanAdd?', 💳빚투 '+fmt(loanAdd):'')+')');
           if(checkWin(p))return;
         } else feedAdd(p.name+': '+c.sym+' 매수 안 함');
@@ -1500,6 +1624,7 @@ function buyAsset(c,loanAdd,pl){
   if(loanAdd>0){p.loan+=loanAdd;p.cash+=loanAdd;}
   p.cash-=c.equity;
   p.assets.push({name:c.name,equity:c.equity,propPrice:c.propPrice,fair:c.fair,cf:c.cf,tag:c.tag,kind:c.kind});
+  if(!FAST)sfx('buy');
   feedAdd('🏠 '+p.name+': '+c.name+' 구매! (월 '+(c.cf>=0?'+':'')+fmt(c.cf)+(loanAdd>0?', 대출 '+fmt(loanAdd):'')+')');
   if(checkWin(p))return;
   const firstAdv=(p.assets.length===1&&!Object.values(p.hold).some(h=>h.qty>0))?adviceHTML('first_asset'):'';
@@ -1658,6 +1783,7 @@ function tileEvent(){
     if(amt>=p.salary*0.5)evAdv=adviceHTML('windfall');
     body=(amt>=0?'<b class="pos">+':'<b class="neg">')+fmt(amt)+'</b>'+(mul>1?'<br><span style="color:var(--green);font-weight:800">🔥 떡상 특성: 조회수 터져서 2배!</span>':''); }
   feedAdd('⚡ '+p.name+': '+c.name);
+  if(!FAST)sfx(/pos">\+|무효|면제/.test(body)?'good':'bad');
   showModal('⚡ '+c.name,body+evAdv+tipHTML(c.tip),btns);
   renderAll();
 }
@@ -1685,6 +1811,7 @@ function tileTempt(){
   const oppo=reitN>0
     ?'<div style="background:#301a1a;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px">💸 <b>기회비용</b>: 이 돈이면 K리츠 <b>'+reitN+'구좌</b> = 매달 <b class="pos">+'+fmt(reitN*reitDiv())+'</b> 배당이 평생 나왔을 텐데…</div>'
     :'';
+  if(!FAST)sfx('bad');
   feedAdd('🛍️ '+p.name+': 지름신 강림! '+c.name+' (−'+fmt(cost)+')');
   showModal('🛍️ 지름신 강림!',
     finBrief(p)+'충동을 이기지 못하고 <b>'+esc(c.name)+'</b>을(를) 질러버렸습니다!<br><span style="color:var(--sub)">"'+esc(c.flex)+'"</span>'+
@@ -2108,11 +2235,13 @@ function openCrisis(onResolved){
       arm2(b,'⚠️ 20% 손해! 정말? 한 번 더');
     });
   }
+  if(!FAST)sfx('alarm');
   showModal('🚨 현금 위기!',build(),[]);
   wire();
 }
 function doBankrupt(p){
   p.bankrupt=true;
+  if(!FAST)sfx('lose');
   feedAdd('💀 '+p.name+' 파산…');
   showModal('💀 파산…','<b>'+p.name+'</b> 님은 빚을 감당하지 못하고 파산했습니다.'+tipHTML('게임에서의 파산은 다시 시작하면 그만이지만, 현실의 빚은 그렇지 않습니다. 감당 가능한 빚만!'),
     [{label:'확인',cls:'red',fn:()=>{
@@ -2130,6 +2259,7 @@ function checkWin(p){
   const ex=expenses(p);
   if(ex>0&&passive(p)>=ex*G.winPct/100&&!p.freedomNotified){
     p.freedomNotified=true;
+    if(!FAST)sfx('coin');
     feedAdd('🔔 '+p.name+': 패시브인컴이 지출을 넘었다! 이제 퇴사할 수 있다!!');
   }
   return false; // 자유는 승리가 아니라 '드림 트랙 입장권'
@@ -2144,6 +2274,7 @@ function doRetire(){
   if(!canRetire(p))return;
   p.free=true;
   const fm=COPYS.freedomMoment||'사표를 냅니다. 내일부터 알람은 없습니다.\n이제 자산이 일하고, 당신은 꿈을 향해 걷습니다.';
+  if(!FAST)sfx('free');
   feedAdd('🎉🎉 '+p.name+': 퇴사 선언!! 월급의 쳇바퀴에서 탈출! 이제 꿈을 향해!');
   showModal('🎉 '+p.name+', 자유를 얻다!',
     '<div class="hugeWord" style="font-size:22px;line-height:1.6">'+esc(fm).replace(/\n/g,'<br>')+'</div>'+
@@ -2204,6 +2335,7 @@ function finishResolve0(){ // 입금 후 phase 유지용 (resolve 상태 아님)
 }
 function gameOver(winner,how){
   G.over=true;
+  if(!FAST){ bgmStop(); sfx(winner?'win':'lose'); }
   const ranked=G.players.slice().sort((a,b)=>{
     if(a.bankrupt!==b.bankrupt)return a.bankrupt?1:-1;
     if(a.free!==b.free)return a.free?-1:1;   // 자유인이 위
@@ -2265,6 +2397,7 @@ $('btnRank').onclick=()=>{
 $('btnHelp').onclick=()=>showHelp();
 $('btnLib').onclick=()=>showLibrary();
 $('btnHow').onclick=()=>showHowTo();
+$('btnSnd').onclick=()=>soundToggle();
 $('btnFeed').onclick=()=>{
   if(!G)return;
   const list=G.feed.slice().reverse();
@@ -2331,6 +2464,7 @@ function armBackGuard(){
 
 /* ---------- 초기화 ---------- */
 $('sudoChk').onchange=()=>{if(G)renderAll();};
+paintSoundBtns();
 buildStart();
 </script>
 </body>

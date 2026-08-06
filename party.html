@@ -874,6 +874,63 @@ function INGAME(){return !!(LG||MG);}
   });
 })();
 
+
+/* ═══ 🔊 효과음 (파일 없이 합성 · 대화 게임이라 배경음악은 없음) ═══ */
+const SND={ctx:null,on:true,master:null};
+function sctx(){
+  if(!SND.ctx){ try{SND.ctx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}
+    SND.master=SND.ctx.createGain(); SND.master.gain.value=0.9; SND.master.connect(SND.ctx.destination); }
+  return SND.ctx;
+}
+function sndUnlock(){const c=sctx();if(c&&c.state==='suspended')c.resume();}
+document.addEventListener('touchstart',sndUnlock,{passive:true});
+document.addEventListener('click',sndUnlock);
+function mtof(m){return 440*Math.pow(2,(m-69)/12);}
+function tone(m,t0,dur,type,vol){
+  const c=sctx(); if(!c||!SND.on)return;
+  const o=c.createOscillator(),g=c.createGain();
+  o.type=type||'square'; o.frequency.setValueAtTime(mtof(m),t0);
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.0002,vol||0.2),t0+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  o.connect(g); g.connect(SND.master); o.start(t0); o.stop(t0+dur+0.03);
+}
+function noise(t0,dur,vol,hp){
+  const c=sctx(); if(!c||!SND.on)return;
+  const n=Math.floor(c.sampleRate*dur);
+  const buf=c.createBuffer(1,Math.max(1,n),c.sampleRate);
+  const dat=buf.getChannelData(0);
+  for(let i=0;i<n;i++)dat[i]=(Math.random()*2-1)*(1-i/n);
+  const src=c.createBufferSource(); src.buffer=buf;
+  const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp||2000;
+  const g=c.createGain(); g.gain.value=vol||0.12;
+  src.connect(f); f.connect(g); g.connect(SND.master); src.start(t0);
+}
+function sfx(name){
+  const c=sctx(); if(!c||!SND.on)return;
+  if(c.state==='suspended')c.resume();
+  const t=c.currentTime;
+  switch(name){
+    case 'tap':    tone(84,t,0.05,'square',0.1); break;
+    case 'reveal': [64,68,71,76].forEach((m,i)=>tone(m,t+i*0.09,0.3,'triangle',0.2)); break;
+    case 'night':  [55,52,48].forEach((m,i)=>tone(m,t+i*0.22,0.5,'sine',0.22)); break;
+    case 'morning':[72,76,79,84].forEach((m,i)=>tone(m,t+i*0.1,0.28,'square',0.2)); break;
+    case 'vote':   tone(79,t,0.09,'square',0.2); tone(84,t+0.1,0.16,'square',0.2); break;
+    case 'kill':   [70,62,54].forEach((m,i)=>tone(m,t+i*0.13,0.34,'sawtooth',0.2)); noise(t,0.2,0.1,1200); break;
+    case 'win':    [72,72,76,79,84].forEach((m,i)=>{tone(m,t+i*0.14,0.34,'square',0.24);tone(m-12,t+i*0.14,0.34,'triangle',0.16);}); break;
+    case 'lose':   [64,61,57,52].forEach((m,i)=>tone(m,t+i*0.2,0.42,'sawtooth',0.18)); break;
+    case 'bet':    [76,81].forEach((m,i)=>tone(m,t+i*0.06,0.15,'square',0.2)); break;
+    case 'shot':   noise(t,0.22,0.22,600); [58,46].forEach((m,i)=>tone(m,t+i*0.05,0.28,'sawtooth',0.2)); break;
+  }
+}
+function soundToggle(){SND.on=!SND.on;if(SND.on){sndUnlock();sfx('tap');}
+  var b=document.getElementById('btnSnd'); if(b)b.textContent=SND.on?'🔊':'🔇';}
+
+/* 효과음 훅 */
+(function(){
+  if(typeof renderMyPriv==='function'){const _o=renderMyPriv;window.renderMyPriv=function(){sfx('reveal');return _o.apply(this,arguments);};}
+  if(typeof checkMafiaWin==='function'){const _w=checkMafiaWin;window.checkMafiaWin=function(){const r=_w.apply(this,arguments);if(r)sfx('win');return r;};}
+})();
 </script>
 </body>
 </html>
