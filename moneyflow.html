@@ -287,7 +287,7 @@ function curId(){return G?G.players[G.turn].id:0;}
 function wireAction(el,fn,owner,valueFn){
   const idx=ACTIONS.length;
   ACTIONS.push({fn,o:owner});
-  el.onclick=()=>{const a={k:'i',i:idx,e:EPOCH};if(valueFn)a.v=String(valueFn()).slice(0,24);sendAct(a);};
+  el.onclick=()=>{const a={k:'i',i:idx,e:EPOCH};if(valueFn)a.v=String(valueFn()).slice(0,120);sendAct(a);};
   if(NET){const o=(owner!=null)?owner:curId();
     if(o!==myPid&&!($('sudoChk')&&$('sudoChk').checked&&NET.host))el.classList.add('mineOnly'),el.disabled=true;}
 }
@@ -383,6 +383,14 @@ let prices;
 
 /* ---------- 카드 덱 ---------- */
 function st(sym,price,desc,tip){return{kind:'stock',sym,price,desc,tip};}
+const BASE_PX={'KS전자':7,'K바이오':5,'K리츠':100,'K코인':800}; // 평년 시세 (비싼지 싼지 판단 기준)
+function pxDevTag(sym,price){
+  const b=BASE_PX[sym]; if(!b)return '';
+  const d=Math.round((price-b)/b*100);
+  return d<=-15?'<span class="pos">▼ 평년 대비 '+(-d)+'% 저평가</span>'
+        :d>=15?'<span class="neg">▲ 평년 대비 +'+d+'% 고평가</span>'
+        :'<span style="color:var(--sub)">평년 수준 ('+(d>=0?'+':'')+d+'%)</span>';
+}
 const SMALL_DEALS=[
  st('KS전자',4,'국가대표 반도체 우량주. 반도체 불황으로 역대급 저평가 구간입니다.','우량주는 쌀 때 사서 오래 들고 가는 게 정석. 워런 버핏도 "공포에 사라"고 했죠.'),
  st('KS전자',5,'외국인 매도세로 주가가 눌려 있습니다.','주가가 내 매수가보다 낮아도 팔지 않으면 손실이 확정되지 않습니다(평가손실).'),
@@ -619,9 +627,9 @@ function showModal(title,bodyHTML,btns,opts){
     el.className='mbtn'+(b.cls?' '+b.cls:'');
     el.innerHTML=b.label;
     if(b.disabled) el.disabled=true;
-    const run=()=>{ if(b.keep!==true) closeModal(); if(b.fn) b.fn(); };
-    if(b.local) el.onclick=run;          // 로컬 전용 버튼 (예: 새 게임)
-    else wireAction(el,run,b.owner);     // 동기화 대상 버튼
+    const run=(v)=>{ if(b.keep!==true) closeModal(); if(b.fn) b.fn(v); };
+    if(b.local) el.onclick=()=>run();    // 로컬 전용 버튼 (예: 새 게임)
+    else wireAction(el,run,b.owner,b.valueFn); // 동기화 대상 버튼 (입력값 동봉 가능)
     bb.appendChild(el);
   });
   $('ovl').classList.add('on');
@@ -884,7 +892,7 @@ function dreamSelectSeq(i){
   const uc=COPYS.uiCopy||{};
   const picks=G.dreamPool||(G.dreamPool=shuffle(DREAMS).slice()); // 전원 같은 풀에서 선택(중복 허용)
   let h='<div class="mini" style="margin-bottom:8px">'+esc(uc.dreamSelectSub||'부자가 되는 게 목적이 아닙니다. 꿈이 목적입니다. 자유를 얻은 뒤 이 꿈의 가격만큼 모으면 승리!')+'</div>';
-  const btns=picks.slice(0,6).map(d=>({
+  const btns=picks.slice(0,8).map(d=>({
     label:d.emoji+' '+d.name+' <small>('+fmt(d.price)+')</small><br><small style="font-weight:600">'+esc(d.desc)+'</small>',
     owner:p.id,
     fn:()=>{
@@ -893,7 +901,28 @@ function dreamSelectSeq(i){
       dreamSelectSeq(i+1);
     }
   }));
+  btns.push({label:'✍️ 나만의 꿈 직접 쓰기 <small style="font-weight:600">(가격도 내 마음대로)</small>',owner:p.id,fn:()=>customDream(i)});
   showModal('🌟 '+p.name+' 님, '+esc(uc.dreamSelectTitle||'당신의 꿈은 무엇인가요?'),h,btns);
+}
+/* ✍️ 나만의 꿈 — 이름과 가격을 직접 쓴다 (온라인: 입력값이 액션에 실려 전 폰 동기화) */
+function customDream(i){
+  const p=G.players[i];
+  const inSt='width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:12px;font-size:15px;margin-top:6px';
+  showModal('✍️ '+p.name+' 님의 꿈을 적어주세요',
+    '<div class="mini" style="margin-bottom:6px">이루고 싶은 꿈과, 그 꿈에 필요한 돈을 직접 정하세요.<br><small class="u">가격이 쌀수록 빨리 이루지만, 그만큼 소박한 꿈이겠죠? (권장 3,000~35,000만원)</small></div>'+
+    '<input id="dmName" maxlength="20" placeholder="예: 세계일주 크루즈, 시골 카페 차리기…" style="'+inSt+'">'+
+    '<input id="dmPrice" inputmode="numeric" placeholder="필요한 돈 (만원 단위, 예: 8000)" style="'+inSt+'">',
+    [{label:'🌠 이 꿈으로 결정!',cls:'pri',owner:p.id,fn:(v)=>{
+        let nm='',pr=0;
+        try{const o=JSON.parse(v||'{}');nm=String(o.n||'').trim();pr=parseInt(String(o.pr||'').replace(/[^0-9]/g,''));}catch(e){}
+        if(!nm)nm='나만의 꿈';
+        if(!isFinite(pr)||pr<1000)pr=1000; if(pr>100000)pr=100000;
+        pr=Math.round(pr/100)*100;
+        p.dream={name:nm,emoji:'🌠',price:pr,ending:'스스로 적어 내려간 꿈이, 마침내 현실이 되었습니다.'};
+        feedAdd('🌠 '+p.name+'의 꿈: '+nm+' ('+fmt(pr)+') — 직접 쓴 꿈!');
+        dreamSelectSeq(i+1);
+      },valueFn:()=>JSON.stringify({n:($('dmName')||{}).value||'',pr:($('dmPrice')||{}).value||''})},
+     {label:'← 목록에서 고르기',owner:p.id,fn:()=>dreamSelectSeq(i)}]);
 }
 
 /* ---------- 보드 렌더 ---------- */
@@ -1146,13 +1175,17 @@ function showDeal(c){
     prices[c.sym]=c.price; // 시세 갱신
     feedAdd((c.kind==='coin'?'🪙':'📈')+' 기회 카드: '+c.sym+' — 시세 '+fmt(c.price)+'/'+UNITS[c.sym].unit);
     const isReit=c.sym==='K리츠';
+    const newsBox='<div style="background:#1c2742;border-left:4px solid var(--gold);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:15px;line-height:1.5"><b>📰 '+esc(c.desc)+'</b></div>';
+    const pxTbl='<table class="tbl">'+
+      '<tr><td>평년 시세 (기준가)</td><td>'+fmt(BASE_PX[c.sym])+'/'+UNITS[c.sym].unit+'</td></tr>'+
+      '<tr><td>현재 시세</td><td><b>'+fmt(c.price)+'</b><br>'+pxDevTag(c.sym,c.price)+'</td></tr></table>';
     const divLine=isReit
       ?'<div style="background:#15301f;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px">💰 <b style="color:var(--green)">배당 자산!</b> 구좌당 월 배당 <b>'+fmt(reitDiv())+'</b> · 현 시세 기준 배당수익률 <b>연 '+(reitDiv()*12/c.price*100).toFixed(1)+'%</b> <small class="u">(배당은 시장 카드로 오르내림!)</small></div>'
       :'<div style="background:#301a1a;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px">📉 <b style="color:var(--red)">배당 없음</b> — 오직 시세차익(싸게 사서 비싸게 팔기)만 노리는 자산입니다.</div>';
     openQty({
       title:(c.kind==='coin'?'🪙 ':'📈 ')+c.sym+' — '+fmt(c.price)+'/'+UNITS[c.sym].unit,
       brief:finBrief(p),
-      sub:c.desc+divLine+adviceHTML(isReit?['reit_buy','diversify']:c.kind==='coin'?['coin_buy','coin_high']:['stock_buy','stock_allin','diversify']),tip:c.tip,unitPrice:c.price,step:UNITS[c.sym].step,unit:UNITS[c.sym].unit,
+      sub:newsBox+pxTbl+divLine+adviceHTML(isReit?['reit_buy','diversify']:c.kind==='coin'?['coin_buy','coin_high']:['stock_buy','stock_allin','diversify']),tip:c.tip,unitPrice:c.price,step:UNITS[c.sym].step,unit:UNITS[c.sym].unit,
       divPerUnit:isReit?reitDiv():0,
       maxCost:p.cash+Math.max(0,loanCap(p)-p.loan), // 빚투 허용 (대출한도까지)
       cashLimit:p.cash,confirm:'매수',
@@ -1573,7 +1606,9 @@ function pxReaction(c,old){
         '<td><button class="sellBtn pxh" data-p="'+q.id+'">절반 매도</button><br>'+
         '<button class="sellBtn pxa" data-p="'+q.id+'" style="margin-top:4px">전량 +'+fmt(val)+'</button></td></tr>';
     });
-    return '<b>'+sym+'</b> 시세: '+fmt(old)+' → <b class="'+(c.mul>=1?'pos':'neg')+'">'+fmt(prices[sym])+'</b>/'+UNITS[sym].unit+
+    return '<div style="background:#1c2742;border-left:4px solid var(--gold);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:15px"><b>📰 '+esc(c.name)+'</b></div>'+
+      '<b>'+sym+'</b> 시세: '+fmt(old)+' → <b class="'+(c.mul>=1?'pos':'neg')+'">'+fmt(prices[sym])+'</b>/'+UNITS[sym].unit+
+      '<br><small>기준: 평년 시세 '+fmt(BASE_PX[sym])+' · '+pxDevTag(sym,prices[sym])+'</small>'+
       (any?'<br><small class="u">보유자는 지금 바로 매도 결정! '+(NET?'각자 자기 폰에서 누르세요.':'각자 결정하세요.')+'</small><table class="tbl">'+rows+'</table>'
           :'<br><small class="u">이 종목 보유자가 없습니다.</small>')+tipHTML(c.tip);
   }
@@ -1698,7 +1733,8 @@ function viewFin(p){
         if(!hd)return;
         openQty({
           title:'📉 '+sym+' 매도 — 현재가 '+fmt(prices[sym])+'/'+UNITS[sym].unit,
-          sub:'보유 '+hd.qty.toLocaleString()+UNITS[sym].unit+' · 평단 '+fmtAvg(hd.avg)+(sym==='K리츠'?'<br><span class="neg" style="font-size:12px">⚠️ 매도한 만큼 월 배당(구좌당 '+fmt(reitDiv())+')이 줄어듭니다</span>':'')+(prices[sym]<hd.avg?adviceHTML('sell_panic'):''),
+          sub:'보유 '+hd.qty.toLocaleString()+UNITS[sym].unit+' · 평단 '+fmtAvg(hd.avg)+
+            '<br><small>기준: 평년 시세 '+fmt(BASE_PX[sym])+' · '+pxDevTag(sym,prices[sym])+'</small>'+(sym==='K리츠'?'<br><span class="neg" style="font-size:12px">⚠️ 매도한 만큼 월 배당(구좌당 '+fmt(reitDiv())+')이 줄어듭니다</span>':'')+(prices[sym]<hd.avg?adviceHTML('sell_panic'):''),
           unit:UNITS[sym].unit,step:UNITS[sym].step,unitPrice:prices[sym],
           maxQtyFixed:hd.qty,sell:true,confirm:'매도 확정',
           tip:'수익은 실현해야 내 돈. 하지만 너무 자주 사고팔면 수수료와 세금이 갉아먹습니다.',
