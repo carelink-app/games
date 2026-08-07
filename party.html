@@ -53,6 +53,8 @@ input{user-select:text;-webkit-user-select:text}
 .banner{background:#152238;border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12.5px;color:#d5ddf0;line-height:1.6;margin:10px 0}
 .banner b{color:var(--gold)}
 #netBanner{display:none;position:fixed;top:0;left:0;right:0;background:#d63a55;color:#fff;font-size:13px;font-weight:800;text-align:center;padding:8px;z-index:90}
+/* 🔊 버튼이 '탭하여 재접속' 배너를 덮어 오탭되지 않도록, 배너가 보일 때만 아래로 비켜줍니다 */
+#netBanner[style*="block"]~#btnSnd{top:46px!important}
 .mini{font-size:12px;color:var(--sub);text-align:center;margin-top:6px}
 .tagRole{display:inline-block;padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800;margin-left:6px}
 </style>
@@ -119,7 +121,10 @@ function startTimer(sec,elId,onEnd){
     e.textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0');
     e.classList.toggle('low',left<=10);};
   paint();
-  timerIv=setInterval(()=>{left--;if(left<0){clearTimer();if(onEnd)onEnd();return;}paint();},1000);
+  timerIv=setInterval(()=>{left--;
+    if(left<0){clearTimer();sfx('buzz');if(onEnd)onEnd();return;} // 🔊 시간 종료 부저
+    if(left<=5&&left>0)sfx('tick');                               // 🔊 마지막 5초 초읽기
+    paint();},1000);
 }
 
 /* =====================================================
@@ -127,6 +132,7 @@ function startTimer(sec,elId,onEnd){
 ===================================================== */
 let selGame='liar', selMode='local';
 function home(){
+  bgmSet('lobby'); // 🔊 홈은 왁자지껄한 로비 음악
   NET=null;myPriv=null;LG=null;MG=null;
   if(peer){try{peer.destroy();}catch(e){}peer=null;}
   $('netBanner')&&($('netBanner').style.display='none');
@@ -202,18 +208,19 @@ const ICE_CFG={config:{iceServers:[
  {urls:'stun:stun.cloudflare.com:3478'}
 ]}};
 function netDiag(msg){ // 연결 문제 진단 표시
+  sfx('error'); // 🔊 연결 실패
   const li=document.getElementById('lobbyInfo');
   if(li)li.innerHTML='<b style="color:#ff5d73">'+msg+'</b><br><small>· 와이파이/데이터가 켜져 있나요?<br>· 아이폰: 설정→Safari→고급→실험적 기능은 건드리지 않아도 됩니다. <b>개인정보 보호 브라우징(시크릿 모드)을 끄고</b> 일반 탭에서 열어주세요.<br>· 같은 방이면 한 명이 <b>핫스팟</b>을 켜고 모두 그 핫스팟에 접속하면 가장 안정적입니다.</small><br><button class="chip" onclick="location.reload()" style="margin-top:8px">🔄 새로고침</button>';
 }
 function makeCode(){const CS='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<4;i++)c+=CS[rnd(CS.length)];return c;}
 function nameOK(){const el=$('myNameIn');myName=el?el.value.trim():myName;
-  if(!myName){$('lobbyInfo').innerHTML='<b style="color:var(--red)">이름을 먼저 입력하세요!</b>';return false;}return true;}
+  if(!myName){sfx('error');$('lobbyInfo').innerHTML='<b style="color:var(--red)">이름을 먼저 입력하세요!</b>';return false;}return true;} // 🔊 입력 누락
 function showJoin(){const j=$('joinCodeIn');
   if(j.style.display==='none'){j.style.display='block';j.focus();
     $('lobbyInfo').innerHTML='코드를 입력하고 다시 [참여하기]를 누르세요.';return;}
   if(!nameOK())return;
   const code=j.value.trim().toUpperCase();
-  if(code.length!==4){$('lobbyInfo').innerHTML='<b style="color:var(--red)">코드는 4글자!</b>';return;}
+  if(code.length!==4){sfx('error');$('lobbyInfo').innerHTML='<b style="color:var(--red)">코드는 4글자!</b>';return;} // 🔊 코드 오류
   roomCode=code;clientConnect();
 }
 function hostRoom(){
@@ -223,7 +230,7 @@ function hostRoom(){
   $('lobbyInfo').innerHTML='방 만드는 중…';
   peer=new Peer('kpg-'+roomCode,ICE_CFG);
   let hostOpened=false;
-  peer.on('open',()=>{hostOpened=true;NET={host:true,conns:[],names:[myName],dead:{}};myPid=0;renderHostLobby();});
+  peer.on('open',()=>{hostOpened=true;sfx('code');NET={host:true,conns:[],names:[myName],dead:{}};myPid=0;renderHostLobby();}); // 🔊 초대 코드 발급
   setTimeout(()=>{if(!hostOpened)netDiag('📡 게임 서버에 연결하지 못했습니다.');},10000);
   peer.on('connection',c=>{
     c.on('data',d=>hostOnData(c,d));
@@ -256,6 +263,7 @@ function clientConnect(){
 }
 function lostConn(){
   if(!NET||NET.host)return;
+  sfx('error'); // 🔊 연결 끊김
   const nb=$('netBanner');
   nb.style.display='block';nb.innerHTML='📡 연결 끊김 — <u>탭하여 재접속</u>';
   nb.onclick=()=>{nb.innerHTML='재접속 중…';clientConnect();};
@@ -264,6 +272,7 @@ function hostDrop(c){
   if(!NET||!NET.host)return;
   const i=NET.conns.indexOf(c);
   if(i>=0){NET.dead[i+1]=true;
+    sfx('leave'); // 🔊 누가 나갔는지 방장이 바로 알아채도록
     if(!LG&&!MG){NET.names.splice(i+1,1);NET.conns.splice(i,1);delete NET.dead[i+1];
       netAll({t:'lobby',names:NET.names});renderHostLobby();}
   }
@@ -290,6 +299,7 @@ function hostOnData(c,d){
     NET.names.push(nm);NET.conns.push(c);NET.tokens[pid]=token;
     c.send({t:'welcome',pid,name:nm,token});
     netAll({t:'lobby',names:NET.names});
+    sfx('join'); // 🔊 새 참가자 입장
     renderHostLobby();
   }
   // 밤/투표 입력: 발신 pid를 연결에서 역산 (클라가 주장하는 d.pid 신뢰 안 함)
@@ -298,18 +308,20 @@ function hostOnData(c,d){
 }
 let myPrivOf=null;
 function clientOnData(d){
-  if(d.t==='welcome'){myPid=d.pid;if(d.name)myName=d.name;if(d.token)myToken=d.token;$('netBanner').style.display='none';renderClientLobby('입장 완료! 방장이 시작하길 기다리는 중…');}
-  else if(d.t==='lobby'){if(NET)NET.names=d.names;renderClientLobby('입장 완료! ('+d.names.join(', ')+')');}
-  else if(d.t==='reject'){render('<div class="card"><b style="color:var(--red)">'+esc(d.msg)+'</b></div><button class="bigBtn" onclick="home()">처음으로</button>');}
+  if(d.t==='welcome'){myPid=d.pid;if(d.name)myName=d.name;if(d.token)myToken=d.token;$('netBanner').style.display='none';sfx('join');renderClientLobby('입장 완료! 방장이 시작하길 기다리는 중…');} // 🔊 입장 완료
+  else if(d.t==='lobby'){if(NET)NET.names=d.names;sfx('join');renderClientLobby('입장 완료! ('+d.names.join(', ')+')');} // 🔊 로비 갱신
+  else if(d.t==='reject'){sfx('error');/* 🔊 입장 거절 */render('<div class="card"><b style="color:var(--red)">'+esc(d.msg)+'</b></div><button class="bigBtn" onclick="home()">처음으로</button>');}
   else if(d.t==='priv'){myPriv=d.data;if(d.data.polres!==undefined)return; renderMyPrivIfWaiting();}
   else if(d.t==='scene'){clientScene(d);}
 }
 function renderClientLobby(msg){
+  bgmSet('lobby'); // 🔊 로비 음악
   render(`<div class="logo">🎭 K-<span class="g">파티게임</span></div>
   <div class="card"><div class="big center">🚪 ${esc(roomCode)} 방</div>
   <div class="sub center" style="margin-top:8px">${msg}</div></div>`);
 }
 function renderHostLobby(){
+  bgmSet('lobby'); // 🔊 로비 음악
   const n=NET.names.length;
   render(`<div class="logo">🎭 K-<span class="g">파티게임</span></div>
   <div class="card"><h3>초대 코드 — 친구들에게 알려주세요!</h3>
@@ -337,6 +349,7 @@ function netStartSettings(){
 ===================================================== */
 let liarCfg={cat:'랜덤',mode:'normal'};
 function liarSettings(names,isNet){
+  bgmSet('lobby'); // 🔊 설정 화면도 로비 음악 유지
   let catChips=`<button class="chip sm ${liarCfg.cat==='랜덤'?'sel':''}" onclick="liarCfg.cat='랜덤';liarSettings(SC.names,SC.isNet)">🎲 랜덤</button>`;
   CATS.forEach(c=>{catChips+=`<button class="chip sm ${liarCfg.cat===c?'sel':''}" onclick="liarCfg.cat='${c}';liarSettings(SC.names,SC.isNet)">${c}</button>`;});
   SC={names,isNet};
@@ -350,6 +363,7 @@ function liarSettings(names,isNet){
   <button class="ghostBtn" onclick="${SC.isNet?'renderHostLobby()':'home()'}">← 뒤로</button>`);
 }
 function liarStart(){
+  sfx('deal'); // 🔊 제시어 카드 촤르륵 배분
   const names=SC.names,isNet=SC.isNet;
   const cat=liarCfg.cat==='랜덤'?CATS[rnd(CATS.length)]:liarCfg.cat;
   const pool=WORDS[cat];
@@ -379,6 +393,7 @@ function liarStart(){
 function liarRevealSeq(i){
   const names=LG.names;
   if(i>=names.length){liarPlayScreen(false);return;}
+  if(i>0)sfx('next'); // 🔊 다음 사람에게 폰을 넘김
   render(`<div class="logo">🤥</div>
   <div class="card center">
     <div class="big">📱 ${esc(names[i])} 님 차례</div>
@@ -393,12 +408,13 @@ function liarRevealSeq(i){
   else if(isLiar&&LG.mode==='fool')txt='📖 '+esc(LG.liarWord)+'<br><small style="font-size:14px" class="sub">주제: '+LG.cat+'</small>';
   else txt='📖 '+esc(LG.word)+'<br><small style="font-size:14px" class="sub">주제: '+LG.cat+'</small>';
   const hb=$('holdB'),wb=$('wordBox');
-  const show=e=>{e.preventDefault();wb.innerHTML=txt;wb.style.visibility='visible';};
-  const hide=e=>{e.preventDefault();wb.style.visibility='hidden';};
+  const show=e=>{e.preventDefault();sfx('cardFlip');wb.innerHTML=txt;wb.style.visibility='visible';}; // 🔊 두구두구 짠!
+  const hide=e=>{e.preventDefault();if(wb.style.visibility==='visible')sfx('cardHide');wb.style.visibility='hidden';}; // 🔊 카드 덮기
   hb.addEventListener('touchstart',show);hb.addEventListener('touchend',hide);hb.addEventListener('touchcancel',hide);
   hb.addEventListener('mousedown',show);hb.addEventListener('mouseup',hide);hb.addEventListener('mouseleave',hide);
 }
 function liarPlayScreen(isNet){
+  bgmSet('day'); sfx('start'); // 🔊 토론 시작 — 가볍고 통통 튀는 낮 음악
   const orderNames=LG.order.map(i=>LG.names[i]);
   render(`<div class="logo">🤥 <span class="g">토론 시간!</span></div>
   ${isNet?myWordCardHTML():''}
@@ -424,8 +440,8 @@ function _wireHold2(){
   let inner;
   if(myPriv.isLiar===true)inner='🤫 당신이 <span class="roleLiar">라이어</span>!<br><small style="font-size:13px" class="sub">주제: '+esc(myPriv.cat)+'</small>';
   else inner='📖 '+esc(myPriv.show)+'<br><small style="font-size:13px" class="sub">주제: '+esc(myPriv.cat)+'</small>';
-  const show=e=>{e.preventDefault();wb.innerHTML=inner;wb.style.visibility='visible';};
-  const hide=e=>{e.preventDefault();wb.style.visibility='hidden';};
+  const show=e=>{e.preventDefault();sfx('cardFlip');wb.innerHTML=inner;wb.style.visibility='visible';}; // 🔊 두구두구 짠!
+  const hide=e=>{e.preventDefault();if(wb.style.visibility==='visible')sfx('cardHide');wb.style.visibility='hidden';}; // 🔊 카드 덮기
   hb.addEventListener('touchstart',show);hb.addEventListener('touchend',hide);hb.addEventListener('touchcancel',hide);
   hb.addEventListener('mousedown',show);hb.addEventListener('mouseup',hide);hb.addEventListener('mouseleave',hide);
 }
@@ -437,6 +453,9 @@ function liarReveal(){
   } else liarResultScreen({liar:LG.names[LG.liarIdx],word:LG.word,liarWord:LG.liarWord,mode:LG.mode,cat:LG.cat},false);
 }
 function liarResultScreen(d,isNet){
+  /* 🔊 긴장 드럼롤 → 짠! → 능글맞은 반전음. 그 사이 배경음악은 잠시 비켜줍니다 */
+  bgmSet(null); sfx('drumroll'); sfx('taDa',0.58); sfx('liarOut',1.15);
+  bgmSet('lobby',3200);
   render(`<div class="logo">🎉</div>
   <div class="card center">
     <div class="sub">라이어는 바로…</div>
@@ -460,6 +479,7 @@ function backToHostLobby(){LG=null;MG=null;lastScene=null;netAll({t:'lobby',name
 ===================================================== */
 let mafCfg={mafia:1,police:1,doctor:1};
 function mafiaSettings(names,isNet){
+  bgmSet('lobby'); // 🔊 역할 구성 화면은 로비 음악
   const n=names.length;
   // 자동 추천
   const rec={mafia:n>=10?3:n>=7?2:1,police:1,doctor:n>=6?1:0};
@@ -491,6 +511,7 @@ function mafiaSettings(names,isNet){
   <button class="ghostBtn" onclick="${isNet?'renderHostLobby()':'home()'}">← 뒤로</button>`);
 }
 function mafiaStart(){
+  sfx('deal'); // 🔊 역할 카드 촤르륵 배분
   const names=SC.names,isNet=SC.isNet;
   const n=names.length;
   const roles=[];
@@ -528,6 +549,7 @@ function roleCardHTML(role,mates){
 function mafiaRevealSeq(i){
   const names=MG.names;
   if(i>=names.length){mafiaNightBegin();return;}
+  if(i>0)sfx('next'); // 🔊 다음 사람에게 폰을 넘김
   render(`<div class="logo">🔪</div>
   <div class="card center">
     <div class="big">📱 ${esc(names[i])} 님 차례</div>
@@ -539,8 +561,8 @@ function mafiaRevealSeq(i){
   const mates=MG.names.filter((_,k)=>MG.roles[k]==='mafia');
   const inner=roleCardHTML(MG.roles[i],mates);
   const hb=$('holdB'),wb=$('wordBox');
-  const show=e=>{e.preventDefault();wb.innerHTML=inner;wb.style.visibility='visible';};
-  const hide=e=>{e.preventDefault();wb.style.visibility='hidden';};
+  const show=e=>{e.preventDefault();sfx('cardFlip');wb.innerHTML=inner;wb.style.visibility='visible';}; // 🔊 두구두구 짠! 역할 카드 공개
+  const hide=e=>{e.preventDefault();if(wb.style.visibility==='visible')sfx('cardHide');wb.style.visibility='hidden';}; // 🔊 카드 덮기
   hb.addEventListener('touchstart',show);hb.addEventListener('touchend',hide);hb.addEventListener('touchcancel',hide);
   hb.addEventListener('mousedown',show);hb.addEventListener('mouseup',hide);hb.addEventListener('mouseleave',hide);
 }
@@ -554,6 +576,7 @@ function mafiaNightBegin(){
     netAll(lastScene);
     mafiaNightScreenNet();
   } else {
+    bgmSet('night'); sfx('night'); // 🔊 밤이 됩니다 — 어두운 하강음 + 불길한 지속음
     render(`<div class="logo">🌙</div>
     <div class="card center">
       <div class="big">${MG.round}번째 밤이 찾아왔습니다</div>
@@ -564,8 +587,10 @@ function mafiaNightBegin(){
 }
 /* --- 한 폰: 밤 개별 행동 --- */
 function mafiaNightSeq(i){
+  bgmSet('night'); // 🔊 밤 음악 유지 (이미 흐르고 있으면 그대로 둡니다)
   while(i<MG.names.length&&!MG.alive[i])i++;
   if(i>=MG.names.length){mafiaNightResolve();return;}
+  if(Object.keys(MG.nightPicks).length)sfx('next'); // 🔊 다음 사람에게 폰을 넘김 (역할 확인 때와 같은 신호음)
   render(`<div class="logo">🌙</div>
   <div class="card center">
     <div class="big">📱 ${esc(MG.names[i])} 님에게 폰을</div>
@@ -598,6 +623,7 @@ function mafiaNightPickLocal(i,k){
   MG.nightPicks[i]=k;
   if(role==='police'){
     const isMaf=MG.roles[k]==='mafia';
+    sfx(isMaf?'polMafia':'polClean'); // 🔊 마피아 발각(밝은 승리음) / 아님(안도의 음)
     render(`<div class="logo">🌙</div>
     <div class="card center">
       <div class="big">조사 결과</div>
@@ -605,6 +631,7 @@ function mafiaNightPickLocal(i,k){
       <button class="bigBtn green" onclick="mafiaNightSeq(${i+1})">기억했다! 다음 사람에게</button>
     </div>`);
   } else {
+    sfx('stamp'); // 🔊 선택 확정 — 도장 쾅
     render(`<div class="logo">🌙</div>
     <div class="card center">
       <div class="big">✅ 선택 완료</div>
@@ -635,6 +662,7 @@ function clientScene(d){
 function renderMyPrivIfWaiting(){/* priv 먼저 도착 대비 - scene 오면 그려짐 */}
 function clientNightRender(i,role,pub){
   if(!pub)return;
+  bgmSet('night'); sfx('night'); // 🔊 밤이 됩니다 — 어두운 하강음 + 불길한 지속음
   const alive=pub.alive,names=pub.names;
   if(!alive[i]){render(nightDeadHTML(pub.round));return;}
   let title,subT,allowSelf=false;
@@ -664,6 +692,7 @@ function nightDeadHTML(round){
   <div class="sub" style="margin-top:8px">${round}번째 밤이 지나가는 중… 조용히 구경하세요 (발언 금지!)</div></div>`;
 }
 function netNightPick(k,btn){
+  sfx('stamp'); // 🔊 밤 행동 제출 — 도장 쾅
   document.querySelectorAll('#nGrid .pick').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');
   $('nWait').textContent='제출 완료! 다른 사람들을 기다리는 중…';
@@ -727,6 +756,12 @@ function mafiaNightResolve(){
 function morningScreen(d,isNet){
   const myPol=(isNet&&myPriv&&myPriv.polres)?myPriv.polres:null;
   const localPol=null;
+  /* 🔊 아침이 밝았습니다 — 밝은 상승음 + 새소리, 이어서 밤 사이 벌어진 일 발표 */
+  bgmSet('day'); sfx('morning');
+  if(d.killed)sfx('death',0.95);            // 사망 발표 — 둔탁한 종
+  else if(d.saved)sfx('saved',0.95);        // 의사가 살려냄
+  else sfx('nobody',0.95);                  // 아무 일도 없었음
+  if(myPol)sfx(myPol.isMafia?'polMafia':'polClean',1.9); // 경찰 조사 결과
   render(`<div class="logo">🌅</div>
   <div class="card center">
     <div class="big">${d.round}번째 아침이 밝았습니다</div>
@@ -750,6 +785,7 @@ function mafiaVoteBegin(){
   }
 }
 function voteScreen(d,isNet){
+  bgmSet('day'); sfx('voteOpen'); // 🔊 투표 개시
   if(isNet&&!d.alive[myPid]){render(nightDeadHTML(d.round||'')+'<div class="mini">투표 진행 중…</div>');return;}
   if(isNet){
     render(`<div class="logo">🗳️</div>
@@ -771,6 +807,7 @@ function voteScreen(d,isNet){
   }
 }
 function netVotePick(k,btn){
+  sfx('stamp'); // 🔊 투표 확정 — 도장 쾅
   document.querySelectorAll('#vGrid .pick').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');
   $('vWait').textContent='투표 완료! 개표를 기다리는 중…';
@@ -796,7 +833,7 @@ function mafiaVoteResolve(){
   }
   mafiaDoExec(exec,cnt);
 }
-function mafiaExecLocal(k){mafiaDoExec(k,null);}
+function mafiaExecLocal(k){sfx('stamp');mafiaDoExec(k,null);} // 🔊 처형 대상 확정 — 도장 쾅
 function mafiaDoExec(k,tally){
   let execName=null,execRole=null;
   if(k>=0){MG.alive[k]=false;execName=MG.names[k];execRole=MG.roles[k];}
@@ -808,6 +845,11 @@ function mafiaDoExec(k,tally){
   else execScreen(d,false);
 }
 function execScreen(d,isNet){
+  /* 🔊 개표 드럼롤 → 처형 망치 → 정체 공개
+     마피아를 잡았으면 밝은 "짠!", 애먼 시민을 처형했으면 김빠지는 "뽜아암…" */
+  sfx('drumroll');
+  if(d.name){ sfx('gavel',0.58); sfx(d.role==='mafia'?'taDa':'oops',1.0); }
+  else sfx('nobody',0.58);
   let tallyHTML='';
   if(d.tally){
     tallyHTML='<table class="tbl">'+Object.keys(d.tally).map(k=>'<tr><td>'+esc(d.names[k])+'</td><td>'+d.tally[k]+'표</td></tr>').join('')+'</table>';
@@ -836,6 +878,10 @@ function checkMafiaWin(){
   return true;
 }
 function endScreen(d,isNet){
+  /* 🔊 시민 승리는 밝은 승리음, 마피아 승리는 능글맞고 어두운 반전음 */
+  bgmSet(null);
+  sfx(d.winner==='mafia'?'winMafia':'winCity');
+  bgmSet('lobby',3600); // 잠시 뒤 다시 로비 음악
   render(`<div class="logo">${d.winner==='mafia'?'🔪':'🎉'}</div>
   <div class="card center">
     <div class="hugeWord" style="font-size:28px">${d.winner==='mafia'?'<span class="roleMafia">마피아 승리!</span>':'<span class="roleCitizen">시민 승리!</span>'}</div>
@@ -846,6 +892,276 @@ function endScreen(d,isNet){
 }
 function mafiaAgainLocal(){mafiaSettings(MG.names,false);}
 function mafiaAgainNet(){mafiaSettings(NET.names.slice(),true);}
+
+/* ═══════════════ 🔊 사운드 엔진 (파일 없이 Web Audio로 직접 합성) ═══════════════
+   게임 로직·PeerJS 동기화와 완전히 분리된 '연출 전용' 코드입니다.
+   jsdom 등 AudioContext가 없는 환경에서는 sctx()가 null을 돌려주고 전부 조용히 넘어갑니다. */
+const SND={ctx:null,on:true,master:null,bgmGain:null,bgmTimer:null,
+           track:null,want:null,switchT:null,drone:null,droneGain:null,lastAt:0,kicked:false};
+function sctx(){
+  if(!SND.ctx){
+    try{ SND.ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+    if(!SND.ctx)return null;
+    SND.master=SND.ctx.createGain(); SND.master.gain.value=0.9; SND.master.connect(SND.ctx.destination);
+    SND.bgmGain=SND.ctx.createGain(); SND.bgmGain.gain.value=0.15; SND.bgmGain.connect(SND.master);
+  }
+  return SND.ctx;
+}
+function sndUnlock(){ // 아이폰/안드로이드는 첫 터치가 있어야 소리가 납니다
+  const c=sctx(); if(!c)return;
+  try{ if(c.state==='suspended')c.resume(); }catch(e){}
+  if(!SND.kicked){ // 첫 터치 순간에 배경음악을 처음부터 다시 깔아줍니다
+    SND.kicked=true;
+    if(SND.want){ const w=SND.want; bgmStop(); SND.track=null; bgmSet(w); }
+  }
+}
+document.addEventListener('touchstart',sndUnlock,{passive:true});
+document.addEventListener('click',sndUnlock);
+function mtof(m){return 440*Math.pow(2,(m-69)/12);}
+/* 단음 */
+function tone(m,t0,dur,type,vol,dst){
+  const c=sctx(); if(!c||!SND.on)return;
+  try{
+    const o=c.createOscillator(),g=c.createGain();
+    o.type=type||'square'; o.frequency.setValueAtTime(mtof(m),t0);
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002,vol||0.2),t0+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g); g.connect(dst||SND.master);
+    o.start(t0); o.stop(t0+dur+0.03);
+  }catch(e){}
+}
+/* 미끄러지는 음 (슝~ / 어두운 하강음) */
+function slide(m1,m2,t0,dur,type,vol){
+  const c=sctx(); if(!c||!SND.on)return;
+  try{
+    const o=c.createOscillator(),g=c.createGain();
+    o.type=type||'sawtooth';
+    o.frequency.setValueAtTime(mtof(m1),t0);
+    o.frequency.exponentialRampToValueAtTime(mtof(m2),t0+dur);
+    g.gain.setValueAtTime(vol||0.18,t0);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g); g.connect(SND.master); o.start(t0); o.stop(t0+dur+0.03);
+  }catch(e){}
+}
+/* 노이즈 (드럼롤, 도장, 새소리 배경) */
+function noise(t0,dur,vol,hp){
+  const c=sctx(); if(!c||!SND.on)return;
+  try{
+    const n=Math.floor(c.sampleRate*dur);
+    const buf=c.createBuffer(1,Math.max(1,n),c.sampleRate);
+    const dat=buf.getChannelData(0);
+    for(let i=0;i<n;i++)dat[i]=(Math.random()*2-1)*(1-i/n);
+    const src=c.createBufferSource(); src.buffer=buf;
+    const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp||2000;
+    const g=c.createGain(); g.gain.value=vol||0.12;
+    src.connect(f); f.connect(g); g.connect(SND.master); src.start(t0);
+  }catch(e){}
+}
+/* ── 효과음 모음 (delay: 초 단위로 뒤에 이어 붙일 때 사용) ── */
+function sfx(name,delay){
+  const c=sctx(); if(!c||!SND.on)return;
+  try{ if(c.state==='suspended')c.resume(); }catch(e){}
+  SND.lastAt=Date.now();
+  const t=c.currentTime+(delay||0);
+  switch(name){
+    /* ── 기본 UI ── */
+    case 'tap':    tone(84,t,0.05,'square',0.10); break;                                   // 일반 버튼 톡
+    case 'chip':   tone(81,t,0.045,'square',0.09); tone(88,t+0.04,0.05,'square',0.07); break; // 옵션 칩 딸깍
+    case 'select': tone(74,t,0.05,'square',0.12); tone(81,t+0.05,0.08,'square',0.12); break;  // 사람 지목
+    case 'next':   tone(72,t,0.06,'triangle',0.14); tone(79,t+0.06,0.10,'triangle',0.14); break; // 다음 사람에게
+    case 'error':  tone(58,t,0.12,'square',0.16); tone(55,t+0.13,0.20,'square',0.16); break;  // 오류/거절
+    case 'join':   [76,83].forEach((m,i)=>tone(m,t+i*0.07,0.14,'square',0.14)); break;        // 누가 들어옴
+    case 'leave':  [83,76].forEach((m,i)=>tone(m,t+i*0.07,0.14,'triangle',0.13)); break;      // 누가 나감(입장음의 반대)
+    case 'code':   [72,76,79,84].forEach((m,i)=>tone(m,t+i*0.06,0.16,'square',0.15)); break;  // 방 코드 생성
+    /* ── 카드 배분 / 역할 공개 ── */
+    case 'deal':   for(let i=0;i<5;i++)noise(t+i*0.075,0.06,0.11,3200); break;                // 카드 촤르륵
+    case 'cardFlip': // 두구두구… 짠! (역할·제시어 카드 공개)
+      for(let i=0;i<8;i++)noise(t+i*0.035,0.03,0.075,2600);
+      [72,76,79,84].forEach((m,i)=>tone(m,t+0.30+i*0.045,0.30,'triangle',0.17));
+      noise(t+0.30,0.09,0.09,5200); break;
+    case 'cardHide': slide(79,64,t,0.12,'triangle',0.10); break;                              // 카드 덮기
+    case 'start':  [67,72,76,79,84].forEach((m,i)=>tone(m,t+i*0.055,0.22,'square',0.18));
+                   noise(t,0.08,0.08,5000); break;                                            // 판 시작!
+    /* ── 라이어게임 ── */
+    case 'drumroll': for(let i=0;i<11;i++)noise(t+i*0.05,0.045,0.06+i*0.008,1800); break;     // 긴장 드럼롤
+    case 'taDa':   [72,79,84].forEach((m,i)=>tone(m,t+i*0.05,0.34,'square',0.20));
+                   tone(88,t+0.15,0.40,'triangle',0.16); noise(t+0.15,0.10,0.10,5200); break; // 짠!
+    case 'liarOut': // 능글맞은 반전음 (라이어 정체 공개)
+      slide(64,59,t,0.16,'triangle',0.16); slide(59,68,t+0.17,0.20,'triangle',0.16);
+      [68,71,75,70].forEach((m,i)=>tone(m,t+0.38+i*0.10,0.30,'triangle',0.16)); break;
+    /* ── 마피아: 밤과 낮 ── */
+    case 'night':  // 밤이 됩니다 — 어두운 하강음
+      slide(69,33,t,0.85,'sawtooth',0.16);
+      [45,41,38].forEach((m,i)=>tone(m,t+0.20+i*0.16,0.60,'sine',0.20));
+      noise(t,0.50,0.05,200); break;
+    case 'morning': // 아침이 밝았습니다 — 밝은 상승음 + 새 지저귐
+      [67,72,76,79,84].forEach((m,i)=>tone(m,t+i*0.075,0.30,'triangle',0.17));
+      for(let i=0;i<4;i++){ slide(96+i*2,103+i*2,t+0.42+i*0.13,0.07,'sine',0.09);
+                            slide(103+i*2,97+i*2,t+0.48+i*0.13,0.06,'sine',0.07); } break;
+    case 'death':  // 사망 발표 — 둔탁한 종
+      [38,50,57].forEach((m,i)=>tone(m,t,0.90-i*0.12,'sine',0.20-i*0.05));
+      tone(45,t+0.02,0.70,'triangle',0.12); noise(t,0.25,0.12,150); break;
+    case 'saved':  [69,74,78,81].forEach((m,i)=>tone(m,t+i*0.07,0.30,'sine',0.16)); break;    // 의사가 살림
+    case 'stamp':  noise(t,0.05,0.22,900); tone(45,t,0.09,'square',0.20);
+                   tone(57,t+0.04,0.07,'triangle',0.12); break;                               // 투표 확정 도장
+    case 'gavel':  noise(t,0.07,0.24,700); [48,36].forEach((m,i)=>tone(m,t+i*0.06,0.30,'square',0.20));
+                   noise(t+0.09,0.09,0.14,500); break;                                        // 처형 망치
+    case 'nobody': [72,70].forEach((m,i)=>tone(m,t+i*0.12,0.26,'triangle',0.13)); break;      // 아무도 처형 안 됨
+    case 'oops':   // 애먼 시민을 처형함 — 김빠지는 "뽜~아~암…" 하강음
+      [58,56,53,49].forEach((m,i)=>{ slide(m,m-1.3,t+i*0.17,0.155,'sawtooth',0.17);
+                                     tone(m-12,t+i*0.17,0.17,'triangle',0.09); });
+      slide(49,38,t+0.70,0.50,'sawtooth',0.16); break;
+    case 'polMafia': [76,83,88].forEach((m,i)=>tone(m,t+i*0.06,0.26,'square',0.20));
+                     noise(t,0.07,0.08,5000); break;                                          // 정답 발각! 밝은 승리음
+    case 'polClean': [72,79].forEach((m,i)=>tone(m,t+i*0.09,0.30,'sine',0.16)); break;        // 마피아 아님(안도)
+    case 'voteOpen': [72,76,81].forEach((m,i)=>tone(m,t+i*0.07,0.20,'square',0.17)); break;   // 투표 개시
+    /* ── 최종 결과 ── */
+    case 'winCity': [72,72,76,79,84,88].forEach((m,i)=>{const tt=t+i*0.12;
+                      tone(m,tt,0.32,'square',0.22); tone(m-12,tt,0.32,'triangle',0.15);});
+                    [0,1,2].forEach(i=>noise(t+i*0.24,0.07,0.08,5200)); break;
+    case 'winMafia':[52,52,51,47,44].forEach((m,i)=>{const tt=t+i*0.16;
+                      tone(m,tt,0.42,'sawtooth',0.19); tone(m+7,tt,0.42,'triangle',0.10);});
+                    noise(t,0.40,0.06,200); break;
+    /* ── 타이머 ── */
+    case 'tick':   tone(88,t,0.07,'square',0.16); break;                                      // 마지막 5초 초읽기
+    case 'buzz':   [0,0.16].forEach(o=>{tone(43,t+o,0.14,'sawtooth',0.22);
+                                        tone(44,t+o,0.14,'square',0.16);}); break;            // 시간 종료 부저
+  }
+}
+/* ── BGM 트랙 3종 (칩튠 루프: [음(MIDI, 0=쉼), 길이(8분음표 단위)]) ── */
+const BGM_TRACKS={
+  /* 로비·설정: 왁자지껄 통통 튀는 파티 느낌 */
+  lobby:{bpm:132,melType:'square',melVol:0.12,bassType:'triangle',bassVol:0.18,hat:1,
+    mel:[[76,1],[79,1],[81,1],[79,1],[76,1],[72,1],[74,2],
+         [74,1],[77,1],[81,1],[79,1],[77,1],[74,1],[72,2],
+         [72,1],[76,1],[79,1],[84,1],[83,1],[81,1],[79,2],
+         [77,1],[76,1],[74,1],[72,1],[71,1],[74,1],[72,2]],
+    bass:[48,0,48,0,55,0,52,0, 53,0,53,0,48,0,52,0,
+          45,0,45,0,52,0,48,0, 50,0,50,0,55,0,55,0]},
+  /* 낮(토론): 가볍고 통통 튀지만 서로 슬쩍 의심하는 리듬 */
+  day:{bpm:118,melType:'square',melVol:0.11,bassType:'triangle',bassVol:0.17,hat:1,
+    mel:[[81,1],[0,1],[81,1],[84,1],[0,1],[83,1],[81,1],[0,1],
+         [79,1],[0,1],[79,1],[81,1],[0,1],[79,1],[76,2],
+         [77,1],[0,1],[77,1],[81,1],[0,1],[80,1],[77,1],[0,1],
+         [76,1],[0,1],[74,1],[76,1],[0,1],[72,1],[69,2]],
+    bass:[45,0,45,0,52,0,45,0, 43,0,43,0,50,0,43,0,
+          41,0,41,0,48,0,41,0, 40,0,40,0,47,0,47,0]},
+  /* 밤: 낮고 불길한 지속음(드론) 위로 느리게 깔리는 저음 */
+  night:{bpm:60,melType:'triangle',melVol:0.12,bassType:'sine',bassVol:0.20,hat:0,drone:[26,33],
+    mel:[[40,4],[0,2],[43,2],[41,4],[0,4],
+         [40,4],[0,2],[46,2],[45,4],[0,4]],
+    bass:[26,0,0,0,0,0,0,0, 26,0,0,0,0,0,0,0,
+          24,0,0,0,0,0,0,0, 25,0,0,0,0,0,0,0]}
+};
+/* 불길한 지속음(드론) — 밤 전용 */
+function droneStart(list){
+  const c=sctx(); if(!c||!SND.on)return;
+  droneStop();
+  try{
+    const f=c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=360;
+    const g=c.createGain();
+    g.gain.setValueAtTime(0.0001,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.16,c.currentTime+1.8);
+    f.connect(g); g.connect(SND.bgmGain);
+    SND.drone=[];
+    list.forEach((m,i)=>{
+      const o=c.createOscillator();
+      o.type=i?'triangle':'sawtooth'; o.frequency.value=mtof(m); o.detune.value=i*9-5;
+      o.connect(f); o.start(); SND.drone.push(o);
+    });
+    SND.droneGain=g;
+  }catch(e){}
+}
+function droneStop(){
+  try{
+    const c=SND.ctx;
+    if(c&&SND.droneGain){
+      const t=c.currentTime;
+      SND.droneGain.gain.cancelScheduledValues(t);
+      SND.droneGain.gain.setValueAtTime(Math.max(0.0002,SND.droneGain.gain.value),t);
+      SND.droneGain.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
+    }
+    if(c&&SND.drone)SND.drone.forEach(o=>{try{o.stop(c.currentTime+0.6);}catch(e){}});
+  }catch(e){}
+  SND.drone=null; SND.droneGain=null;
+}
+function bgmStart(){
+  const c=sctx(); if(!c||!SND.on||SND.bgmTimer)return;
+  const cfg=BGM_TRACKS[SND.track]; if(!cfg)return;
+  try{ if(c.state==='suspended')c.resume(); }catch(e){}
+  if(cfg.drone)droneStart(cfg.drone);
+  const spb=60/cfg.bpm/2; // 8분음표 하나의 길이
+  let idx=0, bi=0, next=c.currentTime+0.12;
+  SND.bgmTimer=setInterval(()=>{
+    if(!SND.on)return;
+    try{
+      const now=c.currentTime;
+      while(next<now+0.30){
+        const step=cfg.mel[idx%cfg.mel.length], m=step[0], len=step[1];
+        if(m>0)tone(m,next,spb*len*0.92,cfg.melType,cfg.melVol,SND.bgmGain);
+        const b=cfg.bass[bi%cfg.bass.length];
+        if(b>0)tone(b,next,spb*0.9,cfg.bassType,cfg.bassVol,SND.bgmGain);
+        if(cfg.hat&&bi%2===0)noise(next,0.03,0.03,6000); // 가벼운 하이햇
+        next+=spb*len; idx++; bi+=len;
+      }
+    }catch(e){}
+  },60);
+}
+function bgmStop(){
+  if(SND.bgmTimer){clearInterval(SND.bgmTimer);SND.bgmTimer=null;}
+  droneStop();
+}
+/* 장면이 바뀌면 어울리는 트랙으로 교체. delay(ms)를 주면 잠깐 조용했다가 다시 깔립니다. */
+function bgmSet(track,delay){
+  SND.want=track||null;
+  if(SND.switchT){clearTimeout(SND.switchT);SND.switchT=null;}
+  if(!track){bgmStop();SND.track=null;return;}
+  const go=()=>{
+    SND.switchT=null;
+    if(SND.want!==track)return;              // 그 사이 장면이 또 바뀌었으면 취소
+    if(SND.track===track&&SND.bgmTimer)return; // 이미 같은 곡이 흐르는 중이면 그대로
+    bgmStop(); SND.track=track; bgmStart();
+  };
+  if(delay){ bgmStop(); SND.track=null; SND.switchT=setTimeout(go,delay); }
+  else go();
+}
+/* 🔊 켜기/끄기 (localStorage 안 씀 — 변수로만 관리) */
+function paintSoundBtns(){
+  const b=document.getElementById('btnSnd');
+  if(b){b.textContent=SND.on?'🔊':'🔇'; b.style.opacity=SND.on?'1':'0.45';}
+}
+function soundToggle(){
+  SND.on=!SND.on;
+  if(SND.on){ sndUnlock(); const w=SND.want; SND.track=null; bgmSet(w); sfx('tap'); }
+  else bgmStop();
+  paintSoundBtns();
+}
+/* 화면 오른쪽 위 고정 버튼 — render()가 #app만 갈아끼우므로 body에 직접 붙입니다 */
+(function(){
+  try{
+    const b=document.createElement('button');
+    b.id='btnSnd'; b.textContent='🔊'; b.title='소리 켜기/끄기';
+    b.style.cssText='position:fixed;top:10px;right:10px;z-index:9999;width:42px;height:42px;'+
+      'border-radius:50%;background:#2a2440;border:1px solid #3a3158;color:#f0edfa;'+
+      'font-size:19px;line-height:1;box-shadow:0 3px 10px rgba(0,0,0,.45)';
+    b.onclick=function(){soundToggle();};
+    document.body.appendChild(b);
+  }catch(e){}
+})();
+/* 버튼을 눌렀는데 아무 소리도 안 나면 심심하니, 전용 효과음이 없는 버튼엔 기본음을 깔아줍니다.
+   (직전 160ms 안에 전용 효과음이 났으면 겹치지 않도록 건너뜁니다) */
+document.addEventListener('click',function(ev){
+  try{
+    if(!SND.on)return;
+    const b=ev.target&&ev.target.closest?ev.target.closest('button'):null;
+    if(!b||b.id==='btnSnd')return;
+    if(Date.now()-SND.lastAt<160)return;
+    if(b.classList.contains('chip')||b.classList.contains('qbtn'))sfx('chip');
+    else if(b.classList.contains('pick'))sfx('select');
+    else sfx('tap');
+  }catch(e){}
+});
 
 /* ---------- 시작 ---------- */
 home();
@@ -875,62 +1191,6 @@ function INGAME(){return !!(LG||MG);}
 })();
 
 
-/* ═══ 🔊 효과음 (파일 없이 합성 · 대화 게임이라 배경음악은 없음) ═══ */
-const SND={ctx:null,on:true,master:null};
-function sctx(){
-  if(!SND.ctx){ try{SND.ctx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}
-    SND.master=SND.ctx.createGain(); SND.master.gain.value=0.9; SND.master.connect(SND.ctx.destination); }
-  return SND.ctx;
-}
-function sndUnlock(){const c=sctx();if(c&&c.state==='suspended')c.resume();}
-document.addEventListener('touchstart',sndUnlock,{passive:true});
-document.addEventListener('click',sndUnlock);
-function mtof(m){return 440*Math.pow(2,(m-69)/12);}
-function tone(m,t0,dur,type,vol){
-  const c=sctx(); if(!c||!SND.on)return;
-  const o=c.createOscillator(),g=c.createGain();
-  o.type=type||'square'; o.frequency.setValueAtTime(mtof(m),t0);
-  g.gain.setValueAtTime(0.0001,t0);
-  g.gain.exponentialRampToValueAtTime(Math.max(0.0002,vol||0.2),t0+0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
-  o.connect(g); g.connect(SND.master); o.start(t0); o.stop(t0+dur+0.03);
-}
-function noise(t0,dur,vol,hp){
-  const c=sctx(); if(!c||!SND.on)return;
-  const n=Math.floor(c.sampleRate*dur);
-  const buf=c.createBuffer(1,Math.max(1,n),c.sampleRate);
-  const dat=buf.getChannelData(0);
-  for(let i=0;i<n;i++)dat[i]=(Math.random()*2-1)*(1-i/n);
-  const src=c.createBufferSource(); src.buffer=buf;
-  const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp||2000;
-  const g=c.createGain(); g.gain.value=vol||0.12;
-  src.connect(f); f.connect(g); g.connect(SND.master); src.start(t0);
-}
-function sfx(name){
-  const c=sctx(); if(!c||!SND.on)return;
-  if(c.state==='suspended')c.resume();
-  const t=c.currentTime;
-  switch(name){
-    case 'tap':    tone(84,t,0.05,'square',0.1); break;
-    case 'reveal': [64,68,71,76].forEach((m,i)=>tone(m,t+i*0.09,0.3,'triangle',0.2)); break;
-    case 'night':  [55,52,48].forEach((m,i)=>tone(m,t+i*0.22,0.5,'sine',0.22)); break;
-    case 'morning':[72,76,79,84].forEach((m,i)=>tone(m,t+i*0.1,0.28,'square',0.2)); break;
-    case 'vote':   tone(79,t,0.09,'square',0.2); tone(84,t+0.1,0.16,'square',0.2); break;
-    case 'kill':   [70,62,54].forEach((m,i)=>tone(m,t+i*0.13,0.34,'sawtooth',0.2)); noise(t,0.2,0.1,1200); break;
-    case 'win':    [72,72,76,79,84].forEach((m,i)=>{tone(m,t+i*0.14,0.34,'square',0.24);tone(m-12,t+i*0.14,0.34,'triangle',0.16);}); break;
-    case 'lose':   [64,61,57,52].forEach((m,i)=>tone(m,t+i*0.2,0.42,'sawtooth',0.18)); break;
-    case 'bet':    [76,81].forEach((m,i)=>tone(m,t+i*0.06,0.15,'square',0.2)); break;
-    case 'shot':   noise(t,0.22,0.22,600); [58,46].forEach((m,i)=>tone(m,t+i*0.05,0.28,'sawtooth',0.2)); break;
-  }
-}
-function soundToggle(){SND.on=!SND.on;if(SND.on){sndUnlock();sfx('tap');}
-  var b=document.getElementById('btnSnd'); if(b)b.textContent=SND.on?'🔊':'🔇';}
-
-/* 효과음 훅 */
-(function(){
-  if(typeof renderMyPriv==='function'){const _o=renderMyPriv;window.renderMyPriv=function(){sfx('reveal');return _o.apply(this,arguments);};}
-  if(typeof checkMafiaWin==='function'){const _w=checkMafiaWin;window.checkMafiaWin=function(){const r=_w.apply(this,arguments);if(r)sfx('win');return r;};}
-})();
 </script>
 </body>
 </html>

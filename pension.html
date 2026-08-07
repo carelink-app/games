@@ -82,25 +82,265 @@ function pick(a){return a[rnd(a.length)];}
 function shuffle(a){const b=a.slice();for(let i=b.length-1;i>0;i--){const j=rnd(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function vib(p){try{if(navigator.vibrate)navigator.vibrate(p);}catch(e){}}
-/* 사운드 (파일 없이 비프음) */
-let AC=null;
-function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}return AC;}
+/* ═══════════════════════════════════════════════════════════════
+   🔊 사운드 엔진 — 파일 없이 Web Audio로 그 자리에서 음을 합성합니다.
+   · 외부 mp3/wav·CDN 라이브러리 전혀 없음 (OscillatorNode + 노이즈 버퍼)
+   · 게임 로직/랜덤(rnd)과 완전히 분리된 '연출 전용' 코드
+   · AudioContext가 없는 환경(jsdom 테스트 등)에서는 전부 조용히 무시됩니다
+═══════════════════════════════════════════════════════════════ */
+const SND={ctx:null,on:true,master:null,bgmGain:null,bgmTimer:null,bgmName:'',want:'',unlocked:false,bpm:132};
+function sctx(){
+  if(!SND.ctx){
+    try{
+      const AC2=window.AudioContext||window.webkitAudioContext;
+      if(!AC2)return null;                       // 오디오를 지원하지 않는 환경
+      SND.ctx=new AC2();
+      SND.master=SND.ctx.createGain();
+      SND.master.gain.value=SND.on?0.9:0;        // 음소거는 마스터 볼륨으로 즉시 처리
+      SND.master.connect(SND.ctx.destination);
+      SND.bgmGain=SND.ctx.createGain();
+      SND.bgmGain.gain.value=0.15;               // BGM은 효과음보다 확실히 작게
+      SND.bgmGain.connect(SND.master);
+    }catch(e){SND.ctx=null;return null;}
+  }
+  return SND.ctx;
+}
+/* 아이폰/안드로이드는 첫 사용자 터치 전에는 소리가 나지 않습니다.
+   터치·클릭을 캡처 단계에서 먼저 잡아 AudioContext를 깨웁니다. */
+function sndUnlock(){
+  try{
+    const c=sctx(); if(!c)return;
+    if(c.state==='suspended')c.resume();
+    if(!SND.unlocked){
+      SND.unlocked=true;
+      if(SND.want)bgmStart(SND.want);            // 잠금 때문에 미뤄둔 BGM을 지금 시작
+    }
+  }catch(e){}
+}
+try{
+  ['touchstart','pointerdown','mousedown','click','keydown'].forEach(function(ev){
+    document.addEventListener(ev,sndUnlock,{passive:true,capture:true});
+  });
+}catch(e){}
+function mtof(m){return 440*Math.pow(2,(m-69)/12);}      // MIDI 번호 → 주파수
+/* 단음 하나 */
+function tone(m,t0,dur,type,vol,dst){
+  try{
+    const c=sctx(); if(!c||!SND.on)return;
+    const o=c.createOscillator(),g=c.createGain();
+    o.type=type||'square'; o.frequency.setValueAtTime(mtof(m),t0);
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002,vol||0.2),t0+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g); g.connect(dst||SND.master);
+    o.start(t0); o.stop(t0+dur+0.03);
+  }catch(e){}
+}
+/* 미끄러지는 음 (슝~ / 익살스러운 하강) */
+function slide(m1,m2,t0,dur,type,vol){
+  try{
+    const c=sctx(); if(!c||!SND.on)return;
+    const o=c.createOscillator(),g=c.createGain();
+    o.type=type||'sawtooth';
+    o.frequency.setValueAtTime(mtof(m1),t0);
+    o.frequency.exponentialRampToValueAtTime(mtof(m2),t0+dur);
+    g.gain.setValueAtTime(vol||0.18,t0);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g); g.connect(SND.master); o.start(t0); o.stop(t0+dur+0.03);
+  }catch(e){}
+}
+/* 노이즈 (딸깍, 치직, 폭발). lp=true면 저역만 남겨 '굵은' 소리가 됩니다.
+   dst를 주면 그쪽으로 보냅니다 (BGM 하이햇은 반드시 bgmGain으로 가야 음량이 맞습니다) */
+function noise(t0,dur,vol,cut,lp,dst){
+  try{
+    const c=sctx(); if(!c||!SND.on)return;
+    const n=Math.floor(c.sampleRate*dur);
+    const buf=c.createBuffer(1,Math.max(1,n),c.sampleRate);
+    const dat=buf.getChannelData(0);
+    for(let i=0;i<n;i++)dat[i]=(Math.random()*2-1)*(1-i/n);   // 뒤로 갈수록 잦아듦
+    const src=c.createBufferSource(); src.buffer=buf;
+    const f=c.createBiquadFilter(); f.type=lp?'lowpass':'highpass'; f.frequency.value=cut||2000;
+    const g=c.createGain(); g.gain.value=vol||0.12;
+    src.connect(f); f.connect(g); g.connect(dst||SND.master); src.start(t0);
+  }catch(e){}
+}
+/* ── 효과음 모음 (전부 0.05~0.9초 내로 짧고 또렷하게) ── */
+function sfx(name){
+  try{
+    const c=sctx(); if(!c||!SND.on)return;
+    if(c.state==='suspended'){c.resume();if(!SND.unlocked)return;} // 잠금 상태면 소리 생략
+    const t=c.currentTime;
+    switch(name){
+      /* 공통 UI */
+      case 'tap':    tone(84,t,0.05,'square',0.10); break;                     // 가벼운 딸깍
+      case 'menu':   [72,79,84].forEach((m,i)=>tone(m,t+i*0.045,0.12,'square',0.15)); break; // 메뉴 진입
+      case 'back':   [76,69].forEach((m,i)=>tone(m,t+i*0.07,0.12,'triangle',0.14)); break;   // 뒤로가기
+      case 'select': tone(88,t,0.05,'square',0.12); tone(93,t+0.045,0.07,'square',0.10); break; // 칩 선택
+      case 'add':    [79,84,88].forEach((m,i)=>tone(m,t+i*0.05,0.13,'square',0.16)); break;  // 목록에 추가
+      case 'whoosh': slide(96,72,t,0.16,'sawtooth',0.10); noise(t,0.14,0.07,3000); break;    // 휙! 넘기기
+      /* 카운트다운 · 시작 신호 */
+      case 'count':  tone(76,t,0.10,'square',0.18); noise(t,0.05,0.06,4000); break;          // 3, 2, 1…
+      case 'start':  [72,76,79,84,88].forEach((m,i)=>{tone(m,t+i*0.05,0.16,'square',0.22);tone(m-12,t+i*0.05,0.16,'triangle',0.14);});
+                     noise(t,0.12,0.12,5000); break;                                          // 출발 신호!
+      case 'count321': // 하나! 둘! 셋! (밸런스 게임 동시 지목)
+                     tone(74,t,0.16,'square',0.2); tone(74,t+0.5,0.16,'square',0.2);
+                     [84,88,93].forEach((m,i)=>tone(m,t+1.0+i*0.06,0.32,'square',0.22));
+                     noise(t+1.0,0.12,0.1,5000); break;
+      /* 퀴즈 */
+      case 'correct':tone(88,t,0.11,'sine',0.26); tone(93,t+0.09,0.24,'sine',0.24);
+                     tone(76,t,0.1,'triangle',0.12); break;                                   // 맑은 띵동
+      case 'wrong':  tone(58,t,0.14,'square',0.2); tone(57,t+0.13,0.2,'square',0.2); break;   // 삑—
+      case 'tick':   tone(93,t,0.05,'square',0.14); break;                                    // 남은 시간 촉박
+      case 'timeup': [79,74,69,62].forEach((m,i)=>{tone(m,t+i*0.16,0.36,'square',0.2);tone(m-12,t+i*0.16,0.36,'triangle',0.14);});
+                     noise(t+0.64,0.2,0.1,3000); break;                                       // 시간 종료
+      case 'quizNew':[69,76,81].forEach((m,i)=>tone(m,t+i*0.06,0.2,'triangle',0.18)); break;  // 새 문제 등장
+      case 'reveal': for(let i=0;i<8;i++)noise(t+i*0.05,0.05,0.1,600,true);                   // 두구두구…
+                     [81,86,90].forEach((m,i)=>tone(m,t+0.42+i*0.08,0.34,'square',0.24)); break; // 정답 공개!
+      case 'vs':     slide(55,67,t,0.18,'sawtooth',0.16); tone(79,t+0.2,0.14,'square',0.2);
+                     tone(74,t+0.2,0.14,'square',0.16); break;                                // 대결 등장
+      /* 폭탄 돌리기 */
+      case 'ignite': noise(t,0.35,0.18,1800); slide(48,84,t,0.32,'sawtooth',0.12);
+                     tone(72,t+0.3,0.12,'square',0.2); break;                                 // 치익—점화!
+      case 'fuse':   noise(t,0.06,0.13,2600); tone(96,t,0.03,'square',0.07); break;           // 도화선 치직
+      case 'boom':   noise(t,0.7,0.5,220,true); noise(t,0.25,0.3,900);                        // 굵은 저음 파열
+                     slide(60,28,t,0.75,'sawtooth',0.3); slide(48,24,t+0.05,0.6,'square',0.22);
+                     [40,33,28].forEach((m,i)=>tone(m,t+0.1+i*0.12,0.5,'sawtooth',0.22)); break;
+      /* 벌칙 · 룰렛 */
+      case 'penalty':slide(76,52,t,0.45,'square',0.2); slide(64,40,t+0.12,0.45,'sawtooth',0.14);
+                     tone(45,t+0.5,0.3,'triangle',0.2); break;                                // 익살스러운 하강음
+      case 'wheelSpin':{ // 딸깍딸깍… 점점 느려지는 룰렛 (약 4.3초, 뒤에 두구두구 깔림)
+        let d=0,gap=0.045;
+        for(let i=0;i<80&&d<4.25;i++){
+          noise(t+d,0.03,0.16,4200); tone(96,t+d,0.02,'square',0.05);
+          d+=gap; gap*=1.055;
+        }
+        for(let i=0;i<26;i++)noise(t+3.45+i*0.032,0.035,0.09,500,true); // 마지막 두구두구
+        break;}
+      case 'jackpot':// 팡파르! (룰렛 당첨)
+        noise(t,0.15,0.16,5000);
+        [84,84,84,88,91,88,91,96].forEach((m,i)=>{const tt=t+i*0.11;
+          tone(m,tt,0.3,'square',0.26); tone(m-12,tt,0.3,'triangle',0.16);});
+        [0,1,2].forEach(i=>noise(t+0.22*i,0.07,0.09,6000)); break;
+      case 'shuffle':for(let i=0;i<6;i++){noise(t+i*0.045,0.04,0.11,3500);tone(72+i*3,t+i*0.045,0.05,'square',0.1);} break; // 다다닥 (주제 바꾸기)
+    }
+  }catch(e){}
+}
+/* ── BGM: 장면마다 어울리는 8비트 루프 (멜로디+베이스+하이햇) ──
+   [음(MIDI, 0=쉼표), 길이(8분음표 단위)] 형식으로 적어둔 악보를 예약 재생합니다. */
+const BGM_TRACKS={
+  /* 밝고 빠른 파티 루프 — 홈·설정·결과 화면 */
+  party:{bpm:134,mel:[
+    [72,1],[76,1],[79,1],[76,1],[77,1],[74,1],[72,1],[0,1],
+    [74,1],[77,1],[81,1],[77,1],[79,1],[76,1],[74,1],[0,1],
+    [72,1],[76,1],[79,2],[81,1],[79,1],[76,2],
+    [74,1],[71,1],[74,1],[77,1],[76,2],[0,2],
+    [81,1],[79,1],[77,1],[76,1],[74,1],[72,1],[74,1],[76,1],
+    [77,2],[76,2],[72,2],[0,2]
+  /* 베이스는 멜로디와 같은 48칸이라 매 루프마다 화음이 딱 맞습니다 (C-G-Am-F-C-G) */
+  ],bass:[48,0,55,0,48,0,55,0, 43,0,50,0,43,0,50,0, 45,0,52,0,45,0,52,0,
+          41,0,48,0,41,0,48,0, 48,0,55,0,48,0,55,0, 43,0,50,0,43,0,50,0]},
+  /* 조금 더 빠르고 통통 튀는 루프 — 스피드퀴즈 진행 중 */
+  quiz:{bpm:152,mel:[
+    [81,1],[84,1],[88,1],[84,1],[81,1],[84,1],[88,1],[91,1],
+    [89,1],[86,1],[82,1],[86,1],[89,1],[86,1],[82,1],[79,1],
+    [81,1],[81,1],[84,1],[88,1],[86,2],[84,2],
+    [83,1],[86,1],[83,1],[79,1],[81,2],[0,2]
+  ],bass:[45,0,52,0,45,0,52,0, 38,0,45,0,38,0,45,0, 45,0,52,0,45,0,52,0, 40,0,47,0,40,0,47,0]},
+  /* 심장 쫄깃한 저음 루프 — 폭탄 돌리기 (템포가 점점 빨라집니다) */
+  bomb:{bpm:112,accel:1.2,max:236,mel:[
+    [60,1],[0,1],[61,1],[0,1],[60,1],[0,1],[63,1],[0,1],
+    [62,1],[0,1],[63,1],[0,1],[62,1],[0,1],[65,1],[0,1]
+  ],bass:[36,0,36,0,36,0,36,0, 38,0,38,0,38,0,38,0]}
+};
+function bgmStart(name){
+  try{
+    SND.want=name||'party';
+    if(SND.bgmName===SND.want&&SND.bgmTimer)return;   // 같은 트랙이면 끊지 않고 이어서
+    bgmStop();
+    const tr=BGM_TRACKS[SND.want]; if(!tr)return;
+    const c=sctx(); if(!c||!SND.on||!SND.unlocked)return; // 첫 터치 전에는 예약만 해둠
+    if(c.state==='suspended')c.resume();
+    SND.bgmName=SND.want; SND.bpm=tr.bpm;
+    let idx=0,bi=0,next=c.currentTime+0.12;
+    SND.bgmTimer=setInterval(function(){
+      try{
+        if(!SND.on)return;
+        const now=c.currentTime;
+        while(next<now+0.25){
+          const spb=60/SND.bpm/2;                        // 8분음표 한 칸 길이
+          const note=tr.mel[idx%tr.mel.length];
+          if(note[0]>0)tone(note[0],next,spb*note[1]*0.92,'square',0.13,SND.bgmGain);
+          const b=tr.bass[bi%tr.bass.length];
+          if(b>0)tone(b,next,spb*0.9,'triangle',0.2,SND.bgmGain);
+          if(bi%2===0)noise(next,0.03,0.08,6000,false,SND.bgmGain); // 하이햇도 BGM 버스를 타야 멜로디에 안 묻힘
+          next+=spb*note[1]; idx++; bi+=note[1];
+          if(tr.accel&&SND.bpm<tr.max)SND.bpm=Math.min(tr.max,SND.bpm+tr.accel*note[1]); // 폭탄: 점점 빠르게!
+        }
+      }catch(e){}
+    },60);
+  }catch(e){}
+}
+function bgmStop(){
+  try{ if(SND.bgmTimer){clearInterval(SND.bgmTimer);SND.bgmTimer=null;} SND.bgmName=''; }catch(e){}
+}
+/* 🔊 켜기/끄기 — localStorage 쓰지 않고 변수로만 관리합니다 */
+function soundToggle(){
+  try{
+    SND.on=!SND.on;
+    const c=sctx();
+    if(c&&SND.master)SND.master.gain.value=SND.on?0.9:0; // 예약된 소리까지 즉시 음소거
+    if(SND.on){ sndUnlock(); bgmStart(SND.want||'party'); sfx('tap'); }
+    else bgmStop();
+    paintSoundBtns();
+  }catch(e){}
+}
+function paintSoundBtns(){
+  try{
+    const b=document.getElementById('sndBtn');
+    if(b){b.textContent=SND.on?'🔊':'🔇'; b.style.opacity=SND.on?'0.9':'0.45';}
+  }catch(e){}
+}
+/* 화면(app)이 계속 다시 그려지므로 body에 고정 버튼으로 붙여둡니다 */
+(function(){
+  try{
+    const b=document.createElement('button');
+    b.id='sndBtn'; b.type='button'; b.textContent='🔊';
+    b.style.cssText='position:fixed;right:10px;bottom:10px;width:40px;height:40px;border-radius:50%;'+
+      'background:rgba(31,66,55,.92);border:1px solid #2c5a4b;color:#eefaf4;font-size:18px;line-height:1;'+
+      'z-index:10000;opacity:.9;padding:0;box-shadow:0 2px 10px rgba(0,0,0,.45)';
+    b.onclick=function(ev){ if(ev&&ev.stopPropagation)ev.stopPropagation(); soundToggle(); };
+    if(document.body)document.body.appendChild(b);
+  }catch(e){}
+})();
+/* 전체화면 탭 게임(이마퀴즈/몸으로 말해요)에서는 화면 전체가 '정답/패스' 버튼입니다.
+   그 위에 떠 있는 🔊 버튼은 오른쪽 아래 '패스' 영역을 가려서 오작동을 부르므로,
+   전체화면(.fsWrap)이 떠 있는 동안에만 잠시 숨겼다가 끝나면 다시 보여줍니다. */
+function sndBtnAuto(){
+  try{
+    const b=document.getElementById('sndBtn'); if(!b)return;
+    b.style.display=document.querySelector('.fsWrap')?'none':'block';
+  }catch(e){}
+}
+try{
+  if(window.MutationObserver&&app)
+    new MutationObserver(sndBtnAuto).observe(app,{childList:true,subtree:true});
+  else setInterval(sndBtnAuto,300);   // 구형 브라우저 대비
+}catch(e){}
+/* ── 구버전 호출 호환용 (혹시 남아있는 beep/boomSound 호출도 음소거를 따릅니다) ── */
+function ac(){return sctx();}
 function beep(freq,dur,type,vol){
-  const c=ac();if(!c)return;
-  const o=c.createOscillator(),g=c.createGain();
-  o.type=type||'square';o.frequency.value=freq;
-  g.gain.value=vol||0.15;
-  o.connect(g);g.connect(c.destination);
-  o.start();g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur);
-  o.stop(c.currentTime+dur);
+  try{
+    const c=sctx(); if(!c||!SND.on)return;
+    if(c.state==='suspended'){c.resume();if(!SND.unlocked)return;}
+    const t=c.currentTime,o=c.createOscillator(),g=c.createGain();
+    o.type=type||'square'; o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(vol||0.15,t);
+    g.gain.exponentialRampToValueAtTime(0.001,t+(dur||0.1));
+    o.connect(g); g.connect(SND.master);
+    o.start(t); o.stop(t+(dur||0.1)+0.02);
+  }catch(e){}
 }
-function boomSound(){
-  const c=ac();if(!c)return;
-  const N=c.sampleRate*0.6,buf=c.createBuffer(1,N,c.sampleRate),d=buf.getChannelData(0);
-  for(let i=0;i<N;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/N,2);
-  const s=c.createBufferSource(),g=c.createGain();
-  s.buffer=buf;g.gain.value=0.5;s.connect(g);g.connect(c.destination);s.start();
-}
+function boomSound(){ sfx('boom'); }
 
 /* =====================================================
    콘텐츠 뱅크
@@ -162,6 +402,7 @@ function glyphLen(str){return [...str].filter(c=>c!==' ').length;} // 공백 제
    홈
 ===================================================== */
 function home(){
+  sfx('back'); bgmStart('party');            // 홈: 밝은 파티 루프
   app.innerHTML=`
   <div class="logo">🏕️ 펜션게임 <span class="g">팩</span></div>
   <div class="tag">폰은 소품, 노는 건 사람! · 6인 여행 최적화 · 인터넷 불필요</div>
@@ -171,7 +412,7 @@ function home(){
     <button class="mbtn" onclick="bombSetup()">💣 폭탄 돌리기<small>말하고 넘겨! 터지면 벌칙</small></button>
     <button class="mbtn" onclick="choSetup()">ㅋㅅ 초성 퀴즈<small>먼저 외치는 사람이 승리</small></button>
     <button class="mbtn" onclick="balanceGame(0,shuffle(BALANCE))">⚖️ 밸런스 게임<small>하나둘셋! 소수파가 벌칙</small></button>
-    <button class="mbtn" onclick="roulette()">🎯 벌칙 룰렛<small>복불복의 최종 병기</small></button>
+    <button class="mbtn" onclick="sfx('menu');roulette()">🎯 벌칙 룰렛<small>복불복의 최종 병기</small></button>
   </div>
   <div class="card" style="margin-top:12px"><h3>💡 추천 코스 (6인 기준)</h3>
   <div class="sub">① 몸풀기: 밸런스 게임 → ② 이마 스피드퀴즈 팀전(3:3) → ③ 폭탄 돌리기 → ④ 초성 퀴즈 → 벌칙은 언제나 🎯룰렛으로!</div></div>`;
@@ -182,6 +423,7 @@ function home(){
 ===================================================== */
 let QZ={};
 function quizSetup(kind){
+  sfx('menu'); bgmStart('party');            // 설정 화면도 파티 루프 유지
   QZ={kind,cat:CATS[0],sec:60};
   quizSetupRender();
 }
@@ -190,10 +432,10 @@ function quizSetupRender(){
   app.innerHTML=`
   <div class="logo">${isHead?'🙆 이마 스피드퀴즈':'🎭 몸으로 말해요'}</div>
   <div class="card"><h3>주제</h3><div class="chips">
-    ${CATS.map(c=>`<button class="chip ${QZ.cat===c?'sel':''}" onclick="QZ.cat='${c}';quizSetupRender()">${c}</button>`).join('')}
+    ${CATS.map(c=>`<button class="chip ${QZ.cat===c?'sel':''}" onclick="sfx('select');QZ.cat='${c}';quizSetupRender()">${c}</button>`).join('')}
   </div></div>
   <div class="card"><h3>제한 시간</h3><div class="chips">
-    ${[60,90,120].map(s=>`<button class="chip ${QZ.sec===s?'sel':''}" onclick="QZ.sec=${s};quizSetupRender()">${s}초</button>`).join('')}
+    ${[60,90,120].map(s=>`<button class="chip ${QZ.sec===s?'sel':''}" onclick="sfx('select');QZ.sec=${s};quizSetupRender()">${s}초</button>`).join('')}
   </div></div>
   <div class="card"><h3>📖 하는 법</h3><div class="sub">
   ${isHead
@@ -214,10 +456,10 @@ function quizGo(){
   let cd=3;
   const paint=()=>{app.innerHTML=`<div class="fsWrap"><div class="fsTop"><div class="huge">${cd>0?cd:'시작!'}</div>
     <div class="lbl">${QZ.kind==='head'?'폰을 이마로!':'설명 준비!'}</div></div></div>`;};
-  paint();beep(600,.1);
+  paint();sfx('count');                     // 3…2…1 카운트다운
   const iv=setInterval(()=>{cd--;paint();
-    if(cd<=0){clearInterval(iv);beep(1000,.25);quizRound();}
-    else beep(600,.1);
+    if(cd<=0){clearInterval(iv);sfx('start');bgmStart('quiz');quizRound();} // 시작 신호 + 빠른 퀴즈 루프
+    else sfx('count');
   },900);
 }
 function quizRound(){
@@ -230,19 +472,20 @@ function quizRound(){
     <div class="fsTop" id="okZone"><div class="lbl">맞히면 여기(위쪽) 탭!</div><div class="fsWord">${esc(w)}</div></div>
     <div class="fsBottom" id="passZone">어려우면 여기 탭 (패스)</div>
   </div>`;
-  $('okZone').onclick=()=>{QZ.score++;QZ.log.push([w,true]);beep(1200,.12);vib(30);QZ.idx++;quizNext('ok');};
-  $('passZone').onclick=()=>{QZ.log.push([w,false]);beep(300,.15);vib([20,40,20]);QZ.idx++;quizNext('pass');};
+  $('okZone').onclick=()=>{QZ.score++;QZ.log.push([w,true]);sfx('correct');vib(30);QZ.idx++;quizNext('ok');};   // 정답 띵동
+  $('passZone').onclick=()=>{QZ.log.push([w,false]);sfx('wrong');vib([20,40,20]);QZ.idx++;quizNext('pass');};  // 오답/패스 삑
   if(!qzTimer){
     qzTimer=setInterval(()=>{
       QZ.left--;
       const el=$('qLeft');if(el)el.textContent=QZ.left;
-      if(QZ.left<=5&&QZ.left>0)beep(800,.08);
+      if(QZ.left<=5&&QZ.left>0)sfx('tick');   // 마지막 5초 초읽기
       if(QZ.left<=0){clearInterval(qzTimer);qzTimer=null;quizEnd();}
     },1000);
   }
 }
 function quizNext(kind){
   if(qzOver)return;
+  if(kind==='pass')sfx('whoosh');            // 휙! 다음 단어로 넘기기
   const top=document.querySelector('.fsTop');
   if(top)top.classList.add(kind==='ok'?'flash-ok':'flash-pass');
   if(qzNextT)clearTimeout(qzNextT);
@@ -255,7 +498,7 @@ function quizEnd(){
   boomlessEnd();
 }
 function boomlessEnd(){
-  beep(500,.2);setTimeout(()=>beep(400,.2),200);setTimeout(()=>beep(300,.4),400);
+  sfx('timeup'); bgmStart('party');          // 시간 종료 → 다시 파티 루프
   vib([80,60,80]);
   app.innerHTML=`
   <div class="logo">⏰ 종료!</div>
@@ -265,7 +508,7 @@ function boomlessEnd(){
     ${QZ.log.map(([w,ok])=>'<tr><td>'+esc(w)+'</td><td>'+(ok?'✅':'❌ 패스')+'</td></tr>').join('')||'<tr><td>기록 없음</td></tr>'}
   </table></div>
   <button class="bigBtn" onclick="quizGo()">🔄 같은 설정으로 다음 사람!</button>
-  <button class="ghostBtn" onclick="quizSetupRender()">설정 바꾸기</button>
+  <button class="ghostBtn" onclick="sfx('back');quizSetupRender()">설정 바꾸기</button>
   <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
 }
 
@@ -274,12 +517,13 @@ function boomlessEnd(){
 ===================================================== */
 let BB={};
 function bombSetup(){
+  sfx('menu'); bgmStart('party');
   BB={topic:pick(BOMB_TOPICS)};
   app.innerHTML=`
   <div class="logo">💣 폭탄 돌리기</div>
   <div class="card center"><h3>이번 판 주제</h3>
     <div class="big" style="font-size:24px" id="bTopic">"${esc(BB.topic)}"</div>
-    <button class="ghostBtn" onclick="BB.topic=pick(BOMB_TOPICS);$('bTopic').textContent='"'+BB.topic+'"'">🎲 주제 바꾸기</button>
+    <button class="ghostBtn" onclick="sfx('shuffle');BB.topic=pick(BOMB_TOPICS);$('bTopic').textContent='"'+BB.topic+'"'">🎲 주제 바꾸기</button>
   </div>
   <div class="card"><h3>📖 하는 법</h3><div class="sub">
   주제에 맞는 단어를 <b>말하고 폰을 옆 사람에게</b> 넘기세요. 중복·5초 침묵 금지!<br>
@@ -290,6 +534,7 @@ function bombSetup(){
 let bombTimers=[];
 function bombGo(){
   ac();
+  sfx('ignite'); bgmStart('bomb');           // 치익—점화! 이후 BGM 템포가 점점 빨라집니다
   const fuse=10000+rnd(25000);
   app.innerHTML=`
   <div class="bombWrap">
@@ -301,24 +546,26 @@ function bombGo(){
   // 점점 빨라지는 틱 소리
   let t=0,gap=700;
   const tick=()=>{
-    beep(900,.05,'square',.1);vib(15);
+    // 폭탄 화면을 이미 벗어났으면 소리/진동만 건너뜁니다 (타이머·터지는 시점은 그대로)
+    if(document.querySelector('.bombWrap')){ sfx('fuse');vib(15); }   // 도화선 치직치직
     t+=gap;
     if(gap>180)gap*=0.93;
     if(t<fuse-200)bombTimers.push(setTimeout(tick,gap));
   };
   bombTimers.push(setTimeout(tick,300));
   bombTimers.push(setTimeout(()=>{
-    boomSound();vib([300,100,300,100,500]);
+    bgmStop();sfx('boom');vib([300,100,300,100,500]);   // 💥 굵은 저음 파열
     app.innerHTML=`<div class="boomBG" onclick="bombAfter()">
       <div class="b1">💥</div><div class="b2">펑!!! 들고 있던 사람 벌칙!</div>
       <div style="color:#ffd7dd;font-size:14px">화면을 탭하세요</div></div>`;
   },fuse));
 }
 function bombAfter(){
+  sfx('penalty'); bgmStart('party');          // 익살스러운 하강음 = 너 당첨!
   app.innerHTML=`
   <div class="logo">💥 당첨!</div>
   <div class="card center"><div class="big">벌칙 타임이다!</div></div>
-  <button class="bigBtn gold" onclick="roulette('bombAfter')">🎯 벌칙 룰렛 돌리기</button>
+  <button class="bigBtn gold" onclick="sfx('menu');roulette('bombAfter')">🎯 벌칙 룰렛 돌리기</button>
   <button class="bigBtn" onclick="bombSetup()">💣 한 판 더</button>
   <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
 }
@@ -328,6 +575,7 @@ function bombAfter(){
 ===================================================== */
 let CQ={};
 function choSetup(){
+  sfx('menu'); bgmStart('party');
   CQ={cat:CATS[0]};
   choSetupRender();
 }
@@ -335,13 +583,14 @@ function choSetupRender(){
   app.innerHTML=`
   <div class="logo">ㅋㅅ 초성 퀴즈</div>
   <div class="card"><h3>주제</h3><div class="chips">
-    ${CATS.map(c=>`<button class="chip ${CQ.cat===c?'sel':''}" onclick="CQ.cat='${c}';choSetupRender()">${c}</button>`).join('')}
+    ${CATS.map(c=>`<button class="chip ${CQ.cat===c?'sel':''}" onclick="sfx('select');CQ.cat='${c}';choSetupRender()">${c}</button>`).join('')}
   </div></div>
   <div class="card"><h3>📖 하는 법</h3><div class="sub">초성이 뜨면 <b>먼저 정답을 외치는 사람</b>이 1점!<br>진행자(폰 든 사람)가 판정하고 [정답 공개]로 확인하세요.<br>못 맞히면 다 같이 벌칙 걸고 다음 문제로!</div></div>
   <button class="bigBtn" onclick="CQ.pool=shuffle(WORDS[CQ.cat]);CQ.idx=0;choRound()">시작!</button>
   <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
 }
 function choRound(){
+  sfx('quizNew');                             // 새 초성 문제 등장!
   if(CQ.idx>=CQ.pool.length){CQ.pool=shuffle(WORDS[CQ.cat]);CQ.idx=0;}
   const w=CQ.pool[CQ.idx];
   CQ.cur=w;
@@ -355,13 +604,14 @@ function choRound(){
   <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
 }
 function choReveal(){
+  sfx('reveal');                              // 두구두구… 정답 공개!
   app.innerHTML=`
   <div class="logo">ㅋㅅ</div>
   <div class="card center"><h3>정답은…</h3>
     <div class="huge">${esc(CQ.cur)}</div>
   </div>
   <button class="bigBtn" onclick="CQ.idx++;choRound()">다음 문제 →</button>
-  <button class="bigBtn gold" onclick="roulette('choReveal')">🎯 벌칙 룰렛</button>
+  <button class="bigBtn gold" onclick="sfx('menu');roulette('choReveal')">🎯 벌칙 룰렛</button>
   <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
 }
 
@@ -369,6 +619,7 @@ function choReveal(){
    ⚖️ 밸런스 게임
 ===================================================== */
 function balanceGame(i,deck){
+  sfx('vs'); bgmStart('party');               // VS! 대결 등장음
   if(i>=deck.length){deck=shuffle(BALANCE);i=0;}
   const [a,b]=deck[i];
   window._bal={i,deck};
@@ -381,12 +632,18 @@ function balanceGame(i,deck){
   <button class="bigBtn blue" onclick="balCount()">🖐️ 하나, 둘, 셋! (동시에 가리키기)</button>
   <div class="mini" style="margin-top:10px">소수파 벌칙 · 만장일치면 세이프</div>
   <button class="bigBtn" onclick="balanceGame(${i+1},window._bal.deck)">다음 질문 →</button>
-  <button class="bigBtn gold" onclick="roulette('balanceBack')">🎯 벌칙 룰렛</button>
+  <button class="bigBtn gold" onclick="sfx('menu');roulette('balanceBack()')">🎯 벌칙 룰렛</button>
   <button class="ghostBtn" onclick="home()">← 메뉴로</button>`;
+}
+/* 벌칙 룰렛에서 '하던 게임으로' 눌렀을 때 돌아올 자리 (예전엔 이 함수가 없어서 갇혔다) */
+function balanceBack(){
+  const b=window._bal||{i:0,deck:shuffle(BALANCE)};
+  balanceGame(b.i,b.deck);
 }
 function balCount(){
   ac();
-  beep(700,.12);setTimeout(()=>beep(700,.12),500);setTimeout(()=>{beep(1100,.3);vib(60);},1000);
+  sfx('count321');                            // 하나! 둘! 셋! (마지막에 팡)
+  setTimeout(()=>{vib(60);},1000);
 }
 
 /* =====================================================
@@ -407,7 +664,7 @@ function roulette(returnTo){
   <div class="card" style="margin-top:12px" id="penEditCard"><h3>벌칙 목록 (${PEN.length}개) — 직접 추가 가능</h3>
     <input class="nameIn" id="penIn" maxlength="20" placeholder="예: 아재개그 하나 하기">
     <button class="ghostBtn" onclick="addPen()">＋ 추가</button>
-    <button class="ghostBtn" onclick="if(!spinning){PEN=PENALTY_DEFAULT.slice();roulette();}">기본 목록으로 초기화</button>
+    <button class="ghostBtn" onclick="if(!spinning){sfx('tap');PEN=PENALTY_DEFAULT.slice();roulette();}">기본 목록으로 초기화</button>
   </div>
   <button class="ghostBtn" id="rouletteBackBtn" onclick="if(!spinning){${rouletteBack.indexOf('(')>=0?rouletteBack:rouletteBack+'()'}}">← ${rouletteBack==='home()'?'메뉴로':'하던 게임으로'}</button>`;
 }
@@ -424,7 +681,8 @@ function wheelSVG(){
 }
 function addPen(){
   const v=$('penIn').value.trim();
-  if(v){PEN.push(v);roulette();}
+  if(v){sfx('add');PEN.push(v);roulette();}   // 목록에 추가 완료음
+  else sfx('wrong');                          // 빈칸이면 '안 됐어요' 신호음
 }
 let spinning=false;
 function spin(){
@@ -441,13 +699,13 @@ function spin(){
   wheelAngle=Math.ceil(wheelAngle/360)*360 + 360*5 + (360-(target*seg+seg/2));
   const wh=$('wheel'); if(wh)wh.style.transform='rotate('+wheelAngle+'deg)';
   const ro0=$('rollOut'); if(ro0)ro0.textContent='두구두구두구…';
-  let t=0;const tickIv=setInterval(()=>{beep(600+rnd(200),.04,'square',.08);t+=1;if(t>30)clearInterval(tickIv);},130);
+  sfx('wheelSpin');                           // 딸깍딸깍… 점점 느려지다 마지막에 두구두구
   setTimeout(()=>{
-    clearInterval(tickIv);
     spinning=false; // 어떤 경우에도 잠금 해제 (아래 DOM 접근보다 먼저)
     const ro=$('rollOut');
     if(!ro)return; // 화면이 바뀌었으면 조용히 종료 (크래시 방지)
-    beep(1200,.4);vib([100,50,100]);
+    sfx('jackpot');vib([100,50,100]);         // 팡파르!
+    setTimeout(()=>{try{if(String(result).indexOf('통과')<0)sfx('penalty');}catch(e){}},950); // 벌칙이면 익살 하강음 한 번 더
     const sb2=$('spinBtn'); if(sb2){sb2.disabled=false;sb2.style.opacity='1';}
     const bb2=$('rouletteBackBtn'); if(bb2)bb2.style.opacity='1';
     ro.innerHTML='👉 <b>'+esc(result)+'</b>';

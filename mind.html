@@ -85,6 +85,8 @@ window.addEventListener('error',function(ev){
 });
 </script>
 <div id="netBanner"></div>
+<!-- 🔊 소리 끄기/켜기 (화면이 통째로 다시 그려져도 남아있도록 #app 바깥에 고정 배치) -->
+<button id="btnSnd" onclick="soundToggle()" style="position:fixed;top:10px;right:10px;z-index:95;width:40px;height:40px;border-radius:50%;background:#2f2440;border:1px solid #453458;color:#f5eefc;font-size:18px;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.4)">🔊</button>
 <button id="hostSkip" style="display:none;position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:88;background:#d63a55;color:#fff;font-weight:800;font-size:13px;padding:9px 16px;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,.4)">⏭ 멈춘 차례 강제 진행</button>
 <div id="app"></div>
 <script>
@@ -109,6 +111,301 @@ let lastScene=null;   // 재접속 복구용
 let myPrivOf=null;    // 호스트: pid별 비밀 정보
 let selGame='code';
 
+/* ═══════════════════════════════════════════════════════════════════
+   🔊 사운드 엔진 (외부 파일 없이 Web Audio API로 직접 합성)
+   분위기: 조여오는 긴장감 — 결투 직전의 정적, 상대 속을 읽는 심리전.
+   게임 로직·PeerJS 동기화와 완전히 분리된 '연출 전용' 코드입니다.
+   (jsdom 등 AudioContext가 없는 환경에서는 전부 조용히 무시됩니다)
+═══════════════════════════════════════════════════════════════════ */
+const SND={ctx:null,on:true,master:null,bgmGain:null,bgmTimer:null,
+  track:null,want:null,lastNamed:0,lastLog:null,prevTurn:-1,prevScene:null};
+function sctx(){
+  if(!SND.ctx){
+    try{ SND.ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+    if(!SND.ctx)return null;
+    try{
+      SND.master=SND.ctx.createGain(); SND.master.gain.value=0.9; SND.master.connect(SND.ctx.destination);
+      SND.bgmGain=SND.ctx.createGain(); SND.bgmGain.gain.value=0.15; SND.bgmGain.connect(SND.master);
+    }catch(e){ SND.ctx=null; return null; }
+  }
+  return SND.ctx;
+}
+function sndUnlock(){ // 아이폰/안드로이드는 첫 터치·클릭이 있어야 소리가 납니다
+  try{ const c=sctx(); if(c&&c.state==='suspended')c.resume(); }catch(e){}
+}
+document.addEventListener('touchstart',sndUnlock,{passive:true});
+document.addEventListener('click',sndUnlock);
+function mtof(m){return 440*Math.pow(2,(m-69)/12);}
+/* 단음 — dst를 주면 BGM 전용 볼륨 버스로 흘려보냅니다 */
+function tone(m,t0,dur,type,vol,dst){
+  const c=sctx(); if(!c||!SND.on)return;
+  try{
+    const o=c.createOscillator(),g=c.createGain();
+    o.type=type||'square'; o.frequency.setValueAtTime(mtof(m),t0);
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002,vol||0.2),t0+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g); g.connect(dst||SND.master);
+    o.start(t0); o.stop(t0+dur+0.03);
+  }catch(e){}
+}
+/* 미끄러지는 음 (슝~ / 총알이 스치는 소리) */
+function slide(m1,m2,t0,dur,type,vol,dst){
+  const c=sctx(); if(!c||!SND.on)return;
+  try{
+    const o=c.createOscillator(),g=c.createGain();
+    o.type=type||'sawtooth';
+    o.frequency.setValueAtTime(mtof(m1),t0);
+    o.frequency.exponentialRampToValueAtTime(mtof(m2),t0+dur);
+    g.gain.setValueAtTime(Math.max(0.0002,vol||0.18),t0);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g); g.connect(dst||SND.master); o.start(t0); o.stop(t0+dur+0.03);
+  }catch(e){}
+}
+/* 노이즈 (카드 슥, 시계 초침, 총성) — hp는 하이패스 컷오프 */
+function noise(t0,dur,vol,hp,dst){
+  const c=sctx(); if(!c||!SND.on)return;
+  try{
+    const n=Math.floor(c.sampleRate*dur);
+    const buf=c.createBuffer(1,Math.max(1,n),c.sampleRate);
+    const dat=buf.getChannelData(0);
+    for(let i=0;i<n;i++)dat[i]=(Math.random()*2-1)*(1-i/n);
+    const src=c.createBufferSource(); src.buffer=buf;
+    const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp||2000;
+    const g=c.createGain(); g.gain.value=vol||0.12;
+    src.connect(f); f.connect(g); g.connect(dst||SND.master); src.start(t0);
+  }catch(e){}
+}
+/* 심장박동 (두-근) — BGM 버스로만 나갑니다 */
+function heartBeat(t){
+  tone(28,t,0.17,'sine',0.55,SND.bgmGain);
+  tone(26,t+0.18,0.22,'sine',0.38,SND.bgmGain);
+}
+/* 시계 초침 틱 — 건파이트의 정적을 채우는 소리 */
+function clockTick(t){
+  noise(t,0.014,0.30,5200,SND.bgmGain);
+  tone(96,t,0.012,'square',0.05,SND.bgmGain);
+}
+
+/* ───────── 효과음 모음 (0.05~0.6초, 짧고 또렷하게) ───────── */
+function sfx(name){
+  const c=sctx(); if(!c||!SND.on)return;
+  try{
+    if(c.state==='suspended')c.resume();
+    if(name!=='tap')SND.lastNamed=Date.now(); // 일반 버튼음과 겹치지 않게 표시
+    const t=c.currentTime;
+    switch(name){
+      /* 버튼 촉감 — 아주 짧고 작게 */
+      case 'tap':     tone(74,t,0.035,'square',0.055); break;
+      /* 숫자 입력 딸깍 */
+      case 'dial':    tone(93,t,0.028,'square',0.10); noise(t,0.014,0.06,6500); break;
+      /* 카드·타일 뒤집기 (짧은 슥) */
+      case 'cardflip':noise(t,0.085,0.12,2200); slide(72,58,t,0.09,'triangle',0.05); break;
+      /* 카드 돌리기 (슥슥슥) */
+      case 'deal':    for(let i=0;i<4;i++){noise(t+i*0.075,0.07,0.11,2400);slide(74,60,t+i*0.075,0.07,'triangle',0.04);} break;
+      /* 타일 섞기 (달그락) */
+      case 'shuffle': for(let i=0;i<7;i++)noise(t+i*0.055,0.05,0.10,3200); break;
+      /* 추리 확정 — 방아쇠에 손가락 올리는 긴장 */
+      case 'lockin':  slide(50,62,t,0.24,'sawtooth',0.10); tone(62,t+0.24,0.10,'square',0.12); break;
+      /* 추리 정답 — 맑은 상승음 */
+      case 'correct': [72,76,79,84].forEach((m,i)=>{tone(m,t+i*0.065,0.26,'triangle',0.22);tone(m+12,t+i*0.065,0.16,'sine',0.08);}); break;
+      /* 오답 — 둔탁한 하강음 */
+      case 'wrong':   [53,49,44].forEach((m,i)=>tone(m,t+i*0.105,0.30,'sawtooth',0.18)); noise(t,0.18,0.10,180); break;
+      /* 탈락 (💀) */
+      case 'dead':    slide(55,28,t,0.55,'sawtooth',0.17); noise(t,0.3,0.10,300); tone(31,t+0.1,0.45,'sine',0.24); break;
+      /* 칩 소리 (베팅/콜) */
+      case 'chip':    [95,99,93].forEach((m,i)=>tone(m,t+i*0.045,0.05,'square',0.10)); noise(t,0.05,0.09,5000); noise(t+0.09,0.04,0.07,4200); break;
+      /* 폴드 — 힘 빠지게 내려놓기 */
+      case 'fold':    slide(66,50,t,0.30,'triangle',0.12); noise(t,0.09,0.08,1800); break;
+      /* 올인 — 긴장 고조 상승음 */
+      case 'allin':   slide(45,81,t,0.5,'sawtooth',0.13); [69,74,78,81].forEach((m,i)=>tone(m,t+0.18+i*0.09,0.22,'square',0.13)); break;
+      /* 팟 쓸어담기 */
+      case 'potwin':  for(let i=0;i<7;i++)noise(t+i*0.055,0.05,0.10,4600);
+                      [72,76,79,84].forEach((m,i)=>tone(m,t+0.2+i*0.07,0.26,'square',0.18)); break;
+      /* 총 뽑기 (찰칵) */
+      case 'draw':    noise(t,0.022,0.20,5200); tone(98,t,0.02,'square',0.10);
+                      noise(t+0.075,0.030,0.17,3600); tone(86,t+0.075,0.03,'square',0.10); break;
+      /* 발사 — 짧고 날카로운 파열음 */
+      case 'shot':    noise(t,0.05,0.34,4200); noise(t+0.01,0.20,0.30,420);
+                      slide(76,26,t,0.16,'sawtooth',0.22); tone(33,t,0.22,'sine',0.26); break;
+      /* 회피 */
+      case 'dodge':   slide(74,90,t,0.17,'sine',0.14); noise(t,0.07,0.09,4000); break;
+      /* 회복 (맥주) */
+      case 'beer':    [60,64,67,72].forEach((m,i)=>tone(m,t+i*0.075,0.28,'triangle',0.16)); break;
+      /* 내 차례 알림 */
+      case 'myturn':  tone(81,t,0.10,'sine',0.20); tone(88,t+0.12,0.20,'sine',0.18); noise(t,0.04,0.06,5000); break;
+      /* 승리 — 짧은 서부극 팡파르 */
+      case 'win':     [72,76,79,84,84,88].forEach((m,i)=>{const tt=t+i*0.115;tone(m,tt,0.30,'square',0.22);tone(m-12,tt,0.30,'triangle',0.14);});
+                      noise(t,0.06,0.09,5000); break;
+      /* 패배 — 힘 빠지는 하강음 */
+      case 'lose':    [60,56,52,47].forEach((m,i)=>tone(m,t+i*0.18,0.42,'sawtooth',0.17)); tone(35,t+0.5,0.5,'sine',0.18); break;
+      /* 경고·강제 진행 */
+      case 'alert':   for(let i=0;i<2;i++){tone(85,t+i*0.19,0.09,'square',0.17);tone(78,t+i*0.19+0.09,0.09,'square',0.17);} break;
+      /* 입장 */
+      case 'join':    [69,76].forEach((m,i)=>tone(m,t+i*0.08,0.18,'triangle',0.16)); break;
+      /* 연결 오류 */
+      case 'err':     [50,43].forEach((m,i)=>tone(m,t+i*0.14,0.30,'sawtooth',0.18)); break;
+    }
+  }catch(e){}
+}
+
+/* ───────── BGM: 장면별 트랙 (낮고 느린 베이스 + 심장박동) ─────────
+   mel = [[MIDI음(0=쉼), 8분음표 길이], ...]  ·  bass = 8분음표 스텝별 저음
+   heart = 몇 스텝마다 심장박동 / tick = 몇 스텝마다 시계 초침            */
+const BGM_TRACKS={
+  /* 로비: 결투 전의 정적. 아주 느린 심박과 길게 끄는 저음. (쉼표는 4칸 이하로 쪼개
+     두었습니다 — 스케줄러가 너무 멀리 앞당겨 예약하면 음소거가 늦게 먹습니다) */
+  lobby:{bpm:60,gain:0.14,melType:'sine',melVol:0.055,bassVol:0.30,bassDur:6,heart:2,tick:0,
+    mel:[[0,4],[0,4],[69,4],[68,4],[0,4],[0,4],[64,4],[65,2],[64,2],
+         [0,4],[0,4],[69,4],[71,4],[0,4],[0,4],[67,4],[65,4]],
+    bass:[33,0,0,0,0,0,0,0, 29,0,0,0,0,0,0,0, 31,0,0,0,0,0,0,0, 28,0,0,0,0,0,0,0]},
+  /* 코드브레이커: 숫자를 좁혀 들어가는 규칙적인 압박. */
+  code:{bpm:74,gain:0.15,melType:'triangle',melVol:0.07,bassVol:0.26,bassDur:1.4,heart:4,tick:0,
+    mel:[[0,4],[72,1],[75,1],[74,2],[0,4],[70,1],[72,1],[70,2],
+         [0,4],[67,1],[70,1],[72,2],[0,4],[75,2],[74,2]],
+    bass:[36,0,36,0,34,0,34,0, 33,0,33,0,31,0,31,0]},
+  /* 이마 포커: 느릿한 워킹 베이스 위의 눈치싸움. */
+  poker:{bpm:66,gain:0.14,melType:'sine',melVol:0.065,bassVol:0.28,bassDur:3,heart:4,tick:0,
+    mel:[[0,4],[0,4],[63,2],[65,2],[63,4],[0,4],[0,4],[60,2],[58,2],[60,4],
+         [0,4],[0,4],[68,2],[67,2],[63,4],[0,4],[0,4],[0,4],[0,4]],
+    bass:[33,0,0,0,40,0,0,0, 31,0,0,0,38,0,0,0, 29,0,0,0,36,0,0,0, 28,0,0,0,35,0,0,0]},
+  /* 건파이트: 거의 무음. 시계 초침과 아주 낮은 드론뿐 — 결투 직전의 정적. */
+  gun:{bpm:60,gain:0.13,melType:'sine',melVol:0.03,bassVol:0.22,bassDur:14,heart:0,tick:2,
+    mel:[[0,4],[0,4],[0,4],[0,4],[0,4],[0,4],[0,4],[0,4],
+         [45,4],[0,4],[0,4],[0,4],[0,4],[0,4],[0,4],[0,4]],
+    bass:[26,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 24,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}
+};
+function bgmStart(name){
+  SND.want=name||null;
+  if(!name){bgmStop();return;}
+  const tr=BGM_TRACKS[name]; if(!tr)return;
+  const c=sctx(); if(!c||!SND.on)return;
+  if(SND.track===name&&SND.bgmTimer)return; // 같은 트랙이면 그대로 이어서
+  bgmStop();
+  SND.track=name;
+  try{
+    if(c.state==='suspended')c.resume();
+    if(SND.bgmGain)SND.bgmGain.gain.value=tr.gain;
+    const spb=60/tr.bpm/2;               // 8분음표 한 칸 길이
+    let idx=0, step=0, next=c.currentTime+0.15;
+    SND.bgmTimer=setInterval(()=>{
+      if(!SND.on)return;
+      try{
+        const now=c.currentTime;
+        while(next<now+0.35){
+          const mv=tr.mel[idx%tr.mel.length], m=mv[0], len=mv[1];
+          if(m>0)tone(m,next,spb*len*0.85,tr.melType,tr.melVol,SND.bgmGain);
+          for(let k=0;k<len;k++){        // 스텝 단위로 베이스·심박·초침을 깔아둡니다
+            const t2=next+spb*k, s=step+k;
+            const b=tr.bass[s%tr.bass.length];
+            if(b>0)tone(b,t2,spb*tr.bassDur,'sine',tr.bassVol,SND.bgmGain);
+            if(tr.heart&&s%tr.heart===0)heartBeat(t2);
+            if(tr.tick&&s%tr.tick===0)clockTick(t2);
+          }
+          next+=spb*len; step+=len; idx++;
+        }
+      }catch(e){}
+    },70);
+  }catch(e){}
+}
+function bgmStop(){
+  if(SND.bgmTimer){try{clearInterval(SND.bgmTimer);}catch(e){} SND.bgmTimer=null;}
+  // 이미 예약된 BGM 음까지 즉시 잠재웁니다 (트랙 교체·음소거가 곧바로 먹히도록)
+  try{ if(SND.bgmGain)SND.bgmGain.gain.value=0; }catch(e){}
+  SND.track=null;
+}
+/* 장면 이름 → 어울리는 BGM 트랙 (결과 화면은 정적) */
+function bgmForScene(s){
+  if(s==='code-board')return 'code';
+  if(s==='poker-round'||s==='poker-show')return 'poker';
+  if(s==='gun-board')return 'gun';
+  return null;
+}
+function soundToggle(){
+  SND.on=!SND.on;
+  if(SND.on){ sndUnlock(); const w=SND.want; SND.track=null; if(w)bgmStart(w); sfx('tap'); }
+  else bgmStop();
+  paintSoundBtn();
+}
+function paintSoundBtn(){
+  const b=document.getElementById('btnSnd'); if(!b)return;
+  b.textContent=SND.on?'🔊':'🔇';
+  b.style.opacity=SND.on?'1':'0.45';
+}
+/* 어떤 버튼을 눌러도 촉감 소리가 나도록 (전용 효과음이 방금 났으면 생략) */
+document.addEventListener('click',function(ev){
+  try{
+    if(!SND.on)return;
+    const el=ev.target;
+    if(!el||!el.closest)return;
+    const b=el.closest('button');
+    if(!b||b.id==='btnSnd')return;
+    if(Date.now()-SND.lastNamed<260)return;
+    sfx('tap');
+  }catch(e){}
+});
+/* 진행 로그 한 줄을 읽고 상황에 맞는 효과음을 재생 (모든 참가자 폰에서 동시에 울림) */
+function sfxFromLog(L){
+  try{
+    if(/적중/.test(L))sfx('correct');
+    else if(/추리 실패/.test(L))sfx('wrong');
+    else if(/회피 성공/.test(L)){sfx('shot');setTimeout(function(){sfx('dodge');},130);} // 쏘고 → 피하고
+    else if(/^💥|^🎯/.test(L))sfx('shot');
+    else if(/🍺/.test(L))sfx('beer');
+    else if(/폴드/.test(L))sfx('fold');
+    else if(/콜|레이즈/.test(L))sfx('chip');
+    else if(/라운드 시작/.test(L))sfx('deal');
+    else if(/게임 시작/.test(L))sfx('shuffle');
+    else if(/🌵/.test(L))sfx('draw');
+    else if(/차례 \(카드/.test(L))sfx('cardflip');
+    else if(/🛑/.test(L))sfx('fold'); // 욕심 접고 안전하게 멈춤 — 물러서는 소리
+    else if(/⏭/.test(L))sfx('alert');
+    else if(/🏆|무승부/.test(L))sfx('potwin');
+    if(/💀/.test(L))setTimeout(function(){sfx('dead');},340); // 탈락은 한 박자 뒤에
+  }catch(e){}
+}
+/* 장면 전환 훅 — BGM 교체 + 새 로그 효과음 + 내 차례 알림 */
+(function(){
+  const _render=renderScene;
+  window.renderScene=function(d){
+    try{
+      const s=d&&d.s;
+      /* 1) 장면에 맞는 BGM으로 자동 교체 */
+      const tr=bgmForScene(s);
+      if(tr)bgmStart(tr); else if(SND.track)bgmStop();
+      /* 2) 결과 화면이면 승/패 소리 */
+      if(s!==SND.prevScene){
+        if(s==='code-end'||s==='poker-end'){
+          sfx(d.winner===myName?'win':'lose');
+        } else if(s==='gun-end'){
+          const r=myPriv&&myPriv.role;
+          const won=(/보안관팀/.test(d.msg||'')&&(r==='sheriff'||r==='deputy'))
+                  ||(/무법자 승리/.test(d.msg||'')&&r==='outlaw')
+                  ||(/배신자 승리/.test(d.msg||'')&&r==='renegade');
+          sfx(won?'win':'lose');
+        } else if(s==='poker-show'){
+          sfx('deal'); setTimeout(function(){sfx('potwin');},300);
+        }
+      }
+      /* 3) 새로 들어온 로그 한 줄에 맞는 효과음
+            단, 결과 화면에서는 위의 승/패 소리가 그 순간을 대표하므로 로그음을 생략합니다.
+            (안 그러면 승리 팡파레 + 적중음 + 탈락음이 한꺼번에 겹쳐 뭉개집니다) */
+      if(d&&d.log&&d.log.length){
+        const L=d.log[d.log.length-1];
+        const isEnd=(s==='code-end'||s==='poker-end'||s==='gun-end');
+        if(L!==SND.lastLog){SND.lastLog=L;if(!isEnd)sfxFromLog(L);}
+      }
+      /* 4) 내 차례가 됐다면 알림 */
+      if(s==='code-board'||s==='poker-round'||s==='gun-board'){
+        if((d.turn!==SND.prevTurn||s!==SND.prevScene)&&d.turn===myPid)setTimeout(function(){sfx('myturn');},180);
+        SND.prevTurn=d.turn;
+      }
+      SND.prevScene=s;
+    }catch(e){}
+    return _render.apply(this,arguments);
+  };
+})();
+
 /* =====================================================
    홈 & 로비
 ===================================================== */
@@ -117,6 +414,7 @@ function home(){
   if(peer){try{peer.destroy();}catch(e){}peer=null;}
   NET=null;
   $('netBanner').style.display='none';
+  bgmStart('lobby'); // 🔊 홈 화면: 결투 전의 정적
   app.innerHTML=`
   <div class="logo">🃏 <span class="g">심리전 팩</span></div>
   <div class="tag">폰엔 비밀만, 승부는 눈빛과 말로! · 전원 각자 폰 필요</div>
@@ -170,7 +468,7 @@ function hostRoom(){
   $('lobbyInfo').innerHTML='방 만드는 중…';
   peer=new Peer('kmg-'+roomCode,ICE_CFG);
   let hostOpened=false;
-  peer.on('open',()=>{hostOpened=true;NET={host:true,conns:[],names:[myName],dead:{}};myPid=0;renderHostLobby();});
+  peer.on('open',()=>{hostOpened=true;NET={host:true,conns:[],names:[myName],dead:{}};myPid=0;sfx('join');renderHostLobby();});
   setTimeout(()=>{if(!hostOpened)netDiag('📡 게임 서버에 연결하지 못했습니다.');},10000);
   peer.on('connection',c=>{
     c.on('data',d=>hostOnData(c,d));
@@ -203,6 +501,7 @@ function clientConnect(){
 function lostConn(){
   if(!NET||NET.host)return;
   const nb=$('netBanner');
+  sfx('err'); // 🔊 연결 끊김 경고
   nb.style.display='block';nb.innerHTML='📡 연결 끊김 — <u>탭하여 재접속</u>';
   nb.onclick=()=>{nb.innerHTML='재접속 중…';clientConnect();};
 }
@@ -210,6 +509,7 @@ function hostDrop(c){
   if(!NET||!NET.host)return;
   const i=NET.conns.indexOf(c);
   if(i>=0){NET.dead[i+1]=true;
+    sfx('err'); // 🔊 참가자 이탈 — 방장이 바로 알아채도록
     if(!GAME){NET.names.splice(i+1,1);NET.conns.splice(i,1);delete NET.dead[i+1];
       netAll({t:'lobby',names:NET.names});renderHostLobby();}
   }
@@ -234,24 +534,27 @@ function hostOnData(c,d){
     NET.names.push(nm);NET.conns.push(c);
     c.send({t:'welcome',pid,name:nm});
     netAll({t:'lobby',names:NET.names});
+    sfx('join'); // 🔊 새 참가자 입장
     renderHostLobby();
   }
   else if(d.t==='act'){d._conn=c;hostAct(d);}
 }
 function clientOnData(d){
-  if(d.t==='welcome'){myPid=d.pid;if(d.name)myName=d.name;$('netBanner').style.display='none';renderClientLobby('입장 완료! 방장이 시작하길 기다리는 중…');}
+  if(d.t==='welcome'){myPid=d.pid;if(d.name)myName=d.name;$('netBanner').style.display='none';sfx('join');renderClientLobby('입장 완료! 방장이 시작하길 기다리는 중…');}
   else if(d.t==='lobby'){if(NET)NET.names=d.names;renderClientLobby('입장 완료! ('+d.names.map(esc).join(', ')+')');}
-  else if(d.t==='reject'){app.innerHTML='<div class="card"><b style="color:var(--red)">'+esc(d.msg)+'</b></div><button class="bigBtn" onclick="home()">처음으로</button>';}
+  else if(d.t==='reject'){sfx('err');app.innerHTML='<div class="card"><b style="color:var(--red)">'+esc(d.msg)+'</b></div><button class="bigBtn" onclick="home()">처음으로</button>';}
   else if(d.t==='priv'){myPriv=d.data;if(lastScene)renderScene(lastScene);}
   else if(d.t==='scene'){lastScene=d;renderScene(d);}
 }
 function sendAct(a){a.t='act';a.p=myPid;if(NET.host)hostAct(a);else NET.c.send(a);}
 function renderClientLobby(msg){
+  bgmStart('lobby'); // 🔊 대기 화면도 로비 트랙
   app.innerHTML=`<div class="logo">🃏 <span class="g">심리전 팩</span></div>
   <div class="card"><div class="big center">🚪 ${esc(roomCode)} 방</div>
   <div class="sub center" style="margin-top:8px">${msg}</div></div>`;
 }
 function renderHostLobby(){
+  bgmStart('lobby'); // 🔊 방장 로비도 로비 트랙
   const n=NET.names.length;
   const MIN={code:2,poker:2,gun:4}[selGame], MAX={code:6,poker:8,gun:8}[selGame];
   app.innerHTML=`<div class="logo">🃏 <span class="g">심리전 팩</span></div>
@@ -291,6 +594,7 @@ function updateHostSkip(d){
 }
 function forceSkip(){
   if(!GAME||GAME.over)return;
+  sfx('alert'); // 🔊 멈춘 차례 강제 진행
   if(GAME.type==='code'){codeNextTurn('⏭ 호스트가 '+NET.names[GAME.turn]+'의 멈춘 차례를 넘김');}
   else if(GAME.type==='poker'){pokerAct({p:GAME.turn,k:'fold'});} // 자동 폴드
   else if(GAME.type==='gun'){const t=GAME.turn;GAME.log.push('⏭ 호스트가 '+NET.names[t]+'의 차례를 넘김');
@@ -447,10 +751,11 @@ function codeRender(d){
   h+=`<div class="logBox">${d.log.slice().reverse().map(esc).join('<br>')}</div>`;
   app.innerHTML=h;
 }
-function codePick(i,ti){codeSel={target:i,ti,v:null};renderScene(lastScene);}
-function codeNum(v){codeSel.v=v;renderScene(lastScene);}
+function codePick(i,ti){sfx('cardflip');codeSel={target:i,ti,v:null};renderScene(lastScene);} // 🔊 타일 콕 집기
+function codeNum(v){sfx('dial');codeSel.v=v;renderScene(lastScene);}                        // 🔊 숫자 입력 딸깍
 function codeGuess(){
   if(codeSel.target==null||codeSel.v==null)return;
+  sfx('lockin'); // 🔊 방아쇠에 손가락 — 결과 소리는 로그에서 이어집니다
   sendAct({g:'code',k:'guess',target:codeSel.target,ti:codeSel.ti,v:codeSel.v});
   codeSel={target:null,ti:null,v:null};
 }
@@ -600,7 +905,7 @@ function pokerRender(d){
       <button class="chip green" style="background:#1d4535" onclick="sendAct({g:'poker',k:'call'})">✅ 콜 ${need>0?'(-'+need+')':''}</button>
       <button class="chip" onclick="sendAct({g:'poker',k:'raise',amt:1})">🔺 +1</button>
       <button class="chip" onclick="sendAct({g:'poker',k:'raise',amt:2})">🔺 +2</button>
-      <button class="chip" onclick="sendAct({g:'poker',k:'raise',amt:3})">🔺 +3</button>
+      <button class="chip" onclick="sfx('allin');sendAct({g:'poker',k:'raise',amt:3})">🔺 +3</button>
       <button class="chip" style="background:#4a2030" onclick="sendAct({g:'poker',k:'fold'})">🏳️ 폴드</button>
     </div>
     <div class="mini">⚠️ 10 들고 폴드하면 벌금 3칩!</div></div>`;
@@ -815,9 +1120,10 @@ function gunRender(d){
   h+=`<div class="logBox">${d.log.slice().reverse().map(esc).join('<br>')}</div>`;
   app.innerHTML=h;
 }
-function gunPickCard(ci){gunSel.card=gunSel.card===ci?null:ci;renderScene(lastScene);}
+function gunPickCard(ci){sfx('cardflip');gunSel.card=gunSel.card===ci?null:ci;renderScene(lastScene);} // 🔊 손패 넘기기
 function gunShoot(t){
   const c=myPriv.hand[gunSel.card];
+  sfx('draw'); // 🔊 총 뽑기 찰칵 — 발사음은 결과 로그에서
   gunSel.card=null;
   sendAct({g:'gun',k:'shoot',card:c,target:t});
 }
@@ -856,72 +1162,6 @@ function INGAME(){return !!GAME||!!(typeof lastScene!=='undefined'&&lastScene);}
   });
 })();
 
-
-/* ═══ 🔊 효과음 (파일 없이 합성 · 대화 게임이라 배경음악은 없음) ═══ */
-const SND={ctx:null,on:true,master:null};
-function sctx(){
-  if(!SND.ctx){ try{SND.ctx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}
-    SND.master=SND.ctx.createGain(); SND.master.gain.value=0.9; SND.master.connect(SND.ctx.destination); }
-  return SND.ctx;
-}
-function sndUnlock(){const c=sctx();if(c&&c.state==='suspended')c.resume();}
-document.addEventListener('touchstart',sndUnlock,{passive:true});
-document.addEventListener('click',sndUnlock);
-function mtof(m){return 440*Math.pow(2,(m-69)/12);}
-function tone(m,t0,dur,type,vol){
-  const c=sctx(); if(!c||!SND.on)return;
-  const o=c.createOscillator(),g=c.createGain();
-  o.type=type||'square'; o.frequency.setValueAtTime(mtof(m),t0);
-  g.gain.setValueAtTime(0.0001,t0);
-  g.gain.exponentialRampToValueAtTime(Math.max(0.0002,vol||0.2),t0+0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
-  o.connect(g); g.connect(SND.master); o.start(t0); o.stop(t0+dur+0.03);
-}
-function noise(t0,dur,vol,hp){
-  const c=sctx(); if(!c||!SND.on)return;
-  const n=Math.floor(c.sampleRate*dur);
-  const buf=c.createBuffer(1,Math.max(1,n),c.sampleRate);
-  const dat=buf.getChannelData(0);
-  for(let i=0;i<n;i++)dat[i]=(Math.random()*2-1)*(1-i/n);
-  const src=c.createBufferSource(); src.buffer=buf;
-  const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp||2000;
-  const g=c.createGain(); g.gain.value=vol||0.12;
-  src.connect(f); f.connect(g); g.connect(SND.master); src.start(t0);
-}
-function sfx(name){
-  const c=sctx(); if(!c||!SND.on)return;
-  if(c.state==='suspended')c.resume();
-  const t=c.currentTime;
-  switch(name){
-    case 'tap':    tone(84,t,0.05,'square',0.1); break;
-    case 'reveal': [64,68,71,76].forEach((m,i)=>tone(m,t+i*0.09,0.3,'triangle',0.2)); break;
-    case 'night':  [55,52,48].forEach((m,i)=>tone(m,t+i*0.22,0.5,'sine',0.22)); break;
-    case 'morning':[72,76,79,84].forEach((m,i)=>tone(m,t+i*0.1,0.28,'square',0.2)); break;
-    case 'vote':   tone(79,t,0.09,'square',0.2); tone(84,t+0.1,0.16,'square',0.2); break;
-    case 'kill':   [70,62,54].forEach((m,i)=>tone(m,t+i*0.13,0.34,'sawtooth',0.2)); noise(t,0.2,0.1,1200); break;
-    case 'win':    [72,72,76,79,84].forEach((m,i)=>{tone(m,t+i*0.14,0.34,'square',0.24);tone(m-12,t+i*0.14,0.34,'triangle',0.16);}); break;
-    case 'lose':   [64,61,57,52].forEach((m,i)=>tone(m,t+i*0.2,0.42,'sawtooth',0.18)); break;
-    case 'bet':    [76,81].forEach((m,i)=>tone(m,t+i*0.06,0.15,'square',0.2)); break;
-    case 'shot':   noise(t,0.22,0.22,600); [58,46].forEach((m,i)=>tone(m,t+i*0.05,0.28,'sawtooth',0.2)); break;
-  }
-}
-function soundToggle(){SND.on=!SND.on;if(SND.on){sndUnlock();sfx('tap');}
-  var b=document.getElementById('btnSnd'); if(b)b.textContent=SND.on?'🔊':'🔇';}
-
-/* 효과음 훅 — 장면이 바뀔 때마다 */
-(function(){
-  if(typeof renderScene==='function'){
-    const _r=renderScene; let last=null;
-    window.renderScene=function(d){
-      try{ const k=d&&d.s; if(k&&k!==last){ last=k;
-        if(/win|end|over/.test(k))sfx('win');
-        else if(/bet|pot/.test(k))sfx('bet');
-        else if(/shot|gun|fire/.test(k))sfx('shot');
-        else sfx('reveal'); } }catch(e){}
-      return _r.apply(this,arguments);
-    };
-  }
-})();
 </script>
 </body>
 </html>
