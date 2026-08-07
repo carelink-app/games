@@ -46,8 +46,21 @@ input{user-select:text;-webkit-user-select:text}
 .tile{width:38px;height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:900;border:2px solid transparent}
 .tile.b{background:#1d1d24;color:#fff;border-color:#3c3c4e}
 .tile.w{background:#f2ecdb;color:#1a1a1a;border-color:#c8bfa5}
-.tile.hidden.b{color:#1d1d24}
-.tile.hidden.w{color:#f2ecdb}
+/* ⛔ 예전엔 '?' 를 배경과 똑같은 색으로 칠해서 글자가 아예 안 보였다 (깐 건지 아닌지 구분 불가) */
+.tile.hidden.b{color:#8a8aa2}
+.tile.hidden.w{color:#8f866f}
+/* 🔓 이미 공개된(깐) 타일 — 초록 테두리로 확실하게 */
+.tile.open{border-color:#3ecf8e!important;box-shadow:0 0 0 2px rgba(62,207,142,.5),0 2px 6px rgba(0,0,0,.5)}
+/* 👁 아직 나만 보고 있는 내 타일 — 보라 점선 */
+.tile.mine{box-shadow:0 0 0 2px var(--purple);border-style:dashed!important}
+.tile{position:relative}
+.tg{position:absolute;top:-7px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:900;
+ padding:1px 5px;border-radius:6px;font-style:normal;white-space:nowrap;letter-spacing:-.3px;z-index:2}
+.tgOpen{background:#3ecf8e;color:#04150c}
+.tgMine{background:var(--purple);color:#fff}
+.tileRow{margin-top:12px!important}
+.tileLegend{font-size:10.5px;color:var(--sub);margin:6px 0 2px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.tileLegend b{font-weight:800}
 .tile.pick{outline:3px solid var(--gold)}
 .tile.small{width:30px;height:42px;font-size:15px}
 .tile.mine{box-shadow:0 0 0 2px var(--purple)}
@@ -718,20 +731,20 @@ function codeRender(d){
   const myTurn=d.turn===myPid;
   const me=d.players[myPid];
   let h=`<div class="logo" style="font-size:20px">🔢 코드브레이커</div>
-  <div class="mini">남은 타일 더미: ${d.pool}장 · <b style="color:${d.turn===myPid?'var(--gold)':'var(--sub)'}">${esc(d.players[d.turn].name)} 차례</b></div>`;
+  <div class="mini">남은 타일 더미: ${d.pool}장 · <b style="color:${d.turn===myPid?'var(--gold)':'var(--sub)'}">${esc(d.players[d.turn].name)} 차례</b></div>
+  <div class="tileLegend"><span>🟢 <b>공개</b> 이미 깐 타일</span><span>🟣 <b>나만</b> 나만 보는 중</span><span style="color:#8a8aa2"><b>?</b> 아무도 모름</span></div>`;
   d.players.forEach((p,i)=>{
     const mine=i===myPid;
     h+=`<div class="card" style="padding:10px 12px${p.alive?'':';opacity:.45'}">
       <div style="font-size:13px;font-weight:800;color:${PCOLORS[i]}">${esc(p.name)}${mine?' (나)':''}${p.alive?'':' 💀'}${i===d.turn?' ◀ 차례':''}</div>
       <div class="tileRow">`;
     p.tiles.forEach((t,ti)=>{
-      let txt='?',cls='tile '+t.c;
-      if(t.open){txt=t.v;}
-      else if(mine&&myPriv){txt=myPriv[ti];cls+=' mine';}
-      else cls+=' hidden';
-      if(t.fresh&&!t.open)cls+=''; // fresh 표시는 본인만 의미 있음
+      let txt='?',cls='tile '+t.c,badge='';
+      if(t.open){ txt=t.v; cls+=' open'; badge='<i class="tg tgOpen">공개</i>'; }        // 이미 깐 타일
+      else if(mine&&myPriv){ txt=myPriv[ti]; cls+=' mine'; badge='<i class="tg tgMine">나만</i>'; } // 나만 보는 중
+      else cls+=' hidden';                                                              // 아직 아무도 모름
       const clickable=myTurn&&!mine&&!t.open&&p.alive;
-      h+=`<div class="${cls}${codeSel.target===i&&codeSel.ti===ti?' pick':''}" ${clickable?`onclick="codePick(${i},${ti})"`:''}>${txt}${t.fresh&&mine?'<span style="font-size:9px;position:absolute;">✦</span>':''}</div>`;
+      h+=`<div class="${cls}${codeSel.target===i&&codeSel.ti===ti?' pick':''}" ${clickable?`onclick="codePick(${i},${ti})"`:''}>${badge}${txt}${t.fresh&&mine?'<span style="font-size:9px;position:absolute;bottom:1px;right:2px">✦</span>':''}</div>`;
     });
     h+=`</div></div>`;
   });

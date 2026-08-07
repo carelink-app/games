@@ -603,25 +603,30 @@ function chk(){ // 상태 체크섬 — 폰 간 불일치 감지
 }
 
 /* ---------- 게임 상수 ---------- */
-const CHILD_COST=60;          // 자녀 1명당 월 지출 (직업 소득에 비례해 스케일됨)
+const CHILD_COST=50;          // 자녀 1명당 월 지출 (60→50: 자녀 3명이면 전 직업이 적자였다)
 const AMT_BASE=380;           // 기준 월급 — 지출/이벤트 금액을 소득 비례로 환산하는 기준
 /* 라이프스타일 인플레이션: 소득이 크면 지출 규모도 커진다 (캐시플로우 원작의 직업별 지출 구조) */
 function amtScale(p){return (p&&p.job&&p.job.salary?p.job.salary:AMT_BASE)/AMT_BASE;}
 /* 💡 매물 스케일링: 내 형편에 맞는 매물이 나온다.
    투자금과 월수익이 같은 비율로 커지므로 수익률은 동일 → 어느 직업이든 자유까지 같은 시간 */
+/* 💰 현금흐름 배수 — 자산이 매달 벌어주는 돈의 크기.
+   이 값이 작으면 '경제적 자유'까지 수십 개월이 걸려 게임이 끝나지 않는다. */
+const CF_MULT=1.5;
 function scaleDeal(c,p){
-  const k=amtScale(p); if(Math.abs(k-1)<0.02)return c;
+  const k=amtScale(p);
   const rr=(v)=>v==null?v:Math.max(10,Math.round(v*k/10)*10);
   const o={...c};
-  if(o.equity!=null)o.equity=rr(o.equity);
-  if(o.propPrice!=null)o.propPrice=rr(o.propPrice);
-  if(o.fair!=null)o.fair=rr(o.fair);
-  if(o.cf!=null)o.cf=(o.cf===0?0:(o.cf<0?-1:1)*Math.max(1,Math.round(Math.abs(o.cf)*k)));
+  if(Math.abs(k-1)>=0.02){
+    if(o.equity!=null)o.equity=rr(o.equity);
+    if(o.propPrice!=null)o.propPrice=rr(o.propPrice);
+    if(o.fair!=null)o.fair=rr(o.fair);
+  }
+  if(o.cf!=null)o.cf=(o.cf===0?0:(o.cf<0?-1:1)*Math.max(1,Math.round(Math.abs(o.cf)*k*(o.cf>0?CF_MULT:1))));
   return o;
 }
 function scaleAmt(p,amt){const v=Math.abs(amt)*amtScale(p);const r=Math.max(5,Math.round(v/5)*5);return amt<0?-r:r;}
 function childCost(p){return Math.max(10,Math.round(CHILD_COST*amtScale(p)/5)*5);}
-const LOAN_RATE=0.05;         // 신용대출 월 이자 5% — 빚은 무섭다! 계획 없는 풀대출 금지
+const LOAN_RATE=0.03;         // 신용대출 월 이자 3% (연 36%) — 5%는 함정이라 아무도 안 썼다
 const DEP_RATE=0.003;         // 예금 월 이자 0.3% (연 3.6%)
 const LOAN_UNIT=500, DEP_UNIT=500;
 const REIT_DIV=1;           // K리츠 초기 월 배당 (게임 중 G.reitDiv로 변동!)
@@ -723,9 +728,10 @@ const PERK_KO={safe:'🛡️ 정년 보장 (실직 면역)',frugal:'💰 알뜰�
 
 /* 보드: 24칸 */
 const TILES=[
- {t:'pay'},{t:'deal'},{t:'doodad'},{t:'bnb'},{t:'market'},{t:'deal'},{t:'tempt'},{t:'deal'},
+ /* 💡 지출 칸 3 → 1 로 줄이고, 남는 두 칸은 기회 칸으로 (파산율이 너무 높았다) */
+ {t:'pay'},{t:'deal'},{t:'deal'},{t:'bnb'},{t:'market'},{t:'deal'},{t:'tempt'},{t:'deal'},
  {t:'pay'},{t:'bnb'},{t:'doodad'},{t:'deal'},{t:'market'},{t:'deal'},{t:'child'},{t:'bnb'},
- {t:'pay'},{t:'deal'},{t:'doodad'},{t:'deal'},{t:'market'},{t:'bnb'},{t:'charity'},{t:'event'}
+ {t:'pay'},{t:'deal'},{t:'deal'},{t:'deal'},{t:'market'},{t:'bnb'},{t:'charity'},{t:'event'}
 ];
 /* 🏠 에어비앤비 — 사두면 남이 밟을 때마다 숙박료를 받는다 (모두의마블식 상호작용) */
 const BNB={
@@ -1672,7 +1678,7 @@ function animateHop(pid,from,steps,delay){
       clearInterval(iv);
       ANIM={pid,pos:(from+steps)%24,hop:'land'}; sfx('land'); camPunch(); drawTokens();
       const lt=$('tile'+((from+steps)%24)); if(lt){lt.classList.add('landing');setTimeout(()=>{try{lt.classList.remove('landing');}catch(e){}},460);}
-      setTimeout(()=>{ ANIM=null; try{drawTokens();diceHide();}catch(e){} },330);
+      setTimeout(()=>{ ANIM=null; try{drawTokens();}catch(e){} },330);
       return;
     }
     ANIM={pid,pos:(from+i)%24,hop:'hop'}; sfx('step'); camFollow((from+i)%24); drawTokens();
@@ -1833,13 +1839,18 @@ STATIC.roll=()=>{
 /* 🎬 한 턴의 연출 순서
    ① 판 전체가 보이는 상태에서 ② 판 한가운데서 주사위가 굴러 멈추고
    ③ 그제서야 그 사람에게 줌인해서 한 칸씩 폴짝폴짝 이동 ④ 턴이 끝나면 다시 전체 보기 */
-const DICE_MS=1500;                       // 주사위가 멈추고 눈을 확인할 때까지
+const DICE_LAND=1200;                     // 주사위가 구르다 멈추는 시각
+const DICE_READ=520;                      // 멈춘 눈을 눈으로 확인할 시간
+const DICE_FADE=300;                      // 주사위가 스르륵 사라지는 시간
+/* 말은 주사위가 완전히 사라진 뒤에 출발한다 */
+const DICE_MS=DICE_LAND+DICE_READ+DICE_FADE;
 function doRoll(nDice){
   G.phase='resolving'; renderAll();
   const d1=1+rnd(6), d2=nDice===2?1+rnd(6):0, steps=d1+d2;
   if(!FAST)sfx('roll');
   camWide();                              // ① 먼저 판 전체를 보여준다
   animateDice(d1,d2,nDice);               // ② 한가운데서 주사위
+  if(!FAST)setTimeout(()=>{try{diceHide();}catch(e){}},DICE_LAND+DICE_READ); // ③ 눈을 보여준 뒤 치운다
   moveAndResolve(steps); // 게임 로직은 즉시(동기) 처리 — 동기화 안정성
 }
 /* 🎲 진짜 3D 주사위: 굴러가다 실제로 나온 눈이 정면에 멈춥니다 */
@@ -1891,7 +1902,7 @@ function moveAndResolve(steps){
   for(let i=1;i<=steps;i++) if(TILES[(p.pos+i)%24].t==='pay') paydays++;
   const from=p.pos;
   p.pos=(p.pos+steps)%24;
-  animateHop(p.id,from,steps,DICE_MS); // 🐰 주사위가 멈춘 뒤에 폴짝폴짝 (연출)
+  animateHop(p.id,from,steps,DICE_MS); // 🐰 주사위가 사라진 뒤에 폴짝폴짝 (연출)
   const tile=TILES[p.pos].t;
   log('🎲 '+steps+'칸 이동! → '+TINFO[tile].em+' '+TINFO[tile].lb+' 칸');
   renderAll();
@@ -2348,7 +2359,7 @@ function tileTempt(){
   // 지름은 '한 달 용돈' 수준으로 (월급의 35% + 잔고 안에서) — 한 방에 휘청이지 않게
   let cost=Math.round(scaleAmt(p,c.cost)*0.45/10)*10;
   const avail=Math.floor(Math.max(0,p.cash)*0.6/10)*10;
-  const cap=Math.min(Math.round(p.salary*0.35/10)*10,avail);
+  const cap=Math.min(Math.round(p.salary*0.25/10)*10,avail);   // 지름신 상한 35%→25%
   if(cap<30){ // 텅장 — 지를 돈조차 없다
     feedAdd('🛍️ '+p.name+': 지름신이 왔지만… 텅장이라 그냥 지나갔다 😌');
     showModal('🛍️ 지름신 강림…?','<div style="font-size:46px;text-align:center">🪙</div><b>'+esc(c.name)+'</b>이(가) 눈에 아른거리지만…<br><b class="pos">잔고가 없어 지름 실패!</b> 가난이 지켜준 하루입니다.'+tipHTML('지갑에 돈이 없으면 유혹도 힘을 못 씁니다. 반대로 말하면, 현금이 많을수록 지출 통제가 더 중요해집니다.'),

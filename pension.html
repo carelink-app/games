@@ -62,7 +62,9 @@ input{user-select:text;-webkit-user-select:text}
 .tbl td:last-child{text-align:right}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
 .vs{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin:16px 0}
-.vsBox{background:var(--panel2);border-radius:16px;padding:22px 10px;text-align:center;font-size:19px;font-weight:900;line-height:1.4;word-break:keep-all;min-height:110px;display:flex;align-items:center;justify-content:center}
+.vsBox{background:var(--panel2);border-radius:16px;padding:16px 10px;text-align:center;font-weight:900;line-height:1.35;word-break:keep-all;min-height:118px;display:flex;align-items:center;justify-content:center}
+.vsHead{font-size:17px}
+.vsSub{font-size:12.5px;font-weight:700;color:#ffd479;margin-top:7px;line-height:1.45}
 .vsMid{font-size:22px;font-weight:900;color:var(--gold)}
 .scoreRow{display:flex;justify-content:center;gap:18px;font-size:16px;font-weight:800;margin-top:8px}
 </style>
@@ -358,20 +360,65 @@ const WORDS={
 const CATS=Object.keys(WORDS);
 /* 밸런스 게임 */
 const BALANCE=[
-['평생 치킨 금지','평생 라면 금지'],['여름만 있는 세상','겨울만 있는 세상'],
-['아는 맛 평생 먹기','매번 새로운 맛 도전'],['과거로 시간여행','미래로 시간여행'],
-['월 500 백수','월 1000 주7일 출근'],['평생 무료 여행 (비행기 이코노미)','평생 무료 호텔 (집 근처만)'],
-['말할 때마다 랩','걸을 때마다 문워크'],['친구 1명과 무인도 1년','혼자 무인도 6개월'],
-['평생 샤워 찬물','평생 에어컨 금지'],['모기 10마리와 하룻밤','바퀴벌레 1마리와 하룻밤'],
-['내 검색기록 전체공개','내 카톡 3일 전체공개'],['10년 전으로 기억 갖고 가기','10억 받고 지금 그대로'],
-['평생 소주만','평생 맥주만'],['국물 없는 라면','면 없는 라면'],
-['매일 2시간 지각','매일 새벽 5시 기상'],['평생 노래방 금지','평생 영화관 금지'],
-['투명인간 능력','하늘 나는 능력'],['상대 마음 읽기','미래 1시간 보기'],
-['치약맛 민트초코','민트초코맛 치약'],['평생 폰 배터리 20%','평생 와이파이 2G 속도'],
-['부먹','찍먹'],['물냉','비냉'],['짜장','짬뽕'],['밥 먹을 때 폰 금지','잘 때 폰 금지'],
-['유명하지만 가난하게','무명이지만 부자로'],['키 2m','키 150cm'],
-['평생 반말만 하기','평생 존댓말만 하기'],['내 코골이 소리 전국방송','내 잠꼬대 매일 녹음 공개'],
-['헬스장 평생 무료(주3회 의무)','배달음식 평생 반값'],['첫사랑과 재회','로또 3등 당첨'],
+  ['평생 월 500만원, 단 어떤 일도 못 함\n(취미·창작·봉사도 금지)','평생 월 1,200만원, 단 주 7일 하루 10시간 근무\n(휴가 없음)'],
+  ['지금 당장 10억, 단 10년간 해외여행 금지','10년 뒤 30억, 단 그때까지 지금 생활 그대로'],
+  ['연봉 1억인데 상사가 매일 잔소리','연봉 4천인데 상사가 나를 존경함'],
+  ['주 4일 근무, 대신 월급 30% 삭감','주 6일 근무, 대신 월급 50% 인상'],
+  ['내 집 마련 성공, 단 출퇴근 편도 2시간','평생 전세, 단 회사 도보 5분'],
+  ['로또 1등 당첨, 단 온 나라에 실명 공개','로또 3등 당첨(150만원), 단 아무도 모름'],
+  ['일은 재밌는데 사람이 최악인 회사','일은 지루한데 사람이 최고인 회사'],
+  ['30살에 은퇴, 단 재산은 딱 5억','70살까지 일, 단 재산 50억'],
+  ['평생 치킨 금지, 단 다른 건 다 무료','평생 뭐든 먹기, 단 모든 음식이 미지근함'],
+  ['평생 한식만, 단 최고급 한정식','평생 아무거나, 단 전부 편의점 음식'],
+  ['국물 없는 라면','면 없는 라면'],
+  ['탕수육 부먹, 단 5분 뒤에 먹기','탕수육 찍먹, 단 소스가 딱 한 숟갈'],
+  ['평생 소주만, 단 안주 무제한','평생 맥주만, 단 안주는 새우깡뿐'],
+  ['맛있는데 1시간 줄 서는 집','그냥 그런데 바로 먹는 집'],
+  ['평생 배달 금지','평생 요리 금지 (사 먹기만)'],
+  ['민트초코 맛 치약','치약 맛 민트초코'],
+  ['친구 1명과 무인도 1년','혼자 무인도 6개월'],
+  ['내 검색기록 전체 공개','내 카톡 최근 3일 전체 공개'],
+  ['모두가 나를 좋아하는데 아무도 안 믿어줌','아무도 나를 안 좋아하는데 모두가 나를 믿어줌'],
+  ['평생 반말만 하기 (어른한테도)','평생 존댓말만 하기 (친구한테도)'],
+  ['내 코골이가 전국에 생중계','내 잠꼬대가 매일 녹음돼 공개'],
+  ['연락 안 되는 좋은 친구 5명','항상 연락되는 애매한 친구 50명'],
+  ['첫사랑과 재회, 단 기억을 못 알아봄','첫사랑 소식 영영 모름, 단 지금이 행복함'],
+  ['가족 여행 매년 무료, 단 목적지는 랜덤','혼자 여행 매년 무료, 단 목적지 내 마음대로'],
+  ['투명인간 능력, 단 옷은 안 투명해짐','하늘 나는 능력, 단 시속 15km'],
+  ['상대 마음 읽기, 단 끌 수 없음','미래 1시간 보기, 단 하루 한 번'],
+  ['모든 외국어 가능, 단 한국어 서툴러짐','한국어 완벽, 단 평생 해외 못 감'],
+  ['잠 안 자도 됨, 단 꿈을 영영 못 꿈','하루 4시간만 자도 됨, 단 매일 악몽'],
+  ['시간을 10초 되돌리기 (하루 1번)','오늘 로또 번호 알기 (한 달 1번)'],
+  ['평생 샤워 찬물','평생 에어컨 금지'],
+  ['여름만 있는 세상','겨울만 있는 세상'],
+  ['평생 폰 배터리 20%로 고정','평생 인터넷 속도 2G'],
+  ['매일 2시간 지각, 단 아무도 뭐라 안 함','매일 새벽 5시 기상, 단 하루가 상쾌함'],
+  ['집이 항상 깨끗함, 단 내 물건 위치를 모름','집이 늘 어질러짐, 단 뭐든 3초 안에 찾음'],
+  ['평생 노래방 금지','평생 영화관 금지'],
+  ['모기 10마리와 하룻밤','바퀴벌레 1마리와 하룻밤'],
+  ['계단만 쓰기 (엘리베이터 평생 금지)','엘리베이터만 쓰기 (2층도 타야 함)'],
+  ['평생 신발 한 켤레, 단 최고급','신발 100켤레, 단 전부 살짝 불편함'],
+  ['키 2m','키 150cm'],
+  ['평생 20대 외모, 단 체력은 70대','평생 20대 체력, 단 외모는 70대'],
+  ['절대 안 아픔, 단 맛을 못 느낌','맛을 200% 느낌, 단 매년 한 달은 아픔'],
+  ['머리가 매일 완벽, 단 옷은 랜덤','옷이 매일 완벽, 단 머리는 랜덤'],
+  ['말할 때마다 랩으로 말하기','걸을 때마다 문워크로 걷기'],
+  ['길에서 넘어지는 영상이 100만 조회','내 학창시절 사진첩이 회사 단톡방에'],
+  ['모든 통화가 스피커폰으로 나감','모든 문자가 크게 읽어짐'],
+  ['평생 이름이 특이해서 늘 되물음','평생 이름이 흔해서 늘 헷갈림'],
+  ['10년 전으로, 단 지금 기억 다 갖고','지금 그대로, 단 10억 받고'],
+  ['과거로 시간여행 (돌아올 수 있음)','미래로 시간여행 (한 번뿐)'],
+  ['내 인생 리셋, 단 어디서 태어날지 랜덤','지금 인생 그대로, 단 앞으로 운이 평균'],
+  ['아는 맛 평생 먹기','매번 새로운 맛 도전 (실패해도 감수)'],
+  ['평생 비행기 무료, 단 이코노미 뒷자리','평생 호텔 무료, 단 집에서 30분 이내만'],
+  ['한 나라에서 1년 살기','30개국을 열흘씩 돌기'],
+  ['여행 계획 완벽, 단 변수 생기면 멘붕','무계획 여행, 단 항상 뭔가 꼬임'],
+  ['물냉','비냉'],
+  ['짜장','짬뽕'],
+  ['밥 먹을 때 폰 금지','잘 때 폰 금지'],
+  ['헬스장 평생 무료, 단 주 3회 의무','배달음식 평생 반값, 단 헬스장 금지'],
+  ['유명한데 가난함 (월 200)','무명인데 부자 (월 2,000)'],
+  ['반려동물 10마리, 단 내가 다 돌봄','반려동물 0마리, 단 언제든 만나러 감'],
 ];
 /* 벌칙 룰렛 기본 */
 const PENALTY_DEFAULT=['물/술 한 잔 원샷','애교 3종 세트','15초 막춤','성대모사 하나','설거지 당번','윗몸일으키기 10개','팔굽혀펴기 (남15 / 여5)','스쿼트 (남15 / 여5)','런지 (남15 / 여5)','옆사람 어깨안마 1분','최근 사진 1장 공개','폰 배경화면 공개','다음 판 벌칙 2배','전원에게 칭찬 한마디씩','창문 열고 "야호" 외치기','한 곡 열창','개인기 아무거나','내일 아침 커피 쏘기','통과! (행운)'];
@@ -618,6 +665,17 @@ function choReveal(){
 /* =====================================================
    ⚖️ 밸런스 게임
 ===================================================== */
+/* 선택지를 '본문 + 단서(단 …)' 두 줄로 나눠 보여준다.
+   양쪽에 대가가 붙어야 진짜 고민이 되므로, 단서가 잘 읽히는 게 중요하다. */
+function vsHTML(t){
+  let head=String(t), sub='';
+  const nl=head.indexOf('\n');
+  if(nl>=0){ sub=head.slice(nl+1).trim(); head=head.slice(0,nl); }
+  const m=head.match(/^(.*?),\s*(단 .*)$/);          // '단 …' 조건은 항상 아래 줄로
+  if(m){ head=m[1]; sub=(m[2]+(sub?' '+sub:'')).trim(); }
+  return '<div><div class="vsHead">'+esc(head)+'</div>'+
+    (sub?'<div class="vsSub">'+esc(sub)+'</div>':'')+'</div>';
+}
 function balanceGame(i,deck){
   sfx('vs'); bgmStart('party');               // VS! 대결 등장음
   if(i>=deck.length){deck=shuffle(BALANCE);i=0;}
@@ -626,9 +684,9 @@ function balanceGame(i,deck){
   app.innerHTML=`
   <div class="logo">⚖️ 밸런스 게임</div>
   <div class="vs">
-    <div class="vsBox">${esc(a)}</div><div class="vsMid">VS</div><div class="vsBox">${esc(b)}</div>
+    <div class="vsBox">${vsHTML(a)}</div><div class="vsMid">VS</div><div class="vsBox">${vsHTML(b)}</div>
   </div>
-  <div class="mini">토론 금지! 직감으로!</div>
+  <div class="mini">토론 금지! 셋 세면 동시에 손가락으로 가리키기 👉</div>
   <button class="bigBtn blue" onclick="balCount()">🖐️ 하나, 둘, 셋! (동시에 가리키기)</button>
   <div class="mini" style="margin-top:10px">소수파 벌칙 · 만장일치면 세이프</div>
   <button class="bigBtn" onclick="balanceGame(${i+1},window._bal.deck)">다음 질문 →</button>
@@ -644,6 +702,29 @@ function balCount(){
   ac();
   sfx('count321');                            // 하나! 둘! 셋! (마지막에 팡)
   setTimeout(()=>{vib(60);},1000);
+  setTimeout(()=>{try{balDebate();}catch(e){}},1500);   // 가리킨 뒤 → 변론 타임
+}
+/* 🗣️ 소수파 변론 — 여기서 웃음이 터진다. 설득에 성공하면 벌칙 면제 */
+function balDebate(){
+  const b=window._bal||{i:0,deck:shuffle(BALANCE)};
+  const [x,y]=b.deck[b.i%b.deck.length];
+  sfx('vs');
+  app.innerHTML=`
+  <div class="logo">🗣️ 변론 타임</div>
+  <div class="vs" style="opacity:.75">
+    <div class="vsBox">${vsHTML(x)}</div><div class="vsMid">VS</div><div class="vsBox">${vsHTML(y)}</div>
+  </div>
+  <div class="card"><h3>규칙</h3>
+    <div class="mini" style="text-align:left;line-height:1.9">
+      · <b>만장일치</b>면 전원 세이프 🎉<br>
+      · 갈렸다면 <b>소수파에게 30초 변론</b> 기회<br>
+      · 변론 듣고 <b>마음 바꾼 사람이 1명이라도</b> 있으면 소수파 벌칙 면제<br>
+      · 아무도 안 넘어오면 소수파가 벌칙 🎯
+    </div>
+  </div>
+  <button class="bigBtn gold" onclick="sfx('menu');roulette('balanceBack()')">🎯 벌칙 룰렛 돌리기</button>
+  <button class="bigBtn blue" onclick="balanceGame(${b.i+1},window._bal.deck)">다음 질문 →</button>
+  <button class="ghostBtn" onclick="balanceBack()">← 질문 다시 보기</button>`;
 }
 
 /* =====================================================
