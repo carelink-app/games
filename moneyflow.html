@@ -2,6 +2,10 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1420">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>드림로드 코리아 — 꿈을 향한 경제 보드게임</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
@@ -256,60 +260,61 @@ button.mineOnly:disabled{opacity:.25}
 #diceStage{display:none!important}
 
 /* ── 가로 모드: 왼쪽은 판, 오른쪽은 조작. 스크롤 없이 한 화면에 ── */
-@media (orientation:landscape){
+/* ── 가로 레이아웃 — 진짜 가로이거나, 화면을 강제로 눕힌 상태(html.land) 둘 다 적용 ── */
+
   /* ⚠️ 스크롤 잠금은 '게임 중'에만! 시작 화면은 길어서 반드시 스크롤돼야 한다 */
-  body.playing{overflow:hidden}
-  #scrGame{padding:5px;max-width:none;height:100dvh;overflow:hidden}
+  html.land body.playing{overflow:hidden}
+  html.land #scrGame{padding:5px;max-width:none;height:100dvh;overflow:hidden}
   /* 시작 화면은 가로에서도 평소처럼 한 줄로 — 길면 그냥 스크롤한다 */
-  #scrStart.on{max-width:520px;padding:14px 16px 18px;display:block;height:auto;overflow:visible}
-  #scrStart .logo img{max-width:260px!important}
+  html.land #scrStart.on{max-width:520px;padding:14px 16px 18px;display:block;height:auto;overflow:visible}
+  html.land #scrStart .logo img{max-width:260px!important}
   /* 🎮 게임 시작 버튼은 화면 아래에 띄워둬서, 어디까지 내려가도 바로 누를 수 있게 */
-  #scrStart.on{padding-bottom:62px}
-  #scrStart #btnStart{position:fixed;left:50%;transform:translateX(-50%);bottom:8px;
+  html.land #scrStart.on{padding-bottom:62px}
+  html.land #scrStart #btnStart{position:fixed;left:50%;transform:translateX(-50%);bottom:8px;
     width:min(490px,92vw);z-index:20;box-shadow:0 8px 22px rgba(0,0,0,.8)}
   /* ── 게임 화면: 왼쪽은 판, 오른쪽은 조작. 스크롤 없이 한 화면에 ── */
-  #gRow{display:flex;gap:7px;height:100%;align-items:stretch}
-  #gLeft{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
-  #gRight{flex:0 0 clamp(178px,25vw,236px);display:flex;flex-direction:column;gap:5px;overflow-y:auto;overflow-x:hidden}
-  #gLeft .topbar{padding:0 2px 4px;flex:0 0 auto}
-  #gLeft .topbar .t{font-size:13px}
-  #gLeft .topbar .iconBtn{padding:5px 7px;font-size:12px}
-  #boardWrap{flex:1 1 auto;min-height:0;position:relative}
-  body.tilt #boardWrap{height:100%;padding-bottom:0;width:auto;max-width:100%;aspect-ratio:1/.66;margin:0 auto}
-  #panel{padding:8px 9px;border-radius:12px}
-  #pName{font-size:14px}#pCash{font-size:15px}
+  html.land #gRow{display:flex;gap:7px;height:100%;align-items:stretch}
+  html.land #gLeft{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+  html.land #gRight{flex:0 0 clamp(178px,25vw,236px);display:flex;flex-direction:column;gap:5px;overflow-y:auto;overflow-x:hidden}
+  html.land #gLeft .topbar{padding:0 2px 4px;flex:0 0 auto}
+  html.land #gLeft .topbar .t{font-size:13px}
+  html.land #gLeft .topbar .iconBtn{padding:5px 7px;font-size:12px}
+  html.land #boardWrap{flex:1 1 auto;min-height:0;position:relative}
+  html.land body.tilt #boardWrap{height:100%;padding-bottom:0;width:auto;max-width:100%;aspect-ratio:1/.66;margin:0 auto}
+  html.land #panel{padding:8px 9px;border-radius:12px}
+  html.land #pName{font-size:14px}#pCash{font-size:15px}
   /* 직업·수입 줄은 옆에 붙이면 서로 밀리니 아래로 쌓는다 */
-  #panel .prow{margin-bottom:1px}
-  #panel .prow:nth-of-type(2){display:block}
-  #pJob{font-size:10px;line-height:1.3;display:block}
-  #pSub{font-size:10px;display:block;margin-top:1px}
-  .meterWrap{margin:5px 0 1px}
-  .meterLbl{font-size:9.5px;margin-bottom:2px}
-  .meter{height:7px}
-  .actRow{gap:4px;margin-top:6px}
-  .act{padding:8px 2px;font-size:12.5px;border-radius:10px}
-  .act.main{font-size:14px;padding:10px}
-  .act.end{font-size:14px;padding:10px}
-  #nowDo{font-size:11.5px;padding:6px 8px;margin:0;border-radius:10px;line-height:1.35}
-  #nowDo .sm{font-size:9.5px;margin-top:1px}
-  #pstrip{gap:4px;padding-bottom:2px;margin-bottom:0;flex-wrap:nowrap;overflow-x:auto}
-  .pchip{padding:3px 6px;font-size:9.5px;gap:3px;border-radius:8px}
-  .pchip img{width:16px!important;height:16px!important}
-  #log{font-size:10px;margin:0;padding:0 2px;min-height:0;text-align:left;line-height:1.4}
+  html.land #panel .prow{margin-bottom:1px}
+  html.land #panel .prow:nth-of-type(2){display:block}
+  html.land #pJob{font-size:10px;line-height:1.3;display:block}
+  html.land #pSub{font-size:10px;display:block;margin-top:1px}
+  html.land .meterWrap{margin:5px 0 1px}
+  html.land .meterLbl{font-size:9.5px;margin-bottom:2px}
+  html.land .meter{height:7px}
+  html.land .actRow{gap:4px;margin-top:6px}
+  html.land .act{padding:8px 2px;font-size:12.5px;border-radius:10px}
+  html.land .act.main{font-size:14px;padding:10px}
+  html.land .act.end{font-size:14px;padding:10px}
+  html.land #nowDo{font-size:11.5px;padding:6px 8px;margin:0;border-radius:10px;line-height:1.35}
+  html.land #nowDo .sm{font-size:9.5px;margin-top:1px}
+  html.land #pstrip{gap:4px;padding-bottom:2px;margin-bottom:0;flex-wrap:nowrap;overflow-x:auto}
+  html.land .pchip{padding:3px 6px;font-size:9.5px;gap:3px;border-radius:8px}
+  html.land .pchip img{width:16px!important;height:16px!important}
+  html.land #log{font-size:10px;margin:0;padding:0 2px;min-height:0;text-align:left;line-height:1.4}
   /* 모달도 낮은 화면에 맞게 바짝 줄인다 */
-  #ovl,#vovl{align-items:center}
-  #modal,#vmodal{max-height:94dvh;border-radius:16px;max-width:min(94vw,720px);padding:12px 14px 14px;border-top:none}
-  #mTitle,#vTitle{font-size:15px;margin-bottom:5px}
-  #mBody,#vBody{font-size:12px;line-height:1.45}
-  #mBody .tip,#vBody .tip{margin-top:7px;padding:6px 9px;font-size:10.5px;line-height:1.45}
-  .tbl{font-size:11px;margin:5px 0}
-  .tbl td{padding:4px 3px}
-  .secH{font-size:11.5px;margin:8px 0 1px}
-  #mBtns{gap:5px;margin-top:9px;display:grid;grid-template-columns:1fr 1fr}
-  #mBtns .mbtn{padding:9px 6px;font-size:12.5px;border-radius:10px}
-  #mBtns .mbtn:only-child,#mBtns .mbtn.pri:last-child{grid-column:1/3}
-  .advice{font-size:10.5px!important;padding:6px 9px!important;margin-top:6px!important;line-height:1.45!important}
-}
+  html.land #ovl, html.land #vovl{align-items:center}
+  html.land #modal, html.land #vmodal{max-height:94dvh;border-radius:16px;max-width:min(94vw,720px);padding:12px 14px 14px;border-top:none}
+  html.land #mTitle, html.land #vTitle{font-size:15px;margin-bottom:5px}
+  html.land #mBody, html.land #vBody{font-size:12px;line-height:1.45}
+  html.land #mBody .tip, html.land #vBody .tip{margin-top:7px;padding:6px 9px;font-size:10.5px;line-height:1.45}
+  html.land .tbl{font-size:11px;margin:5px 0}
+  html.land .tbl td{padding:4px 3px}
+  html.land .secH{font-size:11.5px;margin:8px 0 1px}
+  html.land #mBtns{gap:5px;margin-top:9px;display:grid;grid-template-columns:1fr 1fr}
+  html.land #mBtns .mbtn{padding:9px 6px;font-size:12.5px;border-radius:10px}
+  html.land #mBtns .mbtn:only-child, html.land #mBtns .mbtn.pri:last-child{grid-column:1/3}
+  html.land .advice{font-size:10.5px!important;padding:6px 9px!important;margin-top:6px!important;line-height:1.45!important}
+
 /* ── 세로일 때도 최대한 압축 ── */
 @media (orientation:portrait){
   #scrStart #btnStart{position:sticky;bottom:6px;z-index:6;box-shadow:0 6px 18px rgba(0,0,0,.7)}
@@ -325,7 +330,7 @@ button.mineOnly:disabled{opacity:.25}
 /* ── 세로일 때 뜨는 안내 (게임 중에만) ── */
 #rotHint{position:fixed;inset:0;z-index:80;display:none;flex-direction:column;align-items:center;justify-content:center;
  gap:14px;background:linear-gradient(160deg,#141c2e,#0b1120);text-align:center;padding:30px}
-body.playing.wantLand #rotHint{display:flex}
+body.playing.wantLand #rotHint{display:none}
 #rotIco{font-size:70px;animation:rotSpin 2.2s ease-in-out infinite}
 @keyframes rotSpin{0%,35%{transform:rotate(0)}55%,90%{transform:rotate(90deg)}100%{transform:rotate(0)}}
 #rotHint .big{font-size:20px;font-weight:900}
@@ -349,6 +354,24 @@ body.playing.wantLand #rotHint{display:flex}
   #zoomBar button{width:25px;height:25px;font-size:13px;border-radius:7px}
   #zoomLbl{font-size:9.5px;min-width:30px}
 }
+
+/* ================= 📐 자동 가로 전환 =================
+   브라우저는 폰을 강제로 못 돌린다. 그래서 두 단계로 간다.
+   ① 안드로이드: 전체화면 + orientation.lock('landscape') → 진짜로 화면이 돌아간다
+   ② 그게 안 되면(아이폰 등): 화면 자체를 90도 눕혀서 가로로 만든다.
+      폰을 옆으로 쥐면 글자가 똑바로 보인다. '돌려주세요' 하고 묻지 않는다. */
+html.rot body.playing{
+  position:fixed;top:0;left:0;
+  width:100dvh;height:100dvw;
+  transform-origin:0 0;
+  transform:rotate(-90deg) translateX(-100%);   /* 폰을 시계방향으로 눕히면 똑바로 보인다 */
+  overflow:hidden;
+}
+/* ⚠️ 눕힌 뒤에는 dvh/dvw 가 뒤집힌다 — 화면 높이는 body 기준으로 다시 잡아준다 */
+html.rot body.playing #scrGame{height:100%!important}
+html.rot body.playing #modal,
+html.rot body.playing #vmodal{max-height:92%!important}
+html.rot #scrStart #btnStart{position:fixed}
 </style>
 </head>
 <body>
@@ -436,6 +459,7 @@ window.addEventListener('error',function(ev){
       <label id="sudoWrap"><input type="checkbox" id="sudoChk">대리조작</label>
       <button class="iconBtn" id="btnFeed">📜</button>
       <button class="iconBtn" id="btnRank">🏆</button>
+      <button class="iconBtn" id="btnFull" title="전체화면">⛶</button>
       <button class="iconBtn" id="btnTilt">🎥</button>
       <button class="iconBtn" id="btnSnd">🔊</button>
       <button class="iconBtn" id="btnHow">🎓</button>
@@ -1593,24 +1617,59 @@ function customDream(i){
 }
 
 /* ---------- 📐 가로 화면 고정 ---------- */
+/* ⛶ 전체화면 — 브라우저 주소창을 치워서 게임판을 최대한 크게 */
+function isFull(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+function enterFull(){
+  try{
+    const el=document.documentElement;
+    const rq=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen;
+    if(rq){ const r=rq.call(el,{navigationUI:'hide'}); if(r&&r.then)r.then(lockLand).catch(()=>{}); else lockLand(); return true; }
+  }catch(e){}
+  return false;
+}
+function exitFull(){ try{ if(isFull()&&document.exitFullscreen)document.exitFullscreen().catch(()=>{}); }catch(e){} }
+function lockLand(){ try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }catch(e){} }
+function fullBtnSync(){ const b=$('btnFull'); if(b)b.textContent=isFull()?'⛶':'⛶'; }
 function goLandscape(){
   document.body.classList.add('playing');
-  if(!LAND_SKIP) document.body.classList.add('wantLand');
-  // 안드로이드 크롬 등: 전체화면 상태에서만 실제 잠금이 된다 (실패해도 안내로 대체)
-  try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
-  try{ boardTransform(); }catch(e){}
+  enterFull();          // 버튼 클릭 흐름 안에서 불러야 브라우저가 허락한다
+  lockLand();
+  syncLand();
 }
-/* 게임이 끝나면 가로 고정을 풀어준다 — 결과·순위는 편하게 세로로 보면 되니까 */
 function exitLandscape(){
   document.body.classList.remove('playing');
-  document.body.classList.remove('wantLand');
   try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+  exitFull();
+  syncLand();
+}
+/* 지금 화면이 가로인가? 아니면 우리가 눕혀야 하는가? */
+function syncLand(){
+  const playing=document.body.classList.contains('playing');
+  let wide=true;
+  try{ wide=window.matchMedia('(orientation:landscape)').matches; }catch(e){ wide=innerWidth>=innerHeight; }
+  const rot=playing&&!wide;                 // 게임 중인데 화면이 세로면 → 우리가 눕힌다
+  const el=document.documentElement;
+  el.classList.toggle('rot',rot);
+  el.classList.toggle('land',playing?true:wide);   // 게임 중엔 항상 가로 레이아웃
   try{ boardTransform(); }catch(e){}
 }
+
 let LAND_SKIP=false;
 $('rotSkip').onclick=()=>{ LAND_SKIP=true; document.body.classList.remove('wantLand'); try{boardTransform();}catch(e){} };
-window.addEventListener('resize',()=>{ try{boardTransform();}catch(e){} });
-window.addEventListener('orientationchange',()=>{ setTimeout(()=>{try{boardTransform();}catch(e){}},260); });
+$('btnFull').onclick=()=>{ if(isFull())exitFull(); else enterFull(); setTimeout(fullBtnSync,300); };
+/* 자동 전체화면이 막힌 브라우저를 위해, 게임 중 첫 터치에서 딱 한 번 더 시도한다 */
+let FULL_TRIED=false;
+function fullRetry(){
+  if(FULL_TRIED||isFull())return;
+  if(!document.body.classList.contains('playing'))return;
+  FULL_TRIED=true; enterFull();
+}
+document.addEventListener('touchend',fullRetry,{passive:true});
+document.addEventListener('click',fullRetry);
+document.addEventListener('fullscreenchange',()=>{ try{fullBtnSync();syncLand();}catch(e){} });
+try{ syncLand(); }catch(e){}          // 시작 화면에서도 지금 방향에 맞는 레이아웃을 쓴다
+window.addEventListener('resize',()=>{ try{syncLand();}catch(e){} });
+window.addEventListener('orientationchange',()=>{ setTimeout(()=>{try{syncLand();}catch(e){}},260); });
 
 /* ---------- 보드 렌더 ---------- */
 function buildBoard(){
