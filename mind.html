@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0f1420">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>심리전 팩 — 코드브레이커 · 이마 포커 · 건파이트</title>
+<title>심리전 팩 — 코드브레이커 · 이마 포커 · 뱅!</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
 <style>
 :root{--bg:#141019;--panel:#221a2e;--panel2:#2f2440;--line:#453458;--txt:#f5eefc;--sub:#b39cc9;
@@ -76,7 +76,7 @@ input{user-select:text;-webkit-user-select:text}
 .pcard.back{background:repeating-linear-gradient(45deg,#7d5fd6,#7d5fd6 6px,#6b4fc0 6px,#6b4fc0 12px);color:transparent}
 .pcard.big{width:70px;height:96px;font-size:36px}
 .chipCnt{font-size:15px;font-weight:900;color:var(--gold)}
-/* 건파이트 */
+/* 뱅! (구) */
 .hpRow{display:flex;gap:2px}
 .hp{width:12px;height:12px;border-radius:50%;background:#ff5d73}
 .hp.off{background:#3a2c4e}
@@ -87,6 +87,62 @@ input{user-select:text;-webkit-user-select:text}
 .pick2{padding:14px 8px;border-radius:12px;background:var(--panel2);color:var(--txt);font-size:15px;font-weight:800;border:2px solid transparent}
 .pick2.dead{opacity:.3;text-decoration:line-through}
 .logBox{background:#191322;border-radius:10px;padding:8px 12px;font-size:12px;color:var(--sub);line-height:1.9;max-height:120px;overflow-y:auto;margin:8px 0}
+/* 🤠 뱅! */
+.bTop{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;padding-right:46px}
+.bTop b{font-size:19px}
+.bTop .sub{flex:1;font-size:12px}
+.bRule{background:#2f2440;border:1px solid #453458;color:#f5eefc;font-size:12px;font-weight:800;padding:8px 12px;border-radius:20px}
+.bList{padding:8px 10px}
+.bRow{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--line)}
+.bRow:last-child{border-bottom:0}
+.bRow.now{background:rgba(255,201,77,.10);border-radius:10px}
+.bRow.dead{opacity:.42}
+.bRow.dead .bName b{text-decoration:line-through}
+.bName{flex:1.2;min-width:0}
+.bName b{font-size:13px}
+.bCh{font-size:10px;color:var(--sub);margin-top:2px}
+.bTag{display:inline-block;font-size:9px;font-weight:900;padding:1px 5px;border-radius:8px;background:#3a2f4d;color:#d9cbee;margin-left:3px;vertical-align:middle}
+.bTag.star{background:#4a3a20;color:var(--gold)}
+.bTag.now{background:var(--gold);color:#1c1200}
+.bMid{flex:1.4;min-width:0;text-align:center}
+.bHp{font-size:12px;letter-spacing:-1px}
+.bHp.off{opacity:.45}
+.bEqs{margin-top:3px;line-height:1.5}
+.bEq{display:inline-block;font-size:9px;font-weight:800;background:#241c33;border:1px solid #3b2f52;border-radius:7px;padding:1px 4px;margin:1px}
+.bEq.off{opacity:.4;font-weight:600}
+.bRight{flex:0 0 66px;text-align:right}
+.bCnt{display:block;font-size:12px;font-weight:800}
+.bDist{display:inline-block;font-size:9px;font-weight:800;color:var(--sub);background:#241c33;border-radius:7px;padding:1px 5px;margin-top:2px}
+.bDist.ok{background:#17402c;color:#7ee6b0}
+.bMe{display:flex;gap:10px;flex-wrap:wrap;padding:11px 13px}
+.bMe>div{flex:1;min-width:150px}
+.bChBox{border-left:2px solid var(--line);padding-left:10px}
+.bNow{background:#241c33;border-radius:12px;padding:11px 13px;font-size:14px;font-weight:800;margin-bottom:12px;text-align:center}
+.bNow.red{background:#3d1420;color:#ffb3c0;animation:bPulse 1.1s infinite}
+@keyframes bPulse{50%{background:#55182a}}
+.bHand{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.bCard{flex:1 1 104px;max-width:170px;text-align:left;padding:8px 9px;border-radius:12px;background:var(--panel2);border:2px solid var(--line);color:var(--txt)}
+.bCard b{display:block;font-size:13px;font-weight:900}
+.bCard small{display:block;font-size:10px;color:var(--gold);font-weight:800;margin-top:1px}
+.bCard i{display:block;font-size:10px;color:var(--sub);font-style:normal;line-height:1.4;margin-top:3px}
+.bCard.sel{border-color:var(--gold);background:#4a3a20}
+.bCard.slab{border-color:var(--red)}
+.bCard:disabled{opacity:.45}
+.bAct{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+.bAct .grid{grid-template-columns:1fr 1fr;gap:7px;margin:8px 0}
+.bAct .pick2{padding:11px 7px;font-size:14px}
+.bAct .pick2 small{display:block;font-size:10px;color:var(--sub);font-weight:700;margin-top:2px}
+.bAct .pick2.sel{border-color:var(--gold)}
+.bAct .pick2.good{background:#17402c;color:#a8f0cb}
+.bAct .pick2.bad{background:#3d1420;color:#ffb3c0}
+#gunRuleOvl{position:fixed;inset:0;background:rgba(8,5,14,.86);z-index:200;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.grBox{max-width:640px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.grBox h2{margin:0 0 8px}
+.grBox h3{margin:16px 0 5px;font-size:15px;color:var(--gold)}
+.grBox p{margin:0}
+.grT{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+.grT td{border-bottom:1px solid var(--line);padding:5px 4px;vertical-align:top;color:var(--sub);line-height:1.5}
+.grT td:first-child{width:38%;color:var(--txt);font-weight:800;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -109,7 +165,7 @@ window.addEventListener('error',function(ev){
 <script>
 'use strict';
 /* =====================================================
-   심리전 팩: 코드브레이커 · 이마 포커 · 건파이트
+   심리전 팩: 코드브레이커 · 이마 포커 · 뱅!
    폰은 비밀 정보만, 승부는 눈빛과 말로!
    (방장 폰이 심판 역할을 하는 온라인 구조)
 ===================================================== */
@@ -198,7 +254,7 @@ function heartBeat(t){
   tone(28,t,0.17,'sine',0.55,SND.bgmGain);
   tone(26,t+0.18,0.22,'sine',0.38,SND.bgmGain);
 }
-/* 시계 초침 틱 — 건파이트의 정적을 채우는 소리 */
+/* 시계 초침 틱 — 뱅!의 정적을 채우는 소리 */
 function clockTick(t){
   noise(t,0.014,0.30,5200,SND.bgmGain);
   tone(96,t,0.012,'square',0.05,SND.bgmGain);
@@ -286,7 +342,7 @@ const BGM_TRACKS={
     mel:[[0,4],[0,4],[63,2],[65,2],[63,4],[0,4],[0,4],[60,2],[58,2],[60,4],
          [0,4],[0,4],[68,2],[67,2],[63,4],[0,4],[0,4],[0,4],[0,4]],
     bass:[33,0,0,0,40,0,0,0, 31,0,0,0,38,0,0,0, 29,0,0,0,36,0,0,0, 28,0,0,0,35,0,0,0]},
-  /* 건파이트: 거의 무음. 시계 초침과 아주 낮은 드론뿐 — 결투 직전의 정적. */
+  /* 뱅!: 거의 무음. 시계 초침과 아주 낮은 드론뿐 — 결투 직전의 정적. */
   gun:{bpm:60,gain:0.13,melType:'sine',melVol:0.03,bassVol:0.22,bassDur:14,heart:0,tick:2,
     mel:[[0,4],[0,4],[0,4],[0,4],[0,4],[0,4],[0,4],[0,4],
          [45,4],[0,4],[0,4],[0,4],[0,4],[0,4],[0,4],[0,4]],
@@ -439,7 +495,7 @@ function home(){
     <div class="chips">
       <button class="chip ${selGame==='code'?'sel':''}" onclick="selGame='code';home()">🔢 코드브레이커<br><small>2~6인 · 숫자 추리</small></button>
       <button class="chip ${selGame==='poker'?'sel':''}" onclick="selGame='poker';home()">🂠 이마 포커<br><small>2~8인 · 배팅 블러핑</small></button>
-      <button class="chip ${selGame==='gun'?'sel':''}" onclick="selGame='gun';home()">🤠 건파이트<br><small>4~8인 · 숨은 직업 총격전</small></button>
+      <button class="chip ${selGame==='gun'?'sel':''}" onclick="selGame='gun';home()">🤠 뱅!<br><small>4~8인 · 서부 총격 심리전</small></button>
     </div>
   </div>
   <div class="card"><h3>📶 온라인 접속 (전원 인터넷 필요)</h3>
@@ -456,7 +512,10 @@ function home(){
 function ruleCardHTML(g){
   if(g==='code')return `<div class="banner"><b>🔢 코드브레이커</b> (다빈치코드 스타일 변형)<br>각자 흑/백 숫자 타일을 <b>오름차순</b>으로 숨겨 들고 시작. 내 차례에 상대 타일 하나를 콕 집어 숫자를 추리! 맞히면 그 타일 공개(연속 추리 가능), 틀리면 내가 방금 가져온 타일이 공개됩니다. 타일이 전부 까지면 탈락 — <b>표정 관리가 생명!</b></div>`;
   if(g==='poker')return `<div class="banner"><b>🂠 이마 포커</b> (인디언 포커 변형)<br>내 폰엔 <b>남들 카드만</b> 보이고 내 카드는 안 보여요! 상대 표정과 배팅을 읽고 콜/레이즈/폴드. 최고 숫자가 팟을 쓸어갑니다.<br>🔥 <b>변형 룰</b>: 10을 들고 폴드하면 벌금 3칩! (쫄보 방지)</div>`;
-  return `<div class="banner"><b>🤠 건파이트</b> (뱅! 스타일 라이트 변형)<br>보안관(공개) vs 숨은 무법자들 vs 혼자 배신자! 매 턴 카드 뽑고 총 쏘고, 누가 아군인지 <b>말로 떠보며</b> 추리하세요. 보안관팀은 악당 소탕, 무법자는 보안관 제거, 배신자는 <b>혼자 살아남아야</b> 승리!</div>`;
+  return `<div class="banner"><b>🤠 뱅! (BANG!)</b> 4~8인 · 서부 총격 심리전<br>
+  보안관은 <b>공개</b>, 나머지는 전부 숨어 있습니다. 무법자는 보안관 제거, 부관은 보안관 호위, 배신자는 <b>혼자 마지막까지</b> 살아남아야 승리!<br>
+  무기를 장착해 <b>사거리</b>를 늘리고, 통·무스탕·조준경으로 몸을 지키세요. 내 손패는 항상 보이고, 남의 <b>체력·장착·손패 수·거리</b>도 전부 보입니다.<br>
+  게임 화면 오른쪽 위 <b>📖 규칙</b>에 카드 하나하나까지 다 적어두었습니다.</div>`;
 }
 const ICE_CFG={config:{iceServers:[
  {urls:'stun:stun.l.google.com:19302'},
@@ -580,7 +639,7 @@ function renderHostLobby(){
   <div class="card"><h3>🎮 게임 선택</h3><div class="chips">
     <button class="chip ${selGame==='code'?'sel':''}" onclick="selGame='code';renderHostLobby()">🔢 코드브레이커<br><small>2~6인</small></button>
     <button class="chip ${selGame==='poker'?'sel':''}" onclick="selGame='poker';renderHostLobby()">🂠 이마 포커<br><small>2~8인</small></button>
-    <button class="chip ${selGame==='gun'?'sel':''}" onclick="selGame='gun';renderHostLobby()">🤠 건파이트<br><small>4~8인</small></button>
+    <button class="chip ${selGame==='gun'?'sel':''}" onclick="selGame='gun';renderHostLobby()">🤠 뱅!<br><small>4~8인</small></button>
   </div></div>
   ${ruleCardHTML(selGame)}
   ${(n>=MIN&&n<=MAX)?`<button class="bigBtn" onclick="startGame()">🎮 시작! (${n}명)</button>`
@@ -614,8 +673,22 @@ function forceSkip(){
   sfx('alert'); // 🔊 멈춘 차례 강제 진행
   if(GAME.type==='code'){codeNextTurn('⏭ 호스트가 '+NET.names[GAME.turn]+'의 멈춘 차례를 넘김');}
   else if(GAME.type==='poker'){pokerAct({p:GAME.turn,k:'fold'});} // 자동 폴드
-  else if(GAME.type==='gun'){const t=GAME.turn;GAME.log.push('⏭ 호스트가 '+NET.names[t]+'의 차례를 넘김');
-    do{GAME.turn=(GAME.turn+1)%NET.names.length;}while(!GAME.alive[GAME.turn]);gunTurnBegin();}
+  else if(GAME.type==='gun'){
+    const g=GAME;
+    /* ⚠️ 멈춘 지점이 '응답 대기'면 차례를 넘겨봐야 안 풀린다 — 그 사람 대신 처리해 준다 */
+    if(g.pend){
+      if(g.pend.k==='store'){ g.log.push('⏭ 호스트가 '+NET.names[g.pend.who]+' 대신 상점 카드 1장 가져감');
+        return gunAct({p:g.pend.who,k:'take',ci:0}); }
+      g.log.push('⏭ 호스트가 '+NET.names[g.pend.who]+' 대신 맞아줌');
+      return gunAct({p:g.pend.who,k:'hit'});
+    }
+    if(g.phase==='jesse'){ g.log.push('⏭ 호스트가 '+NET.names[g.turn]+' 대신 덱에서 뽑음');
+      return gunAct({p:g.turn,k:'jesseFrom',target:-1}); }
+    if(g.phase==='discard'){ g.log.push('⏭ 호스트가 '+NET.names[g.turn]+' 대신 손패를 버림');
+      return gunAct({p:g.turn,k:'drop',ci:0}); }
+    g.log.push('⏭ 호스트가 '+NET.names[g.turn]+'의 차례를 넘김');
+    return gunNextTurn();
+  }
 }
 function hostAct(a){
   if(!GAME||GAME.over)return; // 게임 종료 후 늦게/중복 도착한 액션 무시
@@ -955,201 +1028,803 @@ function pokerEndRender(d){
   <button class="ghostBtn" onclick="backToLobbyHost()">로비로</button>`:'<div class="mini">방장이 다음 판을 시작할 수 있어요</div>'}`;
   app.innerHTML=h;
 }
-
 /* =====================================================
-   🤠 건파이트
+   🤠 뱅! (BANG!) — 서부 총격 심리전
+   보안관(공개) vs 숨은 무법자 vs 부관 vs 혼자인 배신자
+   ── 원작 규칙을 폰에 맞게 옮긴 판. 자기 손패는 항상 보이고,
+      남의 체력·장착·손패 수는 언제나 공개된다. ──
 ===================================================== */
-const GUN_ROLES_BY_N={4:['sheriff','outlaw','outlaw','renegade'],
+const GUN_ROLES_BY_N={
+ 4:['sheriff','outlaw','outlaw','renegade'],
  5:['sheriff','deputy','outlaw','outlaw','renegade'],
  6:['sheriff','deputy','outlaw','outlaw','outlaw','renegade'],
  7:['sheriff','deputy','deputy','outlaw','outlaw','outlaw','renegade'],
- 8:['sheriff','deputy','deputy','outlaw','outlaw','outlaw','outlaw','renegade']};
+ 8:['sheriff','deputy','deputy','outlaw','outlaw','outlaw','renegade','renegade']};  /* 8인은 원작(다지시티) 배분 — 배신자가 2명 */
 const GUN_ROLE_KO={sheriff:'⭐ 보안관',deputy:'🤝 부관',outlaw:'🔫 무법자',renegade:'🐍 배신자'};
-const GUN_CARD={bang:{ko:'💥 뱅!',d:'한 명에게 총격 (회피 가능)'},dodge:{ko:'🌀 회피',d:'공격당하면 자동 사용'},
- beer:{ko:'🍺 맥주',d:'체력 1 회복'},aim:{ko:'🎯 정조준',d:'회피 불가 총격!'}};
-function gunDeck(){
+const GUN_ROLE_GOAL={
+ sheriff:'무법자와 배신자를 모두 없애면 승리',
+ deputy:'보안관을 지키고 무법자·배신자를 없애면 승리',
+ outlaw:'보안관을 쓰러뜨리면 무법자 전원 승리',
+ renegade:'마지막 한 명으로 남아야 승리 (보안관을 마지막에 잡을 것)'};
+
+/* ── 캐릭터: 체력과 고유 능력 ── */
+const GUN_CHARS=[
+ {k:'bart',  n:'바르톨로메오', hp:4, d:'피해를 1 받을 때마다 카드를 1장 뽑는다'},
+ {k:'janet', n:'캘러미티 재닛',hp:4, d:'뱅!과 빗나감!을 서로 바꿔 쓸 수 있다'},
+ {k:'paul',  n:'폴 리게럿',   hp:3, d:'남이 나를 볼 때 거리가 1 멀어진다 (무스탕 효과)'},
+ {k:'rose',  n:'로즈 도라도', hp:4, d:'내가 남을 볼 때 거리가 1 가까워진다 (조준경 효과)'},
+ {k:'willy', n:'윌리 더 키드',hp:4, d:'뱅!을 한 턴에 몇 번이든 낼 수 있다'},
+ {k:'suzy',  n:'수지 라파예트',hp:4, d:'손패가 0장이 되면 즉시 1장 뽑는다'},
+ {k:'gringo',n:'엘 고링고',   hp:3, d:'뱅!에 맞으면 쏜 사람의 카드를 1장 뺏는다'},
+ {k:'slab',  n:'슬랩 더 키드',hp:4, d:'뱅!을 낼 때 카드를 1장 더 버리면 피해가 2가 된다'},
+ {k:'jesse', n:'제시 존스',   hp:4, d:'차례 시작 첫 장을 남의 손패에서 뽑을 수 있다'},
+ {k:'jack',  n:'블랙 잭',     hp:4, d:'차례 시작 둘째 장이 ♥나 ♦면 1장 더 뽑는다'},
+];
+const GUN_CH=(k)=>GUN_CHARS.find(c=>c.k===k)||GUN_CHARS[0];
+
+/* ── 카드 ── */
+const GUN_CARD={
+ bang:    {ko:'💥 뱅!',      d:'사거리 안 한 명에게 피해 1 (빗나감!으로 막힘)'},
+ missed:  {ko:'🌀 빗나감!',  d:'나에게 온 뱅!을 막는다'},
+ beer:    {ko:'🍺 맥주',     d:'체력 1 회복 (최대치까지). 마지막 2명일 땐 못 씀'},
+ saloon:  {ko:'🍻 살롱',     d:'살아있는 모두가 체력 1 회복'},
+ stage:   {ko:'🚋 역마차',   d:'카드 2장 뽑기'},
+ wells:   {ko:'🏦 웰스파고', d:'카드 3장 뽑기'},
+ duel:    {ko:'⚔️ 결투',     d:'상대와 번갈아 뱅!을 버린다. 먼저 못 내면 피해 1'},
+ indians: {ko:'🏹 인디언 습격',d:'나 빼고 전원, 뱅!을 버리지 않으면 피해 1'},
+ gatling: {ko:'🔫 개틀링',   d:'나 빼고 전원에게 뱅! (빗나감!으로 막힘)'},
+ panic:   {ko:'🫳 강탈',     d:'거리 1인 사람의 카드 1장을 뺏는다'},
+ catbalou:{ko:'💃 캣발루',   d:'아무나의 카드 1장을 버리게 한다 (거리 무관)'},
+ store:   {ko:'🏪 총기 상점', d:'인원수만큼 카드를 펼치고 차례대로 1장씩 가져간다'},
+ /* 장착 카드 */
+ jail:    {ko:'⛓️ 감옥',     d:'[남에게 장착] 그 사람은 ♥를 뽑아야 차례를 진행한다',eq:1},
+ dynamite:{ko:'🧨 다이너마이트',d:'[내게 장착] 차례마다 ♠2~9면 폭발 피해 3, 아니면 옆으로',eq:1},
+ barrel:  {ko:'🛢️ 통',       d:'[장착] 뱅!을 맞을 때 ♥를 뽑으면 자동으로 빗나감',eq:1},
+ mustang: {ko:'🐴 무스탕',   d:'[장착] 남이 나를 볼 때 거리 +1',eq:1},
+ scope:   {ko:'🔭 조준경',   d:'[장착] 내가 남을 볼 때 거리 −1',eq:1},
+ volcanic:{ko:'🔥 볼케닉 (사거리1)',  d:'[무기] 뱅!을 한 턴에 몇 번이든',eq:1,rng:1},
+ schofield:{ko:'🔫 스코필드 (사거리2)',d:'[무기] 사거리 2',eq:1,rng:2},
+ remington:{ko:'🎯 레밍턴 (사거리3)', d:'[무기] 사거리 3',eq:1,rng:3},
+ carbine: {ko:'🏹 레브카빈 (사거리4)',d:'[무기] 사거리 4',eq:1,rng:4},
+ winchester:{ko:'🪖 윈체스터 (사거리5)',d:'[무기] 사거리 5',eq:1,rng:5},
+};
+const GUN_WEAPONS=['volcanic','schofield','remington','carbine','winchester'];
+const GUN_EQUIP_SELF=['barrel','mustang','scope','dynamite'].concat(GUN_WEAPONS);
+
+/* 카드 한 장 = {t:종류, s:무늬, r:숫자}. 무늬·숫자는 '뽑기!' 판정에 쓰인다 */
+const GUN_SUITS=['♠','♥','♦','♣'];
+function gunMakeDeck(){
+  const spec=[['bang',25],['missed',12],['beer',6],['saloon',1],['stage',2],['wells',1],
+    ['duel',3],['indians',2],['gatling',1],['panic',4],['catbalou',4],['store',2],
+    ['jail',3],['dynamite',1],['barrel',2],['mustang',2],['scope',1],
+    ['volcanic',2],['schofield',3],['remington',1],['carbine',1],['winchester',1]];
   const d=[];
-  for(let i=0;i<24;i++)d.push('bang');
-  for(let i=0;i<16;i++)d.push('dodge');
-  for(let i=0;i<10;i++)d.push('beer');
-  for(let i=0;i<6;i++)d.push('aim');
+  spec.forEach(([t,n])=>{ for(let i=0;i<n;i++)
+    d.push({t,s:GUN_SUITS[rnd(4)],r:1+rnd(13)}); });
   return shuffle(d);
 }
+function gunCardKo(c){ return GUN_CARD[c.t]?GUN_CARD[c.t].ko:c.t; }
+function gunRankKo(r){ return r===1?'A':r===11?'J':r===12?'Q':r===13?'K':String(r); }
+function gunCardFull(c){ return gunCardKo(c)+' '+c.s+gunRankKo(c.r); }
+
+
+/* ── 판 시작 ── */
 function gunStart(){
   const n=NET.names.length;
   const roles=shuffle(GUN_ROLES_BY_N[n]);
-  GAME={type:'gun',roles,hp:roles.map(r=>r==='sheriff'?5:4),maxHp:roles.map(r=>r==='sheriff'?5:4),
-    hands:roles.map(()=>[]),deck:gunDeck(),discard:[],
-    turn:roles.indexOf('sheriff'),shotThisTurn:false,alive:roles.map(()=>true),log:[]};
+  const chars=shuffle(GUN_CHARS.map(c=>c.k)).slice(0,n);
+  const maxHp=roles.map((r,i)=>GUN_CH(chars[i]).hp+(r==='sheriff'?1:0));
+  GAME={type:'gun',roles,chars,hp:maxHp.slice(),maxHp,
+    hands:roles.map(()=>[]),equip:roles.map(()=>({})),
+    deck:gunMakeDeck(),discard:[],
+    turn:roles.indexOf('sheriff'),bangs:0,alive:roles.map(()=>true),
+    pend:null,phase:'play',log:[],over:false};
   const g=GAME;
-  // 초기 카드 4장
-  g.hands.forEach(h=>{for(let k=0;k<4;k++)h.push(gunDraw());});
+  // 시작 손패 = 체력만큼
+  g.hands.forEach((h,i)=>{ for(let k=0;k<g.hp[i];k++)h.push(gunDraw()); });
   myPrivOf={};
-  NET.names.forEach((_,i)=>{
-    myPrivOf[i]={role:g.roles[i],hand:g.hands[i].slice()};
-    sendTo(i,{t:'priv',data:myPrivOf[i]});
-  });
-  g.log.push('🌵 황야에 총성이... 보안관은 '+NET.names[g.turn]+'!');
+  NET.names.forEach((_,i)=>gunSyncPriv(i));
+  g.log.push('🌵 보안관은 '+NET.names[g.turn]+'! 정체를 숨기고 서로를 떠보세요.');
   gunTurnBegin();
 }
 function gunDraw(){
   const g=GAME;
-  if(g.deck.length===0){g.deck=shuffle(g.discard);g.discard=[];}
-  return g.deck.pop()||'bang';
+  if(!g.deck.length){ g.deck=shuffle(g.discard); g.discard=[]; }
+  return g.deck.pop()||{t:'bang',s:'♠',r:1};
 }
+function gunDiscard(c){ GAME.discard.push(c); }
 function gunSyncPriv(i){
-  myPrivOf[i]={role:GAME.roles[i],hand:GAME.hands[i].slice()};
+  myPrivOf[i]={role:GAME.roles[i],hand:GAME.hands[i].slice(),ch:GAME.chars[i]};
   sendTo(i,{t:'priv',data:myPrivOf[i]});
 }
-function gunTurnBegin(){
-  const g=GAME;
-  g.shotThisTurn=false;
-  // 드로우 2장
-  g.hands[g.turn].push(gunDraw(),gunDraw());
-  // 손패 상한 6 (오래된 것부터 버림)
-  while(g.hands[g.turn].length>6)g.discard.push(g.hands[g.turn].shift());
-  gunSyncPriv(g.turn);
-  g.log.push('▶ '+NET.names[g.turn]+' 차례 (카드 2장 드로우)');
-  gunBroadcast();
+function gunSyncAll(){ NET.names.forEach((_,i)=>gunSyncPriv(i)); }
+
+/* '뽑기!' — 덱 맨 위를 공개하고 버린다 */
+function gunFlip(){ const c=gunDraw(); gunDiscard(c); return c; }
+
+/* 좌석 거리 — 살아있는 사람만 세고, 장착·캐릭터로 보정 */
+function gunSeatDist(a,b){
+  const g=GAME, n=NET.names.length;
+  let f=0,bk=0;
+  for(let i=a;i!==b;i=(i+1)%n) if(g.alive[(i+1)%n])f++;
+  for(let i=a;i!==b;i=(i-1+n)%n) if(g.alive[(i-1+n)%n])bk++;
+  return Math.min(f,bk);
 }
-function gunBroadcast(){
+function gunDist(from,to){
   const g=GAME;
-  if(g.log.length>9)g.log=g.log.slice(-9);
-  bc({t:'scene',s:'gun-board',names:NET.names,hp:g.hp.slice(),maxHp:g.maxHp.slice(),
-    alive:g.alive.slice(),turn:g.turn,handCounts:g.hands.map(h=>h.length),
-    sheriff:g.roles.indexOf('sheriff'),shot:g.shotThisTurn,
-    deadRoles:g.roles.map((r,i)=>g.alive[i]?null:r),log:g.log});
+  let d=gunSeatDist(from,to);
+  if(g.equip[to].mustang)d++;
+  if(g.chars[to]==='paul')d++;
+  if(g.equip[from].scope)d--;
+  if(g.chars[from]==='rose')d--;
+  return Math.max(1,d);
+}
+function gunRange(i){
+  const g=GAME, w=g.equip[i].weapon;
+  return w?(GUN_CARD[w].rng||1):1;      // 무기가 없으면 콜트45 = 사거리 1
+}
+function gunInRange(from,to){ return gunDist(from,to)<=gunRange(from); }
+function gunBangLimit(i){
+  const g=GAME;
+  if(g.chars[i]==='willy')return 99;
+  if(g.equip[i].weapon==='volcanic')return 99;
+  return 1;
+}
+
+/* 피해 처리 — 죽으면 정체 공개, 승패 판정 */
+function gunHurt(t,amt,byWhom){
+  const g=GAME;
+  g.hp[t]-=amt;
+  if(g.chars[t]==='bart'){ for(let k=0;k<amt;k++)g.hands[t].push(gunDraw()); gunSyncPriv(t);
+    g.log.push('  🎴 '+NET.names[t]+'(바르톨로메오) 피해만큼 '+amt+'장 뽑음'); }
+  /* 🍺 쓰러지는 순간 손에 맥주가 있으면 저절로 마신다 (남은 사람이 2명이면 듣지 않는다) */
+  while(g.hp[t]<=0&&g.alive.filter(Boolean).length>2){
+    const bi=g.hands[t].findIndex(c=>c.t==='beer');
+    if(bi<0)break;
+    gunDiscard(g.hands[t].splice(bi,1)[0]);
+    g.hp[t]++;
+    g.log.push('  🍺 '+NET.names[t]+' 쓰러지기 직전 맥주를 마셨다!');
+    gunSyncPriv(t);
+  }
+  if(g.hp[t]<=0)gunDie(t,byWhom);
+  return g.hp[t]<=0;
+}
+function gunDie(t,byWhom){
+  const g=GAME;
+  g.alive[t]=false;
+  g.log.push('💀 '+NET.names[t]+' 사망 — 정체는 '+GUN_ROLE_KO[g.roles[t]]+'!');
+  g.hands[t].forEach(gunDiscard); g.hands[t]=[];
+  for(const k in g.equip[t]){ if(g.equip[t][k]&&g.equip[t][k].t)gunDiscard(g.equip[t][k]); }
+  g.equip[t]={};
+  gunSyncPriv(t);
+  // 보상과 벌칙
+  if(byWhom!=null&&byWhom!==t){
+    if(g.roles[t]==='outlaw'){
+      for(let k=0;k<3;k++)g.hands[byWhom].push(gunDraw());
+      g.log.push('  🎁 무법자를 잡아 '+NET.names[byWhom]+' 카드 3장!');
+      gunSyncPriv(byWhom);
+    } else if(g.roles[t]==='deputy'&&g.roles[byWhom]==='sheriff'){
+      g.hands[byWhom].forEach(gunDiscard); g.hands[byWhom]=[];
+      for(const k in g.equip[byWhom]){ if(g.equip[byWhom][k]&&g.equip[byWhom][k].t)gunDiscard(g.equip[byWhom][k]); }
+      g.equip[byWhom]={};
+      g.log.push('  😱 보안관이 부관을 쐈다! 손패와 장착을 모두 잃는다');
+      gunSyncPriv(byWhom);
+    }
+  }
 }
 function gunCheckWin(){
   const g=GAME;
-  const aliveIdx=g.roles.map((_,i)=>i).filter(i=>g.alive[i]);
+  const idx=g.roles.map((_,i)=>i).filter(i=>g.alive[i]);
   const sheriffAlive=g.alive[g.roles.indexOf('sheriff')];
-  const badAlive=aliveIdx.some(i=>g.roles[i]==='outlaw');
-  const renAlive=aliveIdx.some(i=>g.roles[i]==='renegade');
-  let winner=null;
+  const badAlive=idx.some(i=>g.roles[i]==='outlaw');
+  const renAlive=idx.some(i=>g.roles[i]==='renegade');
+  let win=null;
   if(!sheriffAlive){
-    if(aliveIdx.length===1&&g.roles[aliveIdx[0]]==='renegade')winner='🐍 배신자 승리! 혼자 살아남았다!';
-    else winner='🔫 무법자 승리! 보안관이 쓰러졌다!';
+    if(idx.length===1&&g.roles[idx[0]]==='renegade')win='🐍 배신자 승리! 마지막 한 명으로 살아남았다';
+    else win='🔫 무법자 승리! 보안관이 쓰러졌다';
   } else if(!badAlive&&!renAlive){
-    winner='⭐ 보안관팀 승리! 마을에 평화가!';
+    win='⭐ 보안관 팀 승리! 마을에 평화가 돌아왔다';
   }
-  if(winner){
-    GAME.over=true;
-    bc({t:'scene',s:'gun-end',msg:winner,names:NET.names,
-      roles:GAME.roles.slice(),alive:g.alive.slice()});
+  if(win){
+    g.over=true;
+    bc({t:'scene',s:'gun-end',msg:win,names:NET.names,
+      roles:g.roles.slice(),chars:g.chars.slice(),alive:g.alive.slice()});
     return true;
   }
   return false;
 }
-function gunAct(a){
+
+
+/* ── 차례 시작: 다이너마이트 → 감옥 → 드로우 ── */
+function gunTurnBegin(){
   const g=GAME;
-  if(!g||a.p!==g.turn||!g.alive[a.p])return;
-  const i=a.p,name=NET.names[i],hand=g.hands[i];
-  if(a.k==='shoot'){ // card: 'bang'|'aim'
-    if(g.shotThisTurn)return;
-    const ci=hand.indexOf(a.card);
-    if(ci<0||(a.card!=='bang'&&a.card!=='aim'))return;
-    const t=a.target;
-    if(t===i||!g.alive[t])return;
-    hand.splice(ci,1);g.discard.push(a.card);
-    g.shotThisTurn=true;
-    let msg=(a.card==='aim'?'🎯 ':'💥 ')+name+' → '+NET.names[t];
-    const di=g.hands[t].indexOf('dodge');
-    if(a.card==='bang'&&di>=0){
-      g.hands[t].splice(di,1);g.discard.push('dodge');
-      msg+=' … 🌀 회피 성공!';
-      gunSyncPriv(t);
+  g.bangs=0; g.pend=null; g.phase='play';
+  const i=g.turn;
+  // 🧨 다이너마이트
+  if(g.equip[i].dynamite){
+    const c=gunFlip();
+    if(c.s==='♠'&&c.r>=2&&c.r<=9){
+      gunDiscard(g.equip[i].dynamite); delete g.equip[i].dynamite;
+      g.log.push('🧨 '+NET.names[i]+' 다이너마이트 폭발! ('+c.s+gunRankKo(c.r)+') 피해 3');
+      if(gunHurt(i,3,null)){ if(gunCheckWin())return; return gunNextTurn(); }
     } else {
-      g.hp[t]--;
-      msg+=' … 명중! (-1❤️)';
-      if(g.hp[t]<=0){g.alive[t]=false;msg+=' 💀 '+NET.names[t]+' 사망! 정체는 '+GUN_ROLE_KO[g.roles[t]];
-        g.discard.push(...g.hands[t]);g.hands[t]=[];}
+      const n=NET.names.length; let nx=(i+1)%n; while(!g.alive[nx])nx=(nx+1)%n;
+      g.equip[nx].dynamite=g.equip[i].dynamite; delete g.equip[i].dynamite;
+      g.log.push('🧨 '+NET.names[i]+' 무사 통과 ('+c.s+gunRankKo(c.r)+') → '+NET.names[nx]+'에게 넘어감');
     }
-    gunSyncPriv(i);
-    g.log.push(msg);
-    if(gunCheckWin())return;
-    gunBroadcast();
   }
-  else if(a.k==='beer'){
-    const ci=hand.indexOf('beer');
-    if(ci<0)return;
-    if(g.hp[i]>=g.maxHp[i])return;
-    hand.splice(ci,1);g.discard.push('beer');
-    g.hp[i]++;
-    gunSyncPriv(i);
-    g.log.push('🍺 '+name+' 맥주로 회복 (+1❤️)');
-    gunBroadcast();
+  // ⛓️ 감옥
+  if(g.equip[i].jail){
+    const c=gunFlip();
+    gunDiscard(g.equip[i].jail); delete g.equip[i].jail;
+    if(c.s==='♥'){ g.log.push('⛓️ '+NET.names[i]+' 탈옥 성공! ('+c.s+gunRankKo(c.r)+')'); }
+    else { g.log.push('⛓️ '+NET.names[i]+' 탈옥 실패 ('+c.s+gunRankKo(c.r)+') — 이번 차례 건너뜀'); return gunNextTurn(); }
   }
-  else if(a.k==='end'){
-    do{g.turn=(g.turn+1)%NET.names.length;}while(!g.alive[g.turn]);
-    gunTurnBegin();
+  // 🎴 드로우 2장
+  if(g.chars[i]==='jesse'&&NET.names.some((_,k)=>k!==i&&g.alive[k]&&g.hands[k].length)){
+    g.phase='jesse';    // 첫 장을 남의 손에서 뽑을지 고르게 한다
+    g.log.push('▶ '+NET.names[i]+' 차례 — 제시 존스: 첫 장을 어디서 뽑을까?');
+    return gunBroadcast();
+  }
+  gunDrawPhase(i);
+}
+function gunDrawPhase(i,fromWho){
+  const g=GAME;
+  if(fromWho!=null&&g.hands[fromWho].length){
+    const k=rnd(g.hands[fromWho].length);
+    g.hands[i].push(g.hands[fromWho].splice(k,1)[0]);
+    g.log.push('🤏 '+NET.names[i]+'가 '+NET.names[fromWho]+'의 손패에서 1장 가져감');
+    gunSyncPriv(fromWho);
+  } else g.hands[i].push(gunDraw());
+  const second=gunDraw(); g.hands[i].push(second);
+  if(g.chars[i]==='jack'&&(second.s==='♥'||second.s==='♦')){
+    g.hands[i].push(gunDraw());
+    g.log.push('🂡 블랙 잭! 둘째 장이 '+second.s+' → 1장 더');
+  }
+  g.phase='play';
+  gunSyncPriv(i);
+  g.log.push('▶ '+NET.names[i]+' 차례 시작');
+  gunBroadcast();
+}
+function gunNextTurn(){
+  const g=GAME;
+  if(g.over)return;
+  const n=NET.names.length;
+  let t=g.turn, guard=0;
+  do{ t=(t+1)%n; }while(!g.alive[t]&&guard++<60);
+  g.turn=t;
+  gunTurnBegin();
+}
+/* 손패가 비면 수지 라파예트는 즉시 1장 */
+function gunSuzy(i){
+  const g=GAME;
+  if(g.chars[i]==='suzy'&&g.alive[i]&&!g.hands[i].length){
+    g.hands[i].push(gunDraw());
+    g.log.push('🎴 수지 라파예트 — 손패가 비어 1장 뽑음');
+    gunSyncPriv(i);
   }
 }
-let gunSel={card:null};
+
+/* ── 화면에 뿌리는 상태 ── */
+function gunBroadcast(){
+  const g=GAME;
+  if(g.log.length>10)g.log=g.log.slice(-10);
+  bc({t:'scene',s:'gun-board',names:NET.names,
+    hp:g.hp.slice(),maxHp:g.maxHp.slice(),alive:g.alive.slice(),
+    chars:g.chars.slice(),turn:g.turn,phase:g.phase,bangs:g.bangs,
+    handCounts:g.hands.map(h=>h.length),
+    equip:g.equip.map(e=>{const o={};for(const k in e)if(e[k]&&e[k].t)o[k]=e[k].t;return o;}),
+    ranges:NET.names.map((_,i)=>gunRange(i)),
+    dists:NET.names.map((_,i)=>NET.names.map((_,j)=>i===j?0:gunDist(i,j))),
+    sheriff:g.roles.indexOf('sheriff'),
+    deadRoles:g.roles.map((r,i)=>g.alive[i]?null:r),
+    deckLeft:g.deck.length,
+    pend:g.pend?{k:g.pend.k,who:g.pend.who,from:g.pend.from,info:g.pend.info||''}:null,
+    store:(g.pend&&g.pend.k==='store'&&g.store)?g.store.map(c=>({t:c.t,s:c.s,r:c.r})):null,
+    log:g.log});
+}
+
+
+/* ── 행동 처리 ── */
+function gunAct(a){
+  const g=GAME;
+  if(!g||g.over)return;
+  // 응답 대기 중이면 응답할 사람만 움직일 수 있다
+  if(g.pend){ if(a.p!==g.pend.who)return; return gunRespond(a); }
+  if(g.phase==='jesse'){
+    if(a.p!==g.turn)return;
+    if(a.k==='jesseFrom'){ return gunDrawPhase(g.turn, a.target===-1?null:a.target); }
+    return;
+  }
+  if(a.p!==g.turn||!g.alive[a.p])return;
+  const i=a.p, name=NET.names[i], hand=g.hands[i];
+
+  if(a.k==='play'){
+    const ci=a.ci; const c=hand[ci];
+    if(!c)return;
+    const T=c.t;
+    // ▸ 장착 카드
+    if(GUN_CARD[T].eq){
+      if(T==='jail'){
+        const t=a.target;
+        if(t==null||t===i||!g.alive[t]||g.roles[t]==='sheriff'||g.equip[t].jail)return;
+        hand.splice(ci,1); g.equip[t].jail=c;
+        g.log.push('⛓️ '+name+' → '+NET.names[t]+' 감옥에 가둠');
+      } else if(GUN_WEAPONS.indexOf(T)>=0){
+        hand.splice(ci,1);
+        if(g.equip[i].weaponCard)gunDiscard(g.equip[i].weaponCard);
+        g.equip[i].weapon=T; g.equip[i].weaponCard=c;
+        g.log.push('🔫 '+name+' '+GUN_CARD[T].ko+' 장착 (사거리 '+GUN_CARD[T].rng+')');
+      } else {
+        if(g.equip[i][T])return;      // 같은 장착은 하나만
+        hand.splice(ci,1); g.equip[i][T]=c;
+        g.log.push('🎽 '+name+' '+GUN_CARD[T].ko+' 장착');
+      }
+      gunSyncPriv(i); gunSuzy(i); return gunBroadcast();
+    }
+    // ▸ 뱅!
+    if(T==='bang'||(T==='missed'&&g.chars[i]==='janet')){
+      if(g.bangs>=gunBangLimit(i)){ return; }
+      const t=a.target;
+      if(t==null||t===i||!g.alive[t]||!gunInRange(i,t))return;
+      let dmg=1, extra=null;
+      if(g.chars[i]==='slab'&&a.slab!=null&&hand[a.slab]&&a.slab!==ci){ dmg=2; extra=a.slab; }
+      hand.splice(ci,1); gunDiscard(c);
+      if(extra!=null){ const e=hand.splice(extra>ci?extra-1:extra,1)[0]; gunDiscard(e); }
+      g.bangs++;
+      gunSyncPriv(i); gunSuzy(i);
+      g.log.push('💥 '+name+' → '+NET.names[t]+(dmg>1?' (슬랩! 피해 2)':''));
+      return gunAimAt(t,i,dmg,'bang');
+    }
+    // ▸ 그 외 즉시 발동 카드
+    hand.splice(ci,1); gunDiscard(c);
+    gunSyncPriv(i); gunSuzy(i);
+    return gunPlayEffect(T,i,a);
+  }
+  if(a.k==='drop'){                 // 손패 상한 정리
+    const c=hand[a.ci]; if(!c)return;
+    hand.splice(a.ci,1); gunDiscard(c); gunSyncPriv(i);
+    g.log.push('🗑️ '+name+' 카드 1장 버림');
+    if(hand.length<=g.hp[i]&&g.phase==='discard'){ return gunNextTurn(); }
+    return gunBroadcast();
+  }
+  if(a.k==='end'){
+    if(hand.length>g.hp[i]){ g.phase='discard'; g.log.push('🗑️ '+name+' 손패를 체력('+g.hp[i]+'장)까지 버려야 합니다'); return gunBroadcast(); }
+    return gunNextTurn();
+  }
+}
+
+/* 뱅!이 날아갔을 때 — 통 판정 후 상대에게 응답을 넘긴다 */
+function gunAimAt(t,from,dmg,kind){
+  const g=GAME;
+  if(g.equip[t].barrel){
+    const c=gunFlip();
+    if(c.s==='♥'){
+      g.log.push('🛢️ '+NET.names[t]+' 통 판정 '+c.s+gunRankKo(c.r)+' — 자동으로 빗나감!');
+      return gunAfterShot();
+    }
+    g.log.push('🛢️ '+NET.names[t]+' 통 판정 '+c.s+gunRankKo(c.r)+' — 실패');
+  }
+  g.pend={k:kind,who:t,from,dmg,info:'뱅!을 맞았습니다'};
+  gunBroadcast();
+}
+function gunAfterShot(){
+  const g=GAME;
+  g.pend=null;
+  if(g.queue&&g.queue.length){ const nx=g.queue.shift(); return nx(); }
+  if(gunCheckWin())return;
+  /* 자기 차례에 죽는 수가 있다 — 결투에서 지거나, 엘 고링고에게 반격당하거나.
+     그때 차례를 넘겨주지 않으면 죽은 사람이 차례를 쥔 채 판이 멈춘다. */
+  if(!g.alive[g.turn])return gunNextTurn();
+  gunBroadcast();
+}
+
+
+/* ── 응답 처리 (뱅!·결투·인디언·총기상점) ── */
+function gunRespond(a){
+  const g=GAME, p=g.pend, i=p.who, hand=g.hands[i];
+  if(p.k==='bang'){
+    if(a.k==='missed'){
+      const ci=a.ci, c=hand[ci];
+      const ok=c&&(c.t==='missed'||(c.t==='bang'&&g.chars[i]==='janet'));
+      if(!ok)return;
+      hand.splice(ci,1); gunDiscard(c); gunSyncPriv(i); gunSuzy(i);
+      g.log.push('🌀 '+NET.names[i]+' 빗나감! 막아냈다');
+      return gunAfterShot();
+    }
+    if(a.k==='hit'){
+      g.log.push('❤️ '+NET.names[i]+' 피해 '+p.dmg);
+      const died=gunHurt(i,p.dmg,p.from);
+      if(!died&&g.chars[i]==='gringo'&&g.hands[p.from].length){
+        const k=rnd(g.hands[p.from].length);
+        hand.push(g.hands[p.from].splice(k,1)[0]);
+        g.log.push('  🤏 엘 고링고 — 쏜 사람 카드 1장 뺏음');
+        gunSyncPriv(i); gunSyncPriv(p.from);
+      }
+      return gunAfterShot();
+    }
+    return;
+  }
+  if(p.k==='indians'){
+    if(a.k==='missed'){                       // 인디언은 뱅!을 버려야 막는다
+      const ci=a.ci,c=hand[ci]; if(!c||c.t!=='bang')return;
+      hand.splice(ci,1); gunDiscard(c); gunSyncPriv(i); gunSuzy(i);
+      g.log.push('🏹 '+NET.names[i]+' 뱅!을 버려 막아냄');
+      return gunAfterShot();
+    }
+    if(a.k==='hit'){ g.log.push('🏹 '+NET.names[i]+' 피해 1'); gunHurt(i,1,p.from); return gunAfterShot(); }
+    return;
+  }
+  if(p.k==='duel'){
+    if(a.k==='missed'){
+      const ci=a.ci,c=hand[ci]; if(!c||c.t!=='bang')return;
+      hand.splice(ci,1); gunDiscard(c); gunSyncPriv(i); gunSuzy(i);
+      g.log.push('⚔️ '+NET.names[i]+' 뱅!으로 응수');
+      g.pend={k:'duel',who:p.from,from:i,info:'결투 — 뱅!을 내지 못하면 피해 1'};
+      return gunBroadcast();
+    }
+    if(a.k==='hit'){ g.log.push('⚔️ '+NET.names[i]+' 결투에서 졌다 — 피해 1'); gunHurt(i,1,p.from); return gunAfterShot(); }
+    return;
+  }
+  if(p.k==='store'){
+    if(a.k!=='take')return;
+    const k=a.ci; const c=g.store&&g.store[k]; if(!c)return;
+    g.store.splice(k,1);
+    hand.push(c); gunSyncPriv(i);
+    g.log.push('🏪 '+NET.names[i]+' → '+gunCardKo(c)+' 가져감');
+    return gunAfterShot();
+  }
+}
+
+/* ── 즉시 발동 카드 ── */
+function gunPlayEffect(T,i,a){
+  const g=GAME, name=NET.names[i];
+  const others=NET.names.map((_,k)=>k).filter(k=>k!==i&&g.alive[k]);
+  if(T==='beer'){
+    if(g.alive.filter(Boolean).length<=2){ g.log.push('🍺 마지막 2명일 땐 맥주가 듣지 않는다'); return gunBroadcast(); }
+    if(g.hp[i]<g.maxHp[i])g.hp[i]++;
+    g.log.push('🍺 '+name+' 체력 회복');
+    return gunBroadcast();
+  }
+  if(T==='saloon'){
+    NET.names.forEach((_,k)=>{ if(g.alive[k]&&g.hp[k]<g.maxHp[k])g.hp[k]++; });
+    g.log.push('🍻 살롱! 살아있는 모두 체력 +1');
+    return gunBroadcast();
+  }
+  if(T==='stage'||T==='wells'){
+    const n=T==='stage'?2:3;
+    for(let k=0;k<n;k++)g.hands[i].push(gunDraw());
+    gunSyncPriv(i);
+    g.log.push((T==='stage'?'🚋 역마차':'🏦 웰스파고')+' — '+name+' 카드 '+n+'장');
+    return gunBroadcast();
+  }
+  if(T==='panic'||T==='catbalou'){
+    const t=a.target;
+    if(t==null||t===i||!g.alive[t])return gunBroadcast();
+    if(T==='panic'&&gunDist(i,t)>1){ g.log.push('🫳 강탈은 거리 1까지만'); return gunBroadcast(); }
+    // 장착을 지목했으면 그것을, 아니면 손패 무작위 1장
+    let got=null;
+    if(a.eq&&g.equip[t][a.eq]){ got=g.equip[t][a.eq]; delete g.equip[t][a.eq];
+      if(a.eq==='weapon'){ got=g.equip[t].weaponCard; delete g.equip[t].weapon; delete g.equip[t].weaponCard; } }
+    else if(g.hands[t].length){ got=g.hands[t].splice(rnd(g.hands[t].length),1)[0]; gunSyncPriv(t); }
+    if(!got){ g.log.push('빈손이라 가져올 게 없다'); return gunBroadcast(); }
+    if(T==='panic'){ g.hands[i].push(got); gunSyncPriv(i); g.log.push('🫳 '+name+'가 '+NET.names[t]+'의 카드를 뺏음'); }
+    else { gunDiscard(got); g.log.push('💃 '+name+'가 '+NET.names[t]+'의 카드를 버리게 함'); }
+    return gunBroadcast();
+  }
+  if(T==='gatling'||T==='indians'){
+    g.queue=others.slice(1).map(t=>()=>{
+      if(!g.alive[t])return gunAfterShot();
+      if(T==='gatling')return gunAimAt(t,i,1,'bang');
+      g.pend={k:'indians',who:t,from:i,info:'인디언 습격 — 뱅!을 버리지 않으면 피해 1'};
+      return gunBroadcast();
+    });
+    g.log.push(T==='gatling'?'🔫 개틀링! 전원에게 뱅!':'🏹 인디언 습격!');
+    const t0=others[0];
+    if(t0==null)return gunBroadcast();
+    if(T==='gatling')return gunAimAt(t0,i,1,'bang');
+    g.pend={k:'indians',who:t0,from:i,info:'인디언 습격 — 뱅!을 버리지 않으면 피해 1'};
+    return gunBroadcast();
+  }
+  if(T==='duel'){
+    const t=a.target;
+    if(t==null||t===i||!g.alive[t])return gunBroadcast();
+    g.log.push('⚔️ '+name+' → '+NET.names[t]+' 결투 신청!');
+    g.pend={k:'duel',who:t,from:i,info:'결투 — 뱅!을 내지 못하면 피해 1'};
+    return gunBroadcast();
+  }
+  if(T==='store'){
+    const alive=NET.names.map((_,k)=>k).filter(k=>g.alive[k]);
+    g.store=[]; for(let k=0;k<alive.length;k++)g.store.push(gunDraw());
+    const order=[]; for(let k=0;k<alive.length;k++)order.push(alive[(alive.indexOf(i)+k)%alive.length]);
+    g.queue=order.slice(1).map(t=>()=>{ g.pend={k:'store',who:t,from:i,info:'총기 상점 — 1장 고르세요'}; return gunBroadcast(); });
+    g.log.push('🏪 총기 상점! '+alive.length+'장 펼침 — 차례대로 1장씩');
+    g.pend={k:'store',who:i,from:i,info:'총기 상점 — 1장 고르세요'};
+    return gunBroadcast();
+  }
+  return gunBroadcast();
+}
+
+
+/* ── 화면 ── */
+let gunSel={card:null,slab:null};
+function gunHpRow(hp,mx){
+  let h='';
+  for(let k=0;k<mx;k++)h+='<span class="bHp'+(k<hp?'':' off')+'">'+(k<hp?'❤️':'🖤')+'</span>';
+  return h;
+}
+function gunEqRow(eq){
+  if(!eq)return '';
+  const order=['weapon','barrel','mustang','scope','dynamite','jail'];
+  let h='';
+  order.forEach(k=>{ const t=eq[k]; if(!t)return;
+    h+='<span class="bEq">'+GUN_CARD[t].ko.replace(/ \(.*\)/,'')+'</span>'; });
+  return h||'<span class="bEq off">장착 없음</span>';
+}
 function gunRender(d){
-  const myTurn=d.turn===myPid&&d.alive[myPid];
-  let h=`<div class="logo" style="font-size:20px">🤠 건파이트</div>
-  <div class="mini">보안관: <b>${esc(d.names[d.sheriff])}</b> · ${esc(d.names[d.turn])} 차례</div>`;
-  h+=`<div class="card" style="padding:10px 12px">`;
+  const me=myPid, alive=d.alive[me];
+  const myTurn=d.turn===me&&alive&&!d.pend;
+  const iRespond=d.pend&&d.pend.who===me;
+  let h=`<div class="bTop"><b>🤠 뱅!</b>
+    <span class="sub">보안관 ⭐${esc(d.names[d.sheriff])} · 덱 ${d.deckLeft}장</span>
+    <button class="bRule" onclick="gunRules()">📖 규칙</button></div>`;
+
+  /* ── 모두의 상태: 체력·장착·손패 수·거리 (항상 공개) ── */
+  h+=`<div class="card bList">`;
   d.names.forEach((nm,i)=>{
-    h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #352a48${d.alive[i]?'':';opacity:.4'}">
-      <div><b style="color:${PCOLORS[i]}">${esc(nm)}${i===myPid?' (나)':''}</b>
-        ${i===d.sheriff?' ⭐':''}${d.deadRoles[i]?' <small>'+GUN_ROLE_KO[d.deadRoles[i]]+'</small>':''}${i===d.turn?' ◀':''}</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <span class="sub" style="font-size:11px">🎴${d.handCounts[i]}</span>
-        <div class="hpRow">${Array.from({length:d.maxHp[i]},(_,k)=>`<div class="hp ${k<d.hp[i]?'':'off'}"></div>`).join('')}</div>
-      </div></div>`;
+    const dist=(i===me)?null:d.dists[me][i];
+    const canHit=(dist!=null&&dist<=d.ranges[me]);
+    h+=`<div class="bRow${d.alive[i]?'':' dead'}${i===d.turn?' now':''}">
+      <div class="bName"><b style="color:${PCOLORS[i]}">${esc(nm)}${i===me?' (나)':''}</b>
+        ${i===d.sheriff?'<span class="bTag star">⭐보안관</span>':''}
+        ${d.deadRoles[i]?'<span class="bTag">'+GUN_ROLE_KO[d.deadRoles[i]]+'</span>':''}
+        ${i===d.turn?'<span class="bTag now">차례</span>':''}
+        <div class="bCh">${GUN_CH(d.chars[i]).n}</div></div>
+      <div class="bMid">${gunHpRow(d.hp[i],d.maxHp[i])}
+        <div class="bEqs">${gunEqRow(d.equip[i])}</div></div>
+      <div class="bRight"><span class="bCnt">🎴${d.handCounts[i]}</span>
+        ${dist!=null?`<span class="bDist${canHit?' ok':''}">거리 ${dist}</span>`:`<span class="bDist">사거리 ${d.ranges[me]}</span>`}</div>
+    </div>`;
   });
   h+=`</div>`;
+
+  /* ── 내 정체와 캐릭터 ── */
   if(myPriv&&myPriv.role){
-    h+=`<div class="mini">내 정체: <b>${GUN_ROLE_KO[myPriv.role]}</b> (비밀!)</div>`;
+    h+=`<div class="card bMe"><div><b>${GUN_ROLE_KO[myPriv.role]}</b> <small class="sub">(나만 봄)</small>
+      <div class="sub">${GUN_ROLE_GOAL[myPriv.role]}</div></div>
+      <div class="bChBox"><b>${GUN_CH(myPriv.ch).n}</b><div class="sub">${GUN_CH(myPriv.ch).d}</div></div></div>`;
   }
-  if(myTurn&&myPriv){
-    h+=`<div class="card"><h3>내 손패 — 카드를 탭해서 사용</h3><div class="center">`;
+
+  /* ── 지금 무엇을 해야 하나 ── */
+  if(iRespond)      h+=`<div class="bNow red">🔥 ${esc(d.pend.info)}</div>`;
+  else if(d.pend)   h+=`<div class="bNow">⏳ ${esc(d.names[d.pend.who])} 님의 응답을 기다리는 중…</div>`;
+  else if(d.phase==='discard'&&d.turn===me) h+=`<div class="bNow red">🗑️ 손패를 체력(${d.hp[me]}장)까지 버리세요</div>`;
+  else if(d.phase==='jesse'&&d.turn===me)   h+=`<div class="bNow">🎴 제시 존스 — 첫 장을 어디서 뽑을까요?</div>`;
+  else if(myTurn){
+    const lim=(myPriv&&myPriv.ch==='willy')||(d.equip[me]&&d.equip[me].weapon==='volcanic')?'∞':'1';
+    h+=`<div class="bNow">🎯 내 차례 — 카드를 골라 쓰세요 <small class="sub">(뱅! ${d.bangs}/${lim})</small></div>`;
+  }
+  else if(alive)    h+=`<div class="bNow">💬 ${esc(d.names[d.turn])} 님 차례 — 얼굴 보고 떠보세요</div>`;
+  else              h+=`<div class="bNow">👻 관전 중…</div>`;
+
+  /* ── 총기 상점 ── */
+  if(d.pend&&d.pend.k==='store'&&d.store){
+    h+=`<div class="card"><h3>🏪 총기 상점</h3><div class="bHand">`;
+    d.store.forEach((c,k)=>{
+      h+=`<button class="bCard" ${iRespond?`onclick="gunStoreTake(${k})"`:'disabled'}>
+        <b>${gunCardKo(c)}</b><small>${c.s}${gunRankKo(c.r)}</small></button>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  /* ── 제시 존스 선택 ── */
+  if(d.phase==='jesse'&&d.turn===me){
+    h+=`<div class="card"><h3>어디서 뽑을까요?</h3><div class="grid">
+      <button class="pick2" onclick="sendAct({g:'gun',k:'jesseFrom',target:-1})">🂠 덱에서</button>`;
+    d.names.forEach((nm,k)=>{ if(k===me||!d.alive[k]||!d.handCounts[k])return;
+      h+=`<button class="pick2" onclick="sendAct({g:'gun',k:'jesseFrom',target:${k}})">🤏 ${esc(nm)} 손패</button>`; });
+    h+=`</div></div>`;
+  }
+
+  /* ── 내 손패는 언제나 보인다 ── */
+  if(myPriv&&myPriv.hand){
+    h+=`<div class="card"><h3>내 손패 (${myPriv.hand.length}장 / 체력 ${d.hp[me]})</h3><div class="bHand">`;
     myPriv.hand.forEach((c,ci)=>{
-      h+=`<button class="handCard ${gunSel.card===ci?'sel':''}" onclick="gunPickCard(${ci})">${GUN_CARD[c].ko}<small>${GUN_CARD[c].d}</small></button>`;
+      const on=gunSel.card===ci, sl=gunSel.slab===ci;
+      h+=`<button class="bCard${on?' sel':''}${sl?' slab':''}" onclick="gunPick(${ci})">
+        <b>${gunCardKo(c)}</b><small>${c.s}${gunRankKo(c.r)}</small>
+        <i>${GUN_CARD[c.t]?GUN_CARD[c.t].d:''}</i></button>`;
     });
     h+=`</div>`;
-    if(gunSel.card!=null){
-      const c=myPriv.hand[gunSel.card];
-      if(c==='bang'||c==='aim'){
-        if(d.shot)h+=`<div class="mini" style="color:var(--red)">이번 턴 공격은 이미 했어요! (턴당 1발)</div>`;
-        else{
-          h+=`<div class="mini">누굴 쏠까? 🔽</div><div class="grid">`;
-          d.names.forEach((nm,t)=>{
-            if(t===myPid||!d.alive[t])return;
-            h+=`<button class="pick2" onclick="gunShoot(${t})">${esc(nm)}</button>`;
-          });
-          h+=`</div>`;
-        }
-      } else if(c==='beer'){
-        h+=`<button class="bigBtn green" onclick="sendAct({g:'gun',k:'beer'});gunSel.card=null">🍺 마시기 (+1❤️)</button>`;
-      } else {
-        h+=`<div class="mini">🌀 회피는 공격받을 때 자동으로 사용됩니다</div>`;
-      }
-    }
-    h+=`<button class="bigBtn gold" onclick="gunSel.card=null;sendAct({g:'gun',k:'end'})">⏭️ 턴 종료</button></div>`;
-  } else if(d.alive[myPid]===false){
-    h+=`<div class="mini">👻 관전 중… (죽은 자는 말이 없다)</div>`;
-  } else {
-    h+=`<div class="mini">💬 "너 무법자지?" — 얼굴 보고 심문 타임!</div>`;
+    h+=gunActionArea(d);
+    h+=`</div>`;
   }
   h+=`<div class="logBox">${d.log.slice().reverse().map(esc).join('<br>')}</div>`;
   app.innerHTML=h;
 }
-function gunPickCard(ci){sfx('cardflip');gunSel.card=gunSel.card===ci?null:ci;renderScene(lastScene);} // 🔊 손패 넘기기
-function gunShoot(t){
-  const c=myPriv.hand[gunSel.card];
-  sfx('draw'); // 🔊 총 뽑기 찰칵 — 발사음은 결과 로그에서
-  gunSel.card=null;
-  sendAct({g:'gun',k:'shoot',card:c,target:t});
+
+/* ── 손패 아래 버튼들: 지금 할 수 있는 것만 보여준다 ── */
+function gunCanMissed(c){ return c.t==='missed'||(c.t==='bang'&&myPriv&&myPriv.ch==='janet'); }
+function gunTargets(d,f){
+  const me=myPid; let h='';
+  d.names.forEach((nm,t)=>{ if(t===me||!d.alive[t])return;
+    const r=f(t); if(!r)return;
+    h+=`<button class="pick2" onclick="${r.on}"><b style="color:${PCOLORS[t]}">${esc(nm)}</b><small>${r.sub}</small></button>`; });
+  return h||'<div class="sub">지금 겨눌 수 있는 사람이 없습니다</div>';
 }
+function gunActionArea(d){
+  const me=myPid, hand=(myPriv&&myPriv.hand)||[];
+  const sel=gunSel.card!=null?hand[gunSel.card]:null;
+  let h='<div class="bAct">';
+
+  /* ① 나에게 온 공격에 응답 */
+  if(d.pend&&d.pend.who===me){
+    if(d.pend.k==='store'){ h+='<div class="sub">위 상점에서 1장 고르세요</div></div>'; return h; }
+    const need=d.pend.k==='bang'?'missed':'bang';
+    const ok=hand.map((c,ci)=>({c,ci})).filter(x=>d.pend.k==='bang'?gunCanMissed(x.c):x.c.t==='bang');
+    h+='<div class="grid">';
+    ok.forEach(x=>{ h+=`<button class="pick2 good" onclick="gunRespondCard(${x.ci})">
+      ${d.pend.k==='bang'?'🌀 빗나감!':'💥 뱅!'} 내기<small>${x.c.s}${gunRankKo(x.c.r)}</small></button>`; });
+    const hurt=d.pend.k==='duel'?'⚔️ 포기 (피해 1)':(d.pend.k==='indians'?'🏹 화살 맞기 (피해 1)':'😖 맞기 (피해 '+(d.pend.dmg||1)+')');
+    h+=`<button class="pick2 bad" onclick="sendAct({g:'gun',k:'hit'})">${hurt}</button>`;
+    if(!ok.length)h+=`<div class="sub">막을 카드(${need==='missed'?'빗나감!':'뱅!'})가 없습니다</div>`;
+    return h+'</div></div>';
+  }
+  if(d.pend)return h+'</div>';
+  if(d.turn!==me||!d.alive[me])return h+'</div>';
+
+  /* ② 손패 상한 정리 */
+  if(d.phase==='discard'){
+    h+=sel?`<button class="bigBtn red" onclick="gunDrop()">🗑️ ${gunCardKo(sel)} 버리기</button>`
+          :'<div class="sub">버릴 카드를 위에서 고르세요</div>';
+    return h+'</div>';
+  }
+  if(d.phase!=='play')return h+'</div>';
+
+  /* ③ 고른 카드로 무엇을 할까 */
+  if(sel){
+    const T=sel.t, C=GUN_CARD[T];
+    const isBang=(T==='bang'||(T==='missed'&&myPriv.ch==='janet'));
+    if(isBang){
+      const lim=(myPriv.ch==='willy'||(d.equip[me]&&d.equip[me].weapon==='volcanic'))?99:1;
+      if(d.bangs>=lim){ h+='<div class="sub">이번 차례에 뱅!은 이미 썼습니다 (무기를 바꾸면 늘어납니다)</div>'; }
+      else{
+        if(myPriv.ch==='slab'){
+          h+='<div class="sub">슬랩 더 키드 — 카드를 1장 더 버리면 피해가 2가 됩니다</div><div class="grid">';
+          h+=`<button class="pick2${gunSel.slab==null?' sel':''}" onclick="gunSlab(null)">그냥 쏘기 (피해 1)</button>`;
+          hand.forEach((c,ci)=>{ if(ci===gunSel.card)return;
+            h+=`<button class="pick2${gunSel.slab===ci?' sel':''}" onclick="gunSlab(${ci})">+${gunCardKo(c)} 버리고 피해 2</button>`; });
+          h+='</div>';
+        }
+        h+='<div class="sub">누구를 쏠까요? (사거리 '+d.ranges[me]+')</div><div class="grid">';
+        h+=gunTargets(d,t=>d.dists[me][t]<=d.ranges[me]?{on:`gunFire(${t})`,sub:'거리 '+d.dists[me][t]}:null);
+        h+='</div>';
+      }
+    }
+    else if(T==='jail'){
+      h+='<div class="sub">보안관은 가둘 수 없습니다</div><div class="grid">';
+      h+=gunTargets(d,t=>(t===d.sheriff||(d.equip[t]&&d.equip[t].jail))?null:{on:`gunUse(${t})`,sub:'감옥에 가두기'});
+      h+='</div>';
+    }
+    else if(T==='panic'){
+      h+='<div class="sub">거리 1인 사람에게서 1장 뺏기</div>'+gunSteal(d,'panic');
+    }
+    else if(T==='catbalou'){
+      h+='<div class="sub">아무나의 카드 1장을 버리게 합니다 (거리 무관)</div>'+gunSteal(d,'catbalou');
+    }
+    else if(T==='duel'){
+      h+='<div class="sub">누구에게 결투를 신청할까요?</div><div class="grid">';
+      h+=gunTargets(d,t=>({on:`gunUse(${t})`,sub:'뱅! 주고받기'}));
+      h+='</div>';
+    }
+    else{
+      h+=`<div class="sub">${esc(C?C.d:'')}</div>
+        <button class="bigBtn green" onclick="gunUse(null)">${C?C.ko:T} 사용하기</button>`;
+    }
+    h+=`<button class="bigBtn" onclick="gunPick(${gunSel.card})">↩️ 고르기 취소</button>`;
+  } else {
+    h+='<div class="sub">쓸 카드를 위에서 고르세요. 다 썼으면 턴을 넘기세요.</div>';
+  }
+  h+=`<button class="bigBtn gold" onclick="gunEnd()">⏭️ 턴 종료</button>`;
+  return h+'</div>';
+}
+/* 강탈·캣발루 — 손패에서 무작위로 가져올지, 눈에 보이는 장착을 집을지 */
+function gunSteal(d,kind){
+  const me=myPid; let h='<div class="grid">';
+  d.names.forEach((nm,t)=>{
+    if(t===me||!d.alive[t])return;
+    if(kind==='panic'&&d.dists[me][t]>1)return;
+    const eq=d.equip[t]||{};
+    if(d.handCounts[t])h+=`<button class="pick2" onclick="gunUse(${t})"><b style="color:${PCOLORS[t]}">${esc(nm)}</b><small>🎴 손패에서 무작위</small></button>`;
+    for(const k in eq)h+=`<button class="pick2" onclick="gunUse(${t},'${k}')"><b style="color:${PCOLORS[t]}">${esc(nm)}</b><small>${GUN_CARD[eq[k]].ko.replace(/ \(.*\)/,'')}</small></button>`;
+  });
+  return h+'</div>';
+}
+/* ── 조작 ── */
+function gunPick(ci){ sfx('cardflip'); gunSel.slab=null;
+  gunSel.card=(gunSel.card===ci?null:ci); renderScene(lastScene); }
+function gunSlab(ci){ gunSel.slab=ci; renderScene(lastScene); }
+function gunFire(t){ sfx('shot'); const ci=gunSel.card, sl=gunSel.slab;
+  gunSel={card:null,slab:null}; sendAct({g:'gun',k:'play',ci,target:t,slab:sl}); }
+function gunUse(t,eq){ sfx('draw'); const ci=gunSel.card;
+  gunSel={card:null,slab:null}; sendAct({g:'gun',k:'play',ci,target:t,eq}); }
+function gunDrop(){ const ci=gunSel.card; gunSel={card:null,slab:null}; sendAct({g:'gun',k:'drop',ci}); }
+function gunEnd(){ gunSel={card:null,slab:null}; sendAct({g:'gun',k:'end'}); }
+function gunRespondCard(ci){ sfx('dodge'); gunSel={card:null,slab:null}; sendAct({g:'gun',k:'missed',ci}); }
+function gunStoreTake(k){ sfx('cardflip'); sendAct({g:'gun',k:'take',ci:k}); }
+
+/* ── 📖 규칙: 처음 하는 사람도 이 한 장이면 끝나게 ── */
+function gunRules(){
+  let ex=document.getElementById('gunRuleOvl'); if(ex){ex.remove();return;}
+  const cardRow=(k)=>`<tr><td>${GUN_CARD[k].ko}</td><td>${GUN_CARD[k].d}</td></tr>`;
+  const play=['bang','missed','beer','saloon','stage','wells','duel','indians','gatling','panic','catbalou','store'];
+  const eq=['barrel','mustang','scope','jail','dynamite'];
+  const w=GUN_WEAPONS;
+  const o=document.createElement('div');
+  o.id='gunRuleOvl';
+  o.innerHTML=`<div class="grBox">
+   <h2>🤠 뱅! 규칙</h2>
+   <h3>1. 나는 누구인가</h3>
+   <p class="sub">보안관만 정체가 공개됩니다. 나머지는 전부 숨어 있습니다.<br>
+   ⭐ <b>보안관</b> — 무법자와 배신자를 모두 없애면 승리. 체력 +1로 시작합니다.<br>
+   🤝 <b>부관</b> — 보안관 편. 보안관이 이기면 같이 이깁니다. 단, 보안관이 나를 오해하고 쏠 수 있습니다.<br>
+   🔫 <b>무법자</b> — 보안관만 쓰러뜨리면 무법자 전원 승리. 여러 명입니다.<br>
+   🐍 <b>배신자</b> — 혼자입니다. <b>마지막 한 명</b>으로 남아야 이깁니다. 보안관을 <b>제일 마지막에</b> 잡아야 하므로,
+   처음엔 보안관 편인 척 무법자를 돕지 않는 편이 낫습니다.</p>
+   <h3>2. 한 차례에 하는 일</h3>
+   <p class="sub">① <b>뽑기</b> 2장 (감옥·다이너마이트가 있으면 먼저 판정) →
+   ② <b>카드 쓰기</b> — 원하는 만큼, 순서 자유. 단 <b>뱅!은 한 차례에 한 번</b> →
+   ③ <b>손패 정리</b> — 남은 카드가 지금 체력보다 많으면 같아질 때까지 버립니다.</p>
+   <h3>3. 거리 — 아무나 쏠 수 없습니다</h3>
+   <p class="sub">앉은 자리를 원으로 보고, 가까운 쪽으로 몇 칸인지가 <b>거리</b>입니다.
+   죽은 사람은 자리에서 빠져 원이 줄어듭니다.<br>
+   맨손 총(콜트45)은 <b>사거리 1</b> — 바로 옆 사람만 쏩니다. 무기를 장착하면 늘어납니다.<br>
+   🐴 무스탕을 낀 사람은 남이 볼 때 <b>+1 멀어지고</b>, 🔭 조준경을 낀 사람은 남을 볼 때 <b>−1 가까워집니다</b>.<br>
+   화면의 <b>거리</b> 숫자가 초록이면 지금 쏠 수 있다는 뜻입니다.</p>
+   <h3>4. 장착 카드 (내 앞에 깔아두고 계속 효과)</h3>
+   <table class="grT">${eq.map(cardRow).join('')}</table>
+   <p class="sub">같은 종류는 하나만 깔 수 있습니다. ⛓️ 감옥은 <b>남에게</b> 깔며 보안관에게는 못 씁니다.
+   🧨 다이너마이트는 <b>내 앞에</b> 깔리고, 매 차례 시작에 ♠2~9가 나오면 <b>피해 3</b>, 아니면 옆 사람에게 넘어갑니다.</p>
+   <h3>5. 무기 (하나만, 바꾸면 이전 것은 버립니다)</h3>
+   <table class="grT">${w.map(cardRow).join('')}</table>
+   <p class="sub">🔥 볼케닉은 사거리가 1로 짧은 대신 <b>뱅!을 몇 번이든</b> 쏠 수 있습니다.</p>
+   <h3>6. 쓰고 버리는 카드</h3>
+   <table class="grT">${play.map(cardRow).join('')}</table>
+   <h3>7. 뽑기! 판정</h3>
+   <p class="sub">🛢️ 통·⛓️ 감옥·🧨 다이너마이트는 덱 맨 위 한 장을 공개해 <b>무늬</b>로 판정합니다.
+   통은 ♥면 자동 회피, 감옥은 ♥면 탈옥, 다이너마이트는 ♠2~9면 폭발입니다.</p>
+   <h3>8. 죽으면</h3>
+   <p class="sub">체력이 0이 되면 정체가 공개됩니다. 손패와 장착은 모두 버려집니다.<br>
+   🎁 무법자를 잡은 사람은 카드 3장을 받습니다.<br>
+   😱 보안관이 부관을 쏘면 보안관은 손패와 장착을 <b>전부</b> 잃습니다. 함부로 쏘지 마세요.<br>
+   🍺 체력이 0이 되는 순간 맥주를 쓰면 살아납니다 — 단 <b>남은 사람이 2명</b>이면 맥주가 듣지 않습니다.</p>
+   <h3>9. 캐릭터</h3>
+   <table class="grT">${GUN_CHARS.map(c=>`<tr><td>${c.n} (❤️${c.hp})</td><td>${c.d}</td></tr>`).join('')}</table>
+   <button class="bigBtn gold" onclick="gunRules()">닫기</button>
+  </div>`;
+  o.onclick=(e)=>{ if(e.target===o)o.remove(); };
+  document.body.appendChild(o);
+}
+/* ── 끝난 판 ── */
 function gunEndRender(d){
-  let h=`<div class="logo">🌵</div>
-  <div class="card center"><div class="big" style="color:var(--gold)">${esc(d.msg)}</div>
-  <table class="tbl">${d.names.map((nm,i)=>'<tr><td>'+esc(nm)+(d.alive[i]?'':' 💀')+'</td><td>'+GUN_ROLE_KO[d.roles[i]]+'</td></tr>').join('')}</table></div>
-  ${myPid===0?`<button class="bigBtn" onclick="startGame()">🔄 한 판 더</button>
-  <button class="ghostBtn" onclick="backToLobbyHost()">로비로</button>`:'<div class="mini">방장이 다음 판을 시작할 수 있어요</div>'}`;
+  const win=/보안관 팀/.test(d.msg)?'sheriff':(/무법자/.test(d.msg)?'outlaw':'renegade');
+  const mine=myPriv&&myPriv.role;
+  const iWon=mine&&((win==='sheriff'&&(mine==='sheriff'||mine==='deputy'))||(win==='outlaw'&&mine==='outlaw')||(win==='renegade'&&mine==='renegade'));
+  sfx(iWon?'win':'lose');
+  let h=`<div class="card" style="text-align:center"><h2>${esc(d.msg)}</h2>
+    ${mine?`<div class="sub">나는 ${GUN_ROLE_KO[mine]} — <b style="color:${iWon?'var(--green)':'var(--red)'}">${iWon?'승리!':'패배'}</b></div>`:''}</div>
+    <div class="card"><h3>정체 공개</h3>`;
+  d.names.forEach((nm,i)=>{
+    h+=`<div class="bRow${d.alive[i]?'':' dead'}">
+      <div class="bName"><b style="color:${PCOLORS[i]}">${esc(nm)}</b>
+        <div class="bCh">${GUN_CH(d.chars[i]).n}</div></div>
+      <div class="bMid"><b>${GUN_ROLE_KO[d.roles[i]]}</b></div>
+      <div class="bRight">${d.alive[i]?'😀 생존':'💀 사망'}</div></div>`;
+  });
+  h+=`</div><button class="bigBtn" onclick="gunRules()">📖 규칙 다시 보기</button>
+   ${myPid===0?`<button class="bigBtn gold" onclick="startGame()">🔄 한 판 더</button>
+   <button class="bigBtn" onclick="backToLobbyHost()">🏠 로비로</button>`
+   :'<div class="sub" style="text-align:center;margin-top:10px">방장이 다음 판을 시작할 때까지 기다려 주세요</div>'}`;
   app.innerHTML=h;
 }
 
