@@ -372,6 +372,37 @@ html.rot body.playing #scrGame{height:100%!important}
 html.rot body.playing #modal,
 html.rot body.playing #vmodal{max-height:92%!important}
 html.rot #scrStart #btnStart{position:fixed}
+
+/* ================= 📱 가로 화면 모달 — 버튼은 오른쪽에 고정 =================
+   낮은 가로 화면(390px)에서 카드 내용이 길면 버튼이 화면 밖으로 밀려서
+   '눌러야 할 버튼'을 못 찾는 일이 있었다. 내용과 버튼을 좌우로 나눠서,
+   내용이 아무리 길어도 버튼은 항상 제자리에 보이게 한다. */
+html.land #modal{
+  display:grid;
+  grid-template-columns:1fr clamp(148px,23vw,215px);
+  grid-template-rows:auto minmax(0,1fr);
+  grid-template-areas:"t t" "b n";
+  column-gap:11px;
+  width:min(96vw,900px);max-width:none;max-height:92%;
+  overflow:hidden;
+}
+html.land #mTitle{grid-area:t}
+html.land #mBody{grid-area:b;overflow-y:auto;min-height:0;padding-right:5px}
+html.land #mBtns{grid-area:n;margin-top:0;display:flex!important;flex-direction:column;gap:5px;
+  overflow-y:auto;min-height:0;justify-content:flex-start}
+html.land #mBtns .mbtn{grid-column:auto!important;width:100%}
+/* 조회 전용 창(재무제표·순위·기록)은 닫기 버튼을 아래에 붙박이로 */
+html.land #vmodal{
+  display:grid;grid-template-rows:auto minmax(0,1fr) auto;
+  width:min(96vw,900px);max-width:none;max-height:92%;overflow:hidden;
+}
+html.land #vBody{overflow-y:auto;min-height:0;padding-right:5px}
+html.land #vmodal>div:last-child{margin-top:8px!important}
+/* 목록이 긴 창(부의 서재 등)은 가로에서 2열로 — 스크롤을 절반으로 */
+html.land #vBody{column-count:1}
+html.land #vBody .libItem{margin-bottom:6px!important;padding:9px 11px!important;font-size:12px}
+html.land #vBody:has(.libItem){display:grid;grid-template-columns:1fr 1fr;gap:0 10px;align-content:start}
+html.land #vBody:has(.libItem)>div:first-child{grid-column:1/3}
 </style>
 </head>
 <body>
@@ -655,6 +686,8 @@ const DEP_RATE=0.003;         // 예금 월 이자 0.3% (연 3.6%)
 const LOAN_UNIT=500, DEP_UNIT=500;
 const REIT_DIV=1;           // K리츠 초기 월 배당 (게임 중 G.reitDiv로 변동!)
 function reitDiv(){return G?G.reitDiv:REIT_DIV;}
+/* 이자율을 글자에 직접 박으면 상수를 바꿔도 안내문이 거짓말을 한다 — 항상 상수에서 뽑는다 */
+function pctTxt(r){const v=r*100; return (v<1?v.toFixed(1):(Math.abs(v-Math.round(v))<0.05?String(Math.round(v)):v.toFixed(1)))+'%';}
 const COLORS=['#ff5d73','#ffc94d','#3ecf8e','#4dabff','#b78bff','#ff8fd8'];
 const ART={
 'bnb_gangneung':'data:image/png;base64,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',
@@ -2768,12 +2801,12 @@ function openBank(){
     const bankAdv=adviceHTML(p.loan>loanCap(p)*0.5?['loan_heavy','loan_take']:['loan_take','loan_heavy']);
     const body='<table class="tbl">'+
       '<tr><td>💵 현금</td><td><b>'+fmt(p.cash)+'</b></td></tr>'+
-      '<tr><td>💳 대출 잔액 <small class="u">(월 이자 5%)</small></td><td class="neg">'+fmt(p.loan)+
+      '<tr><td>💳 대출 잔액 <small class="u">(월 이자 '+pctTxt(LOAN_RATE)+')</small></td><td class="neg">'+fmt(p.loan)+
         (p.loan>0?' <small>(월 −'+fmt(Math.round(p.loan*LOAN_RATE))+')</small>':'')+'</td></tr>'+
       '<tr><td>대출 한도 <small class="u">(월급×10)</small></td><td>'+fmt(loanCap(p))+'</td></tr>'+
       '<tr><td>🏦 예금 <small class="u">(월 0.3%)</small></td><td class="pos">'+fmt(p.deposit)+'</td></tr>'+
       '</table>'+bankAdv+
-      tipHTML('대출이자(월 5%)는 예금이자(월 0.3%)의 17배! 빚 갚는 게 곧 최고의 재테크인 이유입니다.');
+      tipHTML('대출이자(월 '+pctTxt(LOAN_RATE)+')는 예금이자(월 '+pctTxt(DEP_RATE)+')의 '+Math.round(LOAN_RATE/DEP_RATE)+'배! 빚 갚는 게 곧 최고의 재테크인 이유입니다.');
     const bw=canBorrow(p), rp=canRepay(p), dp=canDep(p), wd=Math.min(DEP_UNIT,p.deposit);
     showModal('🏦 은행',body,[
       {label:bw>0?'💳 대출 받기 <b>+'+fmt(bw)+'</b>':'💳 대출 한도 다 씀',disabled:bw<=0,keep:true,
@@ -2888,7 +2921,7 @@ function finHTML(p,interactive){
     h+='<div class="secH">📤 지출 (월)</div><table class="tbl">'+
       '<tr><td>생활비</td><td class="neg">−'+fmt(p.expense)+'</td></tr>'+
       (p.children?'<tr><td>👶 자녀 양육 ×'+p.children+' <small class="u">(1명당 '+fmt(childCost(p))+')</small></td><td class="neg">−'+fmt(p.children*childCost(p))+'</td></tr>':'')+
-      (p.loan?'<tr><td>💳 대출이자 (월 5%)</td><td class="neg">−'+fmt(Math.round(p.loan*LOAN_RATE))+'</td></tr>':'')+
+      (p.loan?'<tr><td>💳 대출이자 (월 '+pctTxt(LOAN_RATE)+')</td><td class="neg">−'+fmt(Math.round(p.loan*LOAN_RATE))+'</td></tr>':'')+
       '<tr><td><b>총지출</b></td><td class="neg"><b>−'+fmt(ex)+'</b></td></tr></table>';
     h+='<div class="secH">💼 투자 자산'+(interactive?' (매도 가능)':' <small class="u">— 매도는 본인 턴에만</small>')+'</div><table class="tbl">';
     let anyH=false;
@@ -3233,7 +3266,7 @@ function showHelp(){
   '<div class="secH">📈 기회 칸</div>소액(주식·코인·리츠·소형부동산) 또는 대형(아파트·상가·창업) 매물을 볼 수 있습니다. 사도 되고 안 사도 됩니다. 주식·코인은 카드가 보여주는 가격으로 <b>전체 시세가 갱신</b>됩니다.'+
   '<div class="secH">📊 재산현황</div>상단 플레이어 칩을 탭하면 <b>언제든 누구의 재산현황이든</b> 볼 수 있습니다. 월급·이자·지출·손익은 전부 자동 계산됩니다.'+
   '<div class="secH">💱 매도</div>주식·코인·리츠는 내 턴에 <b>재무제표</b>에서 현재 시세로 팔 수 있습니다. 부동산·사업은 ① <b>재무제표에서 "📢 내놓기"</b> — 호가를 정하면 내 월급날마다 팔릴 확률(배짱 10% ~ 급매 85%)을 굴립니다 ② <b>시장 카드</b>의 매수자 등장 ③ 위기 시 급매(80%)로 팔 수 있습니다.'+
-  '<div class="secH">🏦 은행</div>월급×10까지 신용대출(월 이자 5%) 가능 — 이자가 살인적이니 비상용으로만!. 예금은 월 0.3% 이자를 줍니다. 현금이 마이너스가 되면 대출·매각·급매로 해결해야 하며, 불가능하면 <b>파산</b>입니다.'+
+  '<div class="secH">🏦 은행</div>월급×10까지 신용대출(월 이자 '+pctTxt(LOAN_RATE)+', 연 '+Math.round(LOAN_RATE*1200)+'%) 가능 — 이자가 살인적이니 비상용으로만!. 예금은 월 0.3% 이자를 줍니다. 현금이 마이너스가 되면 대출·매각·급매로 해결해야 하며, 불가능하면 <b>파산</b>입니다.'+
   '<div class="secH">📖 경제 용어 사전</div>'+
   '<b>패시브인컴</b>: 노동 없이 자산이 벌어주는 소득. 이 게임의 핵심!<br>'+
   '<b>갭투자</b>: 전세를 끼고 적은 돈으로 집을 사는 것. 시세차익형 투자.<br>'+
